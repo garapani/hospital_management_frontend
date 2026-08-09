@@ -32,7 +32,7 @@ the first of two planned apps (`patient-portal` deferred — no mocks or backend
 it yet); this workspace uses the `angular-monorepo`-shaped layout (`apps/`) so a second app can be
 added later without restructuring.
 
-**UI mocks/reference:** `../new/docs/ui-mocks/` (in the backend repo, not copied here) — 10
+**UI mocks/reference:** `../new/ui-mocks/` (in the backend repo, not copied here) — 10
 role-based static HTML clickable prototypes. Treat as a screen-inventory/IA reference and a
 reusable interaction-pattern vocabulary (step-bar for multi-step forms, tabs for detail views,
 toolbar+search+table for lists, a permission-aware "hide unavailable actions" footer) — the
