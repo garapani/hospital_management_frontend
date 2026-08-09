@@ -1,0 +1,6 @@
+@layer tailwind-base, primeng, tailwind-utilities;
+
+@import "tailwindcss/theme" layer(tailwind-base);
+@import "tailwindcss/utilities" layer(tailwind-utilities);
+@import "primeicons/primeicons.css";
+@plugin "tailwindcss-primeui";
