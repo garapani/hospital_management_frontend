@@ -2,7 +2,14 @@
   "name": "@org/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "start": "nx serve staff-console",
+    "build": "nx build staff-console",
+    "test": "nx run-many -t test",
+    "lint": "nx run-many -t lint",
+    "typecheck": "nx run-many -t typecheck",
+    "e2e": "nx e2e staff-console-e2e"
+  },
   "private": true,
   "devDependencies": {
     "@angular-devkit/core": "~22.0.4",
