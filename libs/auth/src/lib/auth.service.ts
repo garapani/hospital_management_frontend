@@ -16,7 +16,7 @@ interface LoginResponse {
 export class AuthService {
   private readonly apiClient = inject(ApiClientService);
   private readonly router = inject(Router);
-  private readonly tokens = new TokenStorage();
+  private readonly tokens = inject(TokenStorage);
 
   private readonly claims = signal<AccessTokenClaims | null>(null);
   private refreshInFlight: Observable<string> | null = null;
@@ -83,6 +83,8 @@ export class AuthService {
     this.clearSession();
   }
 
+  /** Clears stored tokens AND navigates to /login — called on logout and on unrecoverable
+   * auth failures (interceptor retry-401, failed refresh), which all want both steps together. */
   clearSession(): void {
     this.tokens.clear();
     this.claims.set(null);

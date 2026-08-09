@@ -1,6 +1,9 @@
+import { Injectable } from '@angular/core';
+
 const REFRESH_TOKEN_KEY = 'auth.refreshToken';
 
 /** Access token lives only in memory (this instance's field) — never persisted. */
+@Injectable({ providedIn: 'root' })
 export class TokenStorage {
   private accessToken: string | null = null;
 

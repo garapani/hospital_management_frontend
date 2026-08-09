@@ -51,8 +51,6 @@
     "typescript-eslint": "^8.58.0"
   },
   "dependencies": {
-    "@org/api-client": "workspace:*",
-    "@org/auth": "workspace:*",
     "@angular/animations": "^22.1.1",
     "@angular/common": "~22.0.4",
     "@angular/compiler": "~22.0.4",
@@ -61,6 +59,8 @@
     "@angular/platform-browser": "~22.0.4",
     "@angular/platform-browser-dynamic": "~22.0.4",
     "@angular/router": "~22.0.4",
+    "@org/api-client": "workspace:*",
+    "@org/auth": "workspace:*",
     "@primeuix/themes": "^3.0.0",
     "primeicons": "^8.0.0",
     "primeng": "^22.0.0",

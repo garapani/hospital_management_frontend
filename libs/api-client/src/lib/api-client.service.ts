@@ -33,12 +33,13 @@ export class ApiClientService {
     return `${this.baseUrl}${path}`;
   }
 
-  private normalizeError(error: HttpErrorResponse) {
+  // Arrow field, not a prototype method: safe to pass to catchError() unbound.
+  private readonly normalizeError = (error: HttpErrorResponse) => {
     const apiError: ApiError = {
       status: error.status,
       message: typeof error.error?.message === 'string' ? error.error.message : error.message,
       body: error.error,
     };
     return throwError(() => apiError);
-  }
+  };
 }
