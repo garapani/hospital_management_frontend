@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClientService } from '@org/api-client';
 import { Observable } from 'rxjs';
-import { InvoiceDetail, InvoiceListResult } from './invoice.model.js';
+import { InvoiceListResult, InvoiceWithReturns } from './invoice.model.js';
 
 export interface ListInvoicesParams {
   patientId?: string;
@@ -27,7 +27,7 @@ export class InvoicesApiService {
     return this.apiClient.get<InvoiceListResult>('/billing/invoices', { params: query });
   }
 
-  findOne(id: string): Observable<InvoiceDetail> {
-    return this.apiClient.get<InvoiceDetail>(`/billing/invoices/${id}`);
+  findOne(id: string): Observable<InvoiceWithReturns> {
+    return this.apiClient.get<InvoiceWithReturns>(`/billing/invoices/${id}`);
   }
 }

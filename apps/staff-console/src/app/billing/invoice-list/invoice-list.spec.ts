@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { InvoiceList } from './invoice-list.js';
 import { InvoicesApiService } from '../invoices-api.service.js';
-import { InvoiceListResult } from '../invoice.model.js';
+import { Invoice, InvoiceListResult } from '../invoice.model.js';
 
 describe('InvoiceList', () => {
   function setup() {
@@ -68,17 +68,24 @@ describe('InvoiceList', () => {
   });
 
   it('populates invoices and totalRecords from the response', async () => {
-    const invoice = {
+    const invoice: Invoice = {
       id: 'inv-1',
       patientId: 'patient-1',
       invoiceNumber: 1,
       financialYear: '2026-27',
+      subtotal: 100,
+      discountAmount: 0,
+      taxableAmount: 100,
+      taxAmount: 0,
       totalAmount: 100,
       paidAmount: 0,
-      status: 'Unpaid' as const,
+      status: 'Unpaid',
+      notes: null,
+      createdBy: 'account-1',
+      createdAt: '2026-08-09T00:00:00Z',
       updatedAt: '2026-08-09T00:00:00Z',
     };
-    const result: InvoiceListResult = { data: [invoice] as never, total: 1, page: 1, limit: 20 };
+    const result: InvoiceListResult = { data: [invoice], total: 1, page: 1, limit: 20 };
     const invoicesApi = { list: jest.fn().mockReturnValue(of(result)) } as unknown as InvoicesApiService;
     TestBed.configureTestingModule({
       imports: [InvoiceList],

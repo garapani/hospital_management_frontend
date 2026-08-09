@@ -1,14 +1,14 @@
-import { CommonModule } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { EMPTY, switchMap } from 'rxjs';
 import { InvoicesApiService } from '../invoices-api.service.js';
-import { InvoiceDetail as InvoiceDetailModel } from '../invoice.model.js';
+import { InvoiceWithReturns, invoiceReference } from '../invoice.model.js';
 
 @Component({
-  imports: [CommonModule, RouterModule, CardModule],
+  imports: [DecimalPipe, DatePipe, RouterModule, CardModule],
   selector: 'hms-invoice-detail',
   templateUrl: './invoice-detail.html',
 })
@@ -16,8 +16,10 @@ export class InvoiceDetail {
   private readonly invoicesApi = inject(InvoicesApiService);
   private readonly route = inject(ActivatedRoute);
 
-  readonly invoice = signal<InvoiceDetailModel | null>(null);
+  readonly invoice = signal<InvoiceWithReturns | null>(null);
   readonly error = signal<string | null>(null);
+
+  readonly reference = invoiceReference;
 
   // Subscribes to paramMap (not route.snapshot) so a route-reuse navigation between two
   // billing/invoices/:id URLs (e.g. browser back/forward) refetches instead of leaving the

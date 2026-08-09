@@ -3,9 +3,9 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 import { InvoiceDetail } from './invoice-detail.js';
 import { InvoicesApiService } from '../invoices-api.service.js';
-import { InvoiceDetail as InvoiceDetailModel } from '../invoice.model.js';
+import { InvoiceWithReturns } from '../invoice.model.js';
 
-function fakeInvoice(overrides: Partial<InvoiceDetailModel> = {}): InvoiceDetailModel {
+function fakeInvoice(overrides: Partial<InvoiceWithReturns> = {}): InvoiceWithReturns {
   return {
     id: 'invoice-1',
     patientId: 'patient-1',

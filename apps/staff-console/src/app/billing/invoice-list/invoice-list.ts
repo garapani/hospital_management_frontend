@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -7,7 +7,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { InvoicesApiService } from '../invoices-api.service.js';
-import { Invoice, InvoiceStatus } from '../invoice.model.js';
+import { Invoice, InvoiceStatus, invoiceReference } from '../invoice.model.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -19,7 +19,7 @@ const STATUS_SEVERITY: Record<InvoiceStatus, 'success' | 'warn' | 'danger' | 'in
 };
 
 @Component({
-  imports: [CommonModule, FormsModule, RouterModule, TableModule, InputTextModule, ButtonModule, TagModule],
+  imports: [DecimalPipe, DatePipe, FormsModule, RouterModule, TableModule, InputTextModule, ButtonModule, TagModule],
   selector: 'hms-invoice-list',
   templateUrl: './invoice-list.html',
 })
@@ -33,15 +33,13 @@ export class InvoiceList {
   readonly pageSize = signal(DEFAULT_PAGE_SIZE);
   readonly firstRecord = signal(0);
 
+  readonly reference = invoiceReference;
+
   statusSeverity(status: InvoiceStatus) {
     return STATUS_SEVERITY[status];
   }
 
-  reference(invoice: Invoice): string {
-    return `${invoice.financialYear}-${invoice.invoiceNumber}`;
-  }
-
-  onLazyLoad(event: Partial<TableLazyLoadEvent>): void {
+  onLazyLoad(event: TableLazyLoadEvent): void {
     const rows = event.rows ?? this.pageSize();
     const page = Math.floor((event.first ?? 0) / rows) + 1;
     this.load(page, rows);

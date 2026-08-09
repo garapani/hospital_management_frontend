@@ -34,6 +34,10 @@ export interface InvoiceReturn {
   createdAt: string;
 }
 
-export interface InvoiceDetail extends Invoice {
+export interface InvoiceWithReturns extends Invoice {
   returns: InvoiceReturn[];
+}
+
+export function invoiceReference(invoice: Invoice): string {
+  return `${invoice.financialYear}-${invoice.invoiceNumber}`;
 }
