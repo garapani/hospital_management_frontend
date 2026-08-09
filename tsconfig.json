@@ -5,6 +5,12 @@
   "references": [
     {
       "path": "./apps/staff-console-e2e"
+    },
+    {
+      "path": "./libs/api-client"
+    },
+    {
+      "path": "./libs/auth"
     }
   ],
   "compilerOptions": {}
