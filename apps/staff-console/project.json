@@ -55,6 +55,11 @@
       "continuous": true,
       "executor": "@angular/build:dev-server",
       "defaultConfiguration": "development",
+      "options": {
+        "prebundle": {
+          "exclude": ["@org/api-client", "@org/auth"]
+        }
+      },
       "configurations": {
         "production": {
           "buildTarget": "staff-console:build:production"

@@ -12,10 +12,7 @@ module.exports = {
       },
     ],
   },
-  // .mjs carve-out covers most ESM-only deps; @noble/ed25519 (pulled in transitively via
-  // primeng's @primeui/license-manager) ships plain .js files using ESM `export` syntax, so it
-  // needs its own carve-out too.
-  transformIgnorePatterns: ['node_modules/(?!.*(\\.mjs$|@noble))'],
+  transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$)'],
   snapshotSerializers: [
     'jest-preset-angular/build/serializers/no-ng-attributes',
     'jest-preset-angular/build/serializers/ng-snapshot',
