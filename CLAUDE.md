@@ -73,6 +73,34 @@ component/service.
   interceptor already owns this.
 - `libs/api-client` has zero dependency on `libs/auth` (enforced by import direction, not yet by
   Nx module boundaries) — keeps it reusable by a future `patient-portal` app with different auth.
+- **`authGuard`/`permissionGuard`** (also `@org/auth`) — functional `CanActivateFn`s.
+  `permissionGuard(permission)` alone covers "not logged in" too (`hasPermission()` is false when
+  unauthenticated), so it's the only guard most leaf routes need; `authGuard` is for routes that
+  need "logged in" without a specific permission (e.g. a future shared dashboard). **Any parent
+  route carrying a guard needs `runGuardsAndResolvers: 'always'`** — Angular's default reuse
+  strategy skips re-running `canActivate` on a parent route node when navigating between its
+  children, so without this a parent-level `authGuard` only fires on first entry into that
+  subtree, not on every subsequent in-shell navigation (see `app.routes.ts`'s shell route).
+
+## Screen-building conventions (established building the Billing Invoice List screen, 2026-08-09)
+
+- **Every `.subscribe(...)` on an API call needs an `error` handler**, not just `next` — a bare
+  `.subscribe((result) => ...)` leaves `loading`/`submitting` signals stuck `true` forever on any
+  non-2xx response the `authInterceptor` doesn't itself handle (it only intercepts 401). Always
+  `.subscribe({ next: ..., error: () => loading.set(false) })` at minimum.
+- **A per-domain API service wraps `ApiClientService`, not the component** (e.g.
+  `InvoicesApiService` in `apps/staff-console/src/app/billing/`) — keeps HTTP-shape knowledge
+  (query params, response shape) out of components and matches `libs/api-client`'s own "thin
+  wrapper" design.
+- **PrimeNG `p-table` in lazy/server-paginated mode**: set `[lazyLoadOnInit]="false"` and trigger
+  the first load explicitly from the component (e.g. in the constructor) — PrimeNG's own
+  `lazyLoadOnInit` default fires `onLazyLoad` automatically on init too, so leaving both in place
+  double-fetches page 1 on every screen load.
+- **A component reading a route param should subscribe to `ActivatedRoute.paramMap`**, not read
+  `route.snapshot.paramMap` once in the constructor — Angular's route-reuse strategy can keep the
+  same component instance alive across a params-only navigation (e.g. browser back/forward between
+  two `billing/invoices/:id` URLs), and a snapshot-only read never re-fetches, silently leaving
+  stale data on screen under a changed id.
 
 ## Known scaffold gotchas (found getting this workspace running)
 
