@@ -1,36 +1,72 @@
-<a routerLink="/billing/invoices" class="text-sm text-primary">&larr; Back to invoices</a>
+<div class="flex flex-col gap-6">
+  <p-button
+    label="Back to invoices"
+    icon="pi pi-arrow-left"
+    [text]="true"
+    routerLink="/billing/invoices"
+    class="self-start"
+  />
 
-@if (invoice(); as inv) {
-  <p-card [header]="reference(inv)" class="mt-4 block max-w-xl">
-    <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-      <dt class="text-surface-600">Invoice ID</dt><dd>{{ inv.id }}</dd>
-      <dt class="text-surface-600">Patient ID</dt><dd>{{ inv.patientId }}</dd>
-      <dt class="text-surface-600">Status</dt><dd>{{ inv.status }}</dd>
-      <dt class="text-surface-600">Subtotal</dt><dd>{{ inv.subtotal | number: '1.2-2' }}</dd>
-      <dt class="text-surface-600">Discount</dt><dd>{{ inv.discountAmount | number: '1.2-2' }}</dd>
-      <dt class="text-surface-600">Taxable amount</dt><dd>{{ inv.taxableAmount | number: '1.2-2' }}</dd>
-      <dt class="text-surface-600">Tax</dt><dd>{{ inv.taxAmount | number: '1.2-2' }}</dd>
-      <dt class="text-surface-600">Total</dt><dd>{{ inv.totalAmount | number: '1.2-2' }}</dd>
-      <dt class="text-surface-600">Paid</dt><dd>{{ inv.paidAmount | number: '1.2-2' }}</dd>
-      <dt class="text-surface-600">Notes</dt><dd>{{ inv.notes || '—' }}</dd>
-      <dt class="text-surface-600">Created by</dt><dd>{{ inv.createdBy }}</dd>
-      <dt class="text-surface-600">Created</dt><dd>{{ inv.createdAt | date: 'short' }}</dd>
-      <dt class="text-surface-600">Updated</dt><dd>{{ inv.updatedAt | date: 'short' }}</dd>
-    </dl>
+  @if (invoice(); as inv) {
+    <div class="flex flex-col gap-6">
+      <div class="rounded-xl border border-surface-200 bg-white p-6">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="text-sm text-surface-500">Invoice</div>
+            <div class="text-xl font-semibold text-surface-900">{{ reference(inv) }}</div>
+          </div>
+          <p-tag [value]="inv.status" />
+        </div>
+        <div class="mt-6 grid grid-cols-3 gap-4">
+          <div>
+            <div class="text-xs uppercase tracking-wide text-surface-500">Total</div>
+            <div class="text-lg font-semibold text-surface-900">{{ inv.totalAmount | number: '1.2-2' }}</div>
+          </div>
+          <div>
+            <div class="text-xs uppercase tracking-wide text-surface-500">Paid</div>
+            <div class="text-lg font-semibold text-surface-900">{{ inv.paidAmount | number: '1.2-2' }}</div>
+          </div>
+          <div>
+            <div class="text-xs uppercase tracking-wide text-surface-500">Patient ID</div>
+            <div class="text-lg font-semibold text-surface-900">{{ inv.patientId }}</div>
+          </div>
+        </div>
+      </div>
 
-    <h2 class="mt-4 text-sm font-semibold text-surface-900">Returns</h2>
-    @if (inv.returns.length > 0) {
-      <ul class="text-sm">
-        @for (r of inv.returns; track r.id) {
-          <li>{{ r.amount | number: '1.2-2' }} — {{ r.reason }}</li>
+      <div class="rounded-xl border border-surface-200 bg-white p-6">
+        <h2 class="mb-4 text-sm font-semibold text-surface-900">Details</h2>
+        <dl class="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+          <dt class="text-surface-500">Invoice ID</dt><dd class="text-surface-900">{{ inv.id }}</dd>
+          <dt class="text-surface-500">Subtotal</dt><dd class="text-surface-900">{{ inv.subtotal | number: '1.2-2' }}</dd>
+          <dt class="text-surface-500">Discount</dt><dd class="text-surface-900">{{ inv.discountAmount | number: '1.2-2' }}</dd>
+          <dt class="text-surface-500">Taxable amount</dt><dd class="text-surface-900">{{ inv.taxableAmount | number: '1.2-2' }}</dd>
+          <dt class="text-surface-500">Tax</dt><dd class="text-surface-900">{{ inv.taxAmount | number: '1.2-2' }}</dd>
+          <dt class="text-surface-500">Notes</dt><dd class="text-surface-900">{{ inv.notes || '—' }}</dd>
+          <dt class="text-surface-500">Created by</dt><dd class="text-surface-900">{{ inv.createdBy }}</dd>
+          <dt class="text-surface-500">Created</dt><dd class="text-surface-900">{{ inv.createdAt | date: 'short' }}</dd>
+          <dt class="text-surface-500">Updated</dt><dd class="text-surface-900">{{ inv.updatedAt | date: 'short' }}</dd>
+        </dl>
+      </div>
+
+      <div class="rounded-xl border border-surface-200 bg-white p-6">
+        <h2 class="mb-4 text-sm font-semibold text-surface-900">Returns</h2>
+        @if (inv.returns.length > 0) {
+          <ul class="flex flex-col gap-2 text-sm">
+            @for (r of inv.returns; track r.id) {
+              <li class="flex items-center justify-between border-b border-surface-100 pb-2 last:border-0 last:pb-0">
+                <span class="text-surface-700">{{ r.reason }}</span>
+                <span class="font-medium text-surface-900">{{ r.amount | number: '1.2-2' }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="text-sm text-surface-500">No returns.</p>
         }
-      </ul>
-    } @else {
-      <p class="text-sm text-surface-600">No returns.</p>
-    }
-  </p-card>
-} @else if (error()) {
-  <p class="mt-4 text-sm text-red-600">{{ error() }}</p>
-} @else {
-  <p class="mt-4 text-sm text-surface-600">Loading…</p>
-}
+      </div>
+    </div>
+  } @else if (error()) {
+    <p class="text-sm text-red-600">{{ error() }}</p>
+  } @else {
+    <p class="text-sm text-surface-500">Loading…</p>
+  }
+</div>

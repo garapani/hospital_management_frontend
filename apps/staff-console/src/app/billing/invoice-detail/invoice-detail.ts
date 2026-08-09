@@ -2,13 +2,14 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { CardModule } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
+import { TagModule } from 'primeng/tag';
 import { EMPTY, switchMap } from 'rxjs';
 import { InvoicesApiService } from '../invoices-api.service.js';
 import { InvoiceWithReturns, invoiceReference } from '../invoice.model.js';
 
 @Component({
-  imports: [DecimalPipe, DatePipe, RouterModule, CardModule],
+  imports: [DecimalPipe, DatePipe, RouterModule, ButtonModule, TagModule],
   selector: 'hms-invoice-detail',
   templateUrl: './invoice-detail.html',
 })
