@@ -54,11 +54,36 @@ not real — the actual gating source is the JWT-embedded permissions from the b
 
 ## Process
 
-MVP fast track by default (spec → implement directly with TDD at component/service boundaries →
-review → commit), matching the backend's fast-track convention established
-2026-08-09 — see the backend repo's `CLAUDE.md` ("The MVP Fast Track") for the full rationale.
-Reserve a heavier design pass only for genuinely architectural decisions (shared API-client
-library, auth interceptor), not per-screen work.
+**Default is always the fast track below. The heavyweight `superpowers:*` pipeline
+(`brainstorming` → `writing-plans` → `subagent-driven-development`) requires an explicit,
+affirmative reason before you invoke it — "this feels like a big/multi-file change" is NOT that
+reason.** Before invoking any `superpowers:*` skill on frontend work, stop and re-read this section.
+
+**Fast track (default for ~everything, matching the backend's MVP-fast-track convention
+established 2026-08-09 — see the backend repo's `CLAUDE.md`, "The MVP Fast Track"):** spec directly
+into the conversation via `mattpocock-skills:to-spec`'s template → implement via
+`mattpocock-skills:implement` (TDD at component/service boundaries via `mattpocock-skills:tdd`) →
+`mattpocock-skills:code-review` → commit. This covers: a new list/detail/form screen, a UI-only
+fix, a styling/design-system pass (however many screens or files it touches — **"redesign the
+frontend" / "make it more elegant" is fast-track work**, not a signal to go heavyweight), a shared
+CSS/theme-token change, anything where the answer to "does this establish a *new shared library or
+service boundary* other code must integrate against" is no.
+
+**Heavyweight pipeline — only when the answer to that question is yes**, e.g.: introducing a new
+shared library (`libs/api-client`, `libs/auth` were built this way), a new cross-cutting service
+contract (the auth interceptor's refresh-token protocol), or a decision every future screen must
+follow and getting it wrong is expensive to unwind later. If you're not sure, default to fast
+track — the fast track's own review step (`mattpocock-skills:code-review`) is the safety net for a
+misjudged scope call, and is far cheaper to recover from than an unnecessary heavyweight run.
+
+**Incident (2026-08-09):** a design refresh (navy theme preset + sidebar shell + 3 existing screens
+restyled) was run through the full heavyweight pipeline — brainstorming interview, spec, plan,
+then `subagent-driven-development`'s per-task implementer+reviewer dispatch (6 tasks) plus a final
+whole-branch review and fix wave: ~15 subagent dispatches total for what was, functionally,
+template-only changes plus one config file. The task was misjudged as "architectural" because it
+touched the shell/theme; the actual bar (new shared library/service boundary) was never met.
+`/to-spec` + direct implementation would have covered it at a fraction of the cost. This section
+was rewritten immediately after to make that judgment call explicit rather than left implicit.
 
 ## Shared libraries
 
