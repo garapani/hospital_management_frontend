@@ -13,9 +13,9 @@
         <div class="flex items-start justify-between">
           <div>
             <div class="text-sm text-surface-500">Invoice</div>
-            <div class="text-xl font-semibold text-surface-900">{{ reference(inv) }}</div>
+            <h1 class="text-2xl font-semibold text-surface-900">{{ reference(inv) }}</h1>
           </div>
-          <p-tag [value]="inv.status" />
+          <p-tag [value]="inv.status" [severity]="statusSeverity(inv.status)" />
         </div>
         <div class="mt-6 grid grid-cols-3 gap-4">
           <div>

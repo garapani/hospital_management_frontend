@@ -41,3 +41,14 @@ export interface InvoiceWithReturns extends Invoice {
 export function invoiceReference(invoice: Invoice): string {
   return `${invoice.financialYear}-${invoice.invoiceNumber}`;
 }
+
+const STATUS_SEVERITY: Record<InvoiceStatus, 'success' | 'warn' | 'danger' | 'secondary'> = {
+  Paid: 'success',
+  PartiallyPaid: 'warn',
+  Unpaid: 'danger',
+  Cancelled: 'secondary',
+};
+
+export function statusSeverity(status: InvoiceStatus): 'success' | 'warn' | 'danger' | 'secondary' {
+  return STATUS_SEVERITY[status];
+}

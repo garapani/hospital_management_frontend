@@ -6,7 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { EMPTY, switchMap } from 'rxjs';
 import { InvoicesApiService } from '../invoices-api.service.js';
-import { InvoiceWithReturns, invoiceReference } from '../invoice.model.js';
+import { InvoiceWithReturns, invoiceReference, statusSeverity } from '../invoice.model.js';
 
 @Component({
   imports: [DecimalPipe, DatePipe, RouterModule, ButtonModule, TagModule],
@@ -21,6 +21,7 @@ export class InvoiceDetail {
   readonly error = signal<string | null>(null);
 
   readonly reference = invoiceReference;
+  readonly statusSeverity = statusSeverity;
 
   // Subscribes to paramMap (not route.snapshot) so a route-reuse navigation between two
   // billing/invoices/:id URLs (e.g. browser back/forward) refetches instead of leaving the

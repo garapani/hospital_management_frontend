@@ -7,16 +7,9 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { InvoicesApiService } from '../invoices-api.service.js';
-import { Invoice, InvoiceStatus, invoiceReference } from '../invoice.model.js';
+import { Invoice, invoiceReference, statusSeverity } from '../invoice.model.js';
 
 const DEFAULT_PAGE_SIZE = 20;
-
-const STATUS_SEVERITY: Record<InvoiceStatus, 'success' | 'warn' | 'danger' | 'info'> = {
-  Paid: 'success',
-  PartiallyPaid: 'warn',
-  Unpaid: 'info',
-  Cancelled: 'danger',
-};
 
 @Component({
   imports: [DecimalPipe, DatePipe, FormsModule, RouterModule, TableModule, InputTextModule, ButtonModule, TagModule],
@@ -34,10 +27,7 @@ export class InvoiceList {
   readonly firstRecord = signal(0);
 
   readonly reference = invoiceReference;
-
-  statusSeverity(status: InvoiceStatus) {
-    return STATUS_SEVERITY[status];
-  }
+  readonly statusSeverity = statusSeverity;
 
   onLazyLoad(event: TableLazyLoadEvent): void {
     const rows = event.rows ?? this.pageSize();
