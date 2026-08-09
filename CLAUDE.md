@@ -50,6 +50,30 @@ review → commit), matching the backend's fast-track convention established
 Reserve a heavier design pass only for genuinely architectural decisions (shared API-client
 library, auth interceptor), not per-screen work.
 
+## Shared libraries
+
+`libs/api-client` and `libs/auth` (built 2026-08-09, spec at the backend repo's
+`new/docs/superpowers/specs/2026-08-09-frontend-shared-libs-api-client-auth-design.md`) are how
+every screen talks to the API Gateway — don't hand-roll `HttpClient` calls or token handling in a
+component/service.
+
+- **`ApiClientService`** (`@org/api-client`) — injectable `get`/`post`/`patch`/`delete`, prefixes
+  paths with `API_BASE_URL` (provided in `app.config.ts` from `src/environments/environment.ts`,
+  swapped for `environment.production.ts` on prod builds via `project.json`'s `fileReplacements` —
+  never hardcode a Gateway origin in a component). Errors normalize to `ApiError { status, message,
+  body }`.
+- **`AuthService`** (`@org/auth`) — `login`/`logout`/`hasPermission`/`isAuthenticated`/
+  `currentUser` signals. Access token lives in memory only (gone on reload by design); refresh
+  token in `sessionStorage`. `hasPermission()` reads JWT claims for UI gating only — it is never a
+  security boundary, the backend's `PermissionGuard` is authoritative.
+- **`authInterceptor`** (registered once, in `app.config.ts`) — attaches the Bearer token to every
+  request, and on a 401 does a single-flight refresh (concurrent 401s share one `/auth/refresh`
+  call) then retries the original request **once**. A 401 on the retry, or a failed refresh itself,
+  clears the session and redirects to `/login` — don't add per-screen 401 handling, the
+  interceptor already owns this.
+- `libs/api-client` has zero dependency on `libs/auth` (enforced by import direction, not yet by
+  Nx module boundaries) — keeps it reusable by a future `patient-portal` app with different auth.
+
 ## Known scaffold gotchas (found getting this workspace running)
 
 - **`tsconfig.json` files are protected** by a global `guard-config.sh` hook — same as the backend
