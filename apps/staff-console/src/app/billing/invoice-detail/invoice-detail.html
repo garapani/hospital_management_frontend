@@ -1,0 +1,36 @@
+<a routerLink="/billing/invoices" class="text-sm text-primary">&larr; Back to invoices</a>
+
+@if (invoice(); as inv) {
+  <p-card [header]="inv.financialYear + '-' + inv.invoiceNumber" class="mt-4 block max-w-xl">
+    <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+      <dt class="text-surface-600">Invoice ID</dt><dd>{{ inv.id }}</dd>
+      <dt class="text-surface-600">Patient ID</dt><dd>{{ inv.patientId }}</dd>
+      <dt class="text-surface-600">Status</dt><dd>{{ inv.status }}</dd>
+      <dt class="text-surface-600">Subtotal</dt><dd>{{ inv.subtotal | number: '1.2-2' }}</dd>
+      <dt class="text-surface-600">Discount</dt><dd>{{ inv.discountAmount | number: '1.2-2' }}</dd>
+      <dt class="text-surface-600">Taxable amount</dt><dd>{{ inv.taxableAmount | number: '1.2-2' }}</dd>
+      <dt class="text-surface-600">Tax</dt><dd>{{ inv.taxAmount | number: '1.2-2' }}</dd>
+      <dt class="text-surface-600">Total</dt><dd>{{ inv.totalAmount | number: '1.2-2' }}</dd>
+      <dt class="text-surface-600">Paid</dt><dd>{{ inv.paidAmount | number: '1.2-2' }}</dd>
+      <dt class="text-surface-600">Notes</dt><dd>{{ inv.notes || '—' }}</dd>
+      <dt class="text-surface-600">Created by</dt><dd>{{ inv.createdBy }}</dd>
+      <dt class="text-surface-600">Created</dt><dd>{{ inv.createdAt | date: 'short' }}</dd>
+      <dt class="text-surface-600">Updated</dt><dd>{{ inv.updatedAt | date: 'short' }}</dd>
+    </dl>
+
+    <h2 class="mt-4 text-sm font-semibold text-surface-900">Returns</h2>
+    @if (inv.returns.length > 0) {
+      <ul class="text-sm">
+        @for (r of inv.returns; track r.id) {
+          <li>{{ r.amount | number: '1.2-2' }} — {{ r.reason }}</li>
+        }
+      </ul>
+    } @else {
+      <p class="text-sm text-surface-600">No returns.</p>
+    }
+  </p-card>
+} @else if (error()) {
+  <p class="mt-4 text-sm text-red-600">{{ error() }}</p>
+} @else {
+  <p class="mt-4 text-sm text-surface-600">Loading…</p>
+}

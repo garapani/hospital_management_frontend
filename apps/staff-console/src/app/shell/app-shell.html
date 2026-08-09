@@ -1,0 +1,11 @@
+<div class="flex min-h-screen">
+  <aside class="w-56 shrink-0 border-r border-surface-200 bg-surface-0 p-4">
+    <div class="mb-6 text-lg font-semibold text-surface-900">MediCare OS</div>
+    <nav class="flex flex-col gap-1">
+      <a routerLink="/billing/invoices" routerLinkActive="font-semibold text-primary" class="rounded px-2 py-1 text-surface-700 hover:bg-surface-100">Invoices</a>
+    </nav>
+  </aside>
+  <main class="flex-1 p-6">
+    <router-outlet></router-outlet>
+  </main>
+</div>

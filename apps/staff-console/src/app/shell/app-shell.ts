@@ -3,7 +3,7 @@ import { RouterModule } from '@angular/router';
 
 @Component({
   imports: [RouterModule],
-  selector: 'hms-root',
-  templateUrl: './app.html',
+  selector: 'hms-app-shell',
+  templateUrl: './app-shell.html',
 })
-export class App {}
+export class AppShell {}

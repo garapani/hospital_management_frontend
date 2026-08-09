@@ -1,19 +1,19 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { App } from './app';
+import { AppShell } from './app-shell.js';
 
-describe('App', () => {
-  beforeEach(async () => {
+describe('AppShell', () => {
+  it('renders the sidebar nav and a router outlet', async () => {
     await TestBed.configureTestingModule({
-      imports: [App],
+      imports: [AppShell],
       providers: [provideRouter([])],
     }).compileComponents();
-  });
 
-  it('renders a router outlet', async () => {
-    const fixture = TestBed.createComponent(App);
+    const fixture = TestBed.createComponent(AppShell);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
+
     expect(compiled.querySelector('router-outlet')).toBeTruthy();
+    expect(compiled.textContent).toContain('Invoices');
   });
 });
