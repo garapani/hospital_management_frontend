@@ -1,6 +1,13 @@
 <div class="flex min-h-screen items-center justify-center bg-surface-50 p-6">
-  <form [formGroup]="form" (ngSubmit)="submit()" class="w-full max-w-sm flex flex-col gap-4 rounded border border-surface-200 bg-white p-8">
-    <h1 class="text-xl font-semibold text-surface-900">MediCare OS — Staff Console</h1>
+  <form
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    class="flex w-full max-w-sm flex-col gap-5 rounded-xl bg-white p-8 shadow-md shadow-surface-200/60"
+  >
+    <div class="flex flex-col gap-1">
+      <h1 class="text-xl font-semibold text-primary-700">MediCare OS</h1>
+      <p class="text-sm text-surface-500">Staff console sign in</p>
+    </div>
 
     <div class="flex flex-col gap-1">
       <label for="username" class="text-sm text-surface-700">Username</label>
