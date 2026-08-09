@@ -25,12 +25,22 @@
 # staff-console — Hospital EMR Frontend
 
 Separate git repo from the backend (`../` — `new_hospital`, an independent repository, not a
-parent/submodule relationship). Angular v22 (approved as "v18+" per
+parent/submodule relationship). Angular ~21.2.19 (approved as "v18+" per
 `../new/docs/superpowers/specs/2026-07-30-frontend-framework-architecture-design.md`), CSR only,
 signals for state (no NgRx), PrimeNG + Tailwind CSS v4 for components/styling. `staff-console` is
 the first of two planned apps (`patient-portal` deferred — no mocks or backend auth path exist for
 it yet); this workspace uses the `angular-monorepo`-shaped layout (`apps/`) so a second app can be
 added later without restructuring.
+
+**Angular/PrimeNG pinned to v21, not v22 (2026-08-09):** PrimeNG v22 bundles
+`@primeui/license-manager` as a direct dependency — PrimeTek relicensed the mainline package
+starting at v22 under revenue/dev-count/funding-gated "Community License" terms (see
+`node_modules/primeng/LICENSE.md` on a v22 install), not MIT. Verified via npm registry that v18
+through v21 mainline releases carry no license-manager dependency and are genuinely MIT
+(`primeng@21.1.9`'s own `dependencies` field has none). PrimeNG's Angular peer requirement tracks
+its own major 1:1 (`primeng@21.1.9` → `@angular/core ^21.0.7`), so staying free meant pinning
+Angular to the matching 21.x line too, not just swapping the PrimeNG version — do not bump either
+past v21 without re-checking `primeng`'s own `dependencies` for `@primeui/license-manager` first.
 
 **UI mocks/reference:** `../new/ui-mocks/` (in the backend repo, not copied here) — 10
 role-based static HTML clickable prototypes. Treat as a screen-inventory/IA reference and a
@@ -117,19 +127,52 @@ component/service.
   the same TS-project-references incompatibility above — safe here since the app-level tsconfig
   override (previous point) actually fixes the real incompatibility; the env var just gets past
   the generator's own overly-broad guard.
-- **Jest + PrimeNG**: `primeng` pulls in `@primeui/license-manager` → `@noble/ed25519`, which ships
-  plain `.js` files using ESM `export` syntax. The generated `transformIgnorePatterns` only carves
-  out `.mjs` files; `apps/staff-console/jest.config.cts` extends the carve-out to `@noble` too
-  (`node_modules/(?!.*(\.mjs$|@noble))` — note `.*` must apply to *both* alternatives, since
-  pnpm's flattened path structure puts `@noble` several path segments after `node_modules/`, not
-  immediately after it).
 - **PrimeNG + Tailwind v4 CSS layering**: `providePrimeNG`'s `theme.options.cssLayer.order` in
   `app.config.ts` (`'tailwind-base, primeng, tailwind-utilities'`) must match the `@layer`
   declaration and `@import ... layer(...)` statements in `src/styles.css` — see that file for the
   working pattern. `@angular/animations` is a required runtime dependency for
   `provideAnimationsAsync()` (PrimeNG components use classic Angular animation triggers
-  internally) even though Angular v22 deprecates `@angular/animations` in favor of native
+  internally) even though modern Angular deprecates `@angular/animations` in favor of native
   `animate.enter`/`animate.leave` — expect that deprecation warning, it's not a real problem yet.
+- **Vite dev-server externalizes anything resolved through `node_modules`** — including
+  `@org/api-client`/`@org/auth`, which resolve via the pnpm workspace symlink at
+  `node_modules/@org/*` even though the real files live under `libs/`.
+  `@angular/build`'s `external-packages-plugin` marks any resolved path matching `/node_modules/`
+  as external for the dev server, which skips Angular's AOT/Ivy compiler transform on it — the
+  class still has `@Injectable()`/etc. in source but never gets a compiled `ɵprov`, so Angular
+  falls back to JIT at runtime and throws (`@angular/compiler` isn't loaded in an AOT-only build).
+  Fixed via `prebundle.exclude: ["@org/api-client", "@org/auth"]` on the `serve` target in
+  `apps/staff-console/project.json` (dev-server only; production `build` doesn't externalize
+  packages this way, so it isn't affected). Any new `@org/*` workspace lib needs the same
+  `prebundle.exclude` entry once it's consumed by `staff-console`.
+- **Excluding a lib from prebundling means esbuild now expects it in the TS program**: once
+  externalization is off, `@angular/build`'s compiler plugin needs the lib's `.ts` files literally
+  covered by `apps/staff-console/tsconfig.app.json`'s `include`/`exclude` — TS project
+  `references` to a lib's `tsconfig.lib.json` are a *separate* composite compilation unit and
+  don't fold that source into the app's own ts.Program, so Angular's AOT plugin errors with "Files
+  containing Angular metadata... must be part of the TypeScript compilation." `tsconfig.app.json`
+  now includes `../../libs/auth/src/**/*.ts` and `../../libs/api-client/src/**/*.ts` (with
+  matching `*.spec.ts` excludes) for this reason — any new `@org/*` lib needs the same include
+  entries. This in turn changes the project's inferred `rootDir` (now spans `apps/staff-console`
+  and `libs/`), which trips `tsc --build`'s `--emitDeclarationOnly` validation (TS5011/TS5069)
+  unless `rootDir`/`declaration` are set explicitly — see the file for the working values.
+- **Theming lives in `app.config.ts`, not per-component CSS.** The navy preset
+  (`definePreset(Aura, {...})`) seeds every `primary-*`/`surface-*` Tailwind class used across
+  screens (via `tailwindcss-primeui`). A new screen should reuse those classes, not introduce a new
+  color or a component-local stylesheet. See `new/docs/technical-design/Development-Standards.md`
+  §21 for the exact class vocabulary.
+- **`apps/staff-console/tsconfig.spec.json` must not set `moduleResolution` to `"node10"`** — it
+  extends `tsconfig.base.json` directly (not `./tsconfig.json`), so it inherits
+  `customConditions`, and TypeScript hard-errors (TS5098) on that combination regardless of
+  installed package versions. This was latent and masked by stale `.tsbuildinfo` incremental-build
+  caches for a long time; a `pnpm install` that touches `node_modules` enough to invalidate those
+  caches will resurface it as ~40 cascading errors (anything resolved via a package.json `exports`
+  map — `@angular/common/http`, `@angular/core/testing`, `primeng/*` — fails to resolve under
+  `node10`). Fixed by setting `moduleResolution: "bundler"` (matching `tsconfig.json`'s own
+  setting) and adding `"lib": ["es2022", "dom"]` (this file doesn't extend the app tsconfig, so it
+  doesn't inherit that lib list either). The same file also inherited `composite: true` from base
+  for the same "extends base directly" reason, which requires every transitively-imported file
+  (not just `*.spec.ts`) to appear in `include` — broadened to `src/**/*.ts`.
 
 ## Git Conventions
 
