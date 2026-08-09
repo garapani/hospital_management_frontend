@@ -40,7 +40,7 @@ field-level content is generic placeholder (confirmed by inspection: e.g. Lab's 
 has no component-name/value/reference-range fields, just generic "Patient/Entity, Status,
 Reference/Number, Notes"), not real design. Permission strings shown in the mocks are invented,
 not real — the actual gating source is the JWT-embedded permissions from the backend's
-`seed-rbac-catalog.ts` (`apps/api/src/rbac/seed-rbac-catalog.ts` in the backend repo).
+`seed-rbac-catalog.ts` (`new/code/apps/api/src/rbac/seed-rbac-catalog.ts` in the backend repo).
 
 ## Process
 
