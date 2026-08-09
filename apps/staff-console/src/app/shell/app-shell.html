@@ -1,11 +1,18 @@
 <div class="flex min-h-screen">
-  <aside class="w-56 shrink-0 border-r border-surface-200 bg-surface-0 p-4">
-    <div class="mb-6 text-lg font-semibold text-surface-900">MediCare OS</div>
+  <aside class="flex w-60 shrink-0 flex-col bg-primary-900 px-3 py-5 text-white">
+    <div class="mb-8 px-3 text-base font-semibold tracking-tight">MediCare OS</div>
     <nav class="flex flex-col gap-1">
-      <a routerLink="/billing/invoices" routerLinkActive="font-semibold text-primary" class="rounded px-2 py-1 text-surface-700 hover:bg-surface-100">Invoices</a>
+      <a
+        routerLink="/billing/invoices"
+        routerLinkActive="bg-white/10 text-white font-semibold"
+        class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-primary-100 hover:bg-white/5"
+      >
+        <i class="pi pi-receipt text-sm"></i>
+        Invoices
+      </a>
     </nav>
   </aside>
-  <main class="flex-1 p-6">
+  <main class="flex-1 bg-surface-50 p-8">
     <router-outlet></router-outlet>
   </main>
 </div>
