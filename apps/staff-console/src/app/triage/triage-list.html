@@ -1,0 +1,115 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900">Triage / ER Intake</h1>
+      <p class="text-sm text-slate-500 mt-1">Active triage queue.</p>
+    </div>
+    @if (auth.hasPermission('triage.manage')) {
+    <p-button label="New Triage Entry" icon="pi pi-plus" (onClick)="openCreateModal()"></p-button>
+    }
+  </div>
+
+  <div class="glass-panel flex-1 rounded-2xl overflow-hidden shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl p-4">
+    <p-table [value]="entries()" [loading]="loading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Name</th>
+          <th>Arrival</th>
+          <th>Chief Complaint</th>
+          <th>Acuity</th>
+          <th>Status</th>
+          <th class="w-24">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-entry>
+        <tr>
+          <td class="font-medium">
+            {{ displayName(entry) }}
+            @if (entry.patientId) {
+            <i class="pi pi-link text-xs text-slate-400 ml-1" pTooltip="Linked to patient record"></i>
+            }
+          </td>
+          <td class="text-slate-500">{{ entry.arrivalMode || '-' }}</td>
+          <td>{{ entry.chiefComplaint || '-' }}</td>
+          <td>
+            @if (entry.colorCode) {
+            <p-tag [value]="entry.colorCode" [severity]="colorSeverity(entry.colorCode)" [rounded]="true"></p-tag>
+            } @else {
+            <span class="text-slate-400">Untriaged</span>
+            }
+          </td>
+          <td>{{ entry.status }}</td>
+          <td>
+            <a
+              [routerLink]="['/clinical/triage', entry.id]"
+              class="text-sky-600 hover:text-sky-800 text-sm font-medium"
+              >View</a
+            >
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-6 text-slate-500">No active triage entries.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- New Triage Entry Modal -->
+<p-dialog header="New Triage Entry" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '550px' }" styleClass="glass-modal">
+  <div class="grid grid-cols-2 gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="triageFirstName" class="text-sm font-medium text-slate-700">First Name</label>
+      <input id="triageFirstName" pInputText [ngModel]="createForm().firstName" (ngModelChange)="createForm.set({ ...createForm(), firstName: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="triageLastName" class="text-sm font-medium text-slate-700">Last Name</label>
+      <input id="triageLastName" pInputText [ngModel]="createForm().lastName" (ngModelChange)="createForm.set({ ...createForm(), lastName: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="triageGender" class="text-sm font-medium text-slate-700">Gender</label>
+      <input id="triageGender" pInputText [ngModel]="createForm().gender" (ngModelChange)="createForm.set({ ...createForm(), gender: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="triageEstAge" class="text-sm font-medium text-slate-700">Estimated Age</label>
+      <input id="triageEstAge" pInputText [ngModel]="createForm().estimatedAge" (ngModelChange)="createForm.set({ ...createForm(), estimatedAge: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="triageArrivalMode" class="text-sm font-medium text-slate-700">Arrival Mode</label>
+      <p-select
+        inputId="triageArrivalMode"
+        [options]="arrivalModes"
+        [ngModel]="createForm().arrivalMode"
+        (ngModelChange)="createForm.set({ ...createForm(), arrivalMode: $event })"
+        placeholder="Select"
+        [showClear]="true"
+        styleClass="w-full"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="triageBroughtBy" class="text-sm font-medium text-slate-700">Brought By</label>
+      <input id="triageBroughtBy" pInputText [ngModel]="createForm().broughtBy" (ngModelChange)="createForm.set({ ...createForm(), broughtBy: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="triageChiefComplaint" class="text-sm font-medium text-slate-700">Chief Complaint</label>
+      <input id="triageChiefComplaint" pInputText [ngModel]="createForm().chiefComplaint" (ngModelChange)="createForm.set({ ...createForm(), chiefComplaint: $event })" class="w-full" />
+    </div>
+    <div class="flex items-center gap-2 col-span-2">
+      <p-checkbox
+        [binary]="true"
+        inputId="isPoliceCase"
+        [ngModel]="createForm().isPoliceCase"
+        (ngModelChange)="createForm.set({ ...createForm(), isPoliceCase: $event })"
+      ></p-checkbox>
+      <label for="isPoliceCase" class="text-sm text-slate-700 cursor-pointer">Police Case</label>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCreateModal.set(false)"></p-button>
+      <p-button label="Save" [loading]="saving()" (onClick)="submitCreate()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

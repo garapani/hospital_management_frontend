@@ -77,37 +77,357 @@
 
     <!-- Clinical Workspace (Tabs) -->
     <div class="glass-panel rounded-2xl shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl md:col-span-2 overflow-hidden flex flex-col">
-      <p-tabs value="0" styleClass="w-full h-full flex flex-col">
+      <p-tabs value="appointments" styleClass="w-full h-full flex flex-col">
         <p-tablist>
-          <p-tab value="0"><i class="pi pi-calendar mr-2"></i> Appointments</p-tab>
-          <p-tab value="1"><i class="pi pi-bed mr-2"></i> Admissions (ADT)</p-tab>
-          <p-tab value="2"><i class="pi pi-file mr-2"></i> Encounters</p-tab>
+          <p-tab value="appointments"><i class="pi pi-calendar mr-2"></i> Appointments</p-tab>
+          <p-tab value="admissions"><i class="pi pi-bed mr-2"></i> Admissions (ADT)</p-tab>
+          @if (auth.hasPermission('vitals.read')) {
+          <p-tab value="vitals"><i class="pi pi-heart mr-2"></i> Vitals</p-tab>
+          }
+          @if (auth.hasPermission('encounter.read')) {
+          <p-tab value="notes"><i class="pi pi-file mr-2"></i> Notes</p-tab>
+          <p-tab value="diagnoses"><i class="pi pi-info-circle mr-2"></i> Diagnoses</p-tab>
+          <p-tab value="prescriptions"><i class="pi pi-list mr-2"></i> Prescriptions</p-tab>
+          }
         </p-tablist>
-        
+
         <p-tabpanels class="flex-1 bg-white/40 p-6 overflow-y-auto">
-          <p-tabpanel value="0">
+          <p-tabpanel value="appointments">
             <div class="text-center text-slate-500 py-12">
               <i class="pi pi-calendar text-4xl mb-3 opacity-50"></i>
               <p>No upcoming appointments.</p>
               <p-button label="Book Appointment" [text]="true" size="small" class="mt-2"></p-button>
             </div>
           </p-tabpanel>
-          <p-tabpanel value="1">
+          <p-tabpanel value="admissions">
             <div class="text-center text-slate-500 py-12">
               <i class="pi pi-bed text-4xl mb-3 opacity-50"></i>
               <p>Patient is not currently admitted.</p>
               <p-button label="Admit to Ward" [text]="true" size="small" class="mt-2"></p-button>
             </div>
           </p-tabpanel>
-          <p-tabpanel value="2">
-            <div class="text-center text-slate-500 py-12">
-              <i class="pi pi-folder-open text-4xl mb-3 opacity-50"></i>
-              <p>No previous encounters found.</p>
+
+          @if (auth.hasPermission('vitals.read')) {
+          <p-tabpanel value="vitals">
+            <div class="flex flex-col gap-4">
+              @if (auth.hasPermission('vitals.manage')) {
+              <div class="flex justify-end">
+                <p-button label="Record Vitals" icon="pi pi-plus" size="small" (onClick)="openVitalModal()"></p-button>
+              </div>
+              }
+              <p-table [value]="vitals()" [loading]="vitalsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th>Recorded</th>
+                    <th>Temp (&deg;C)</th>
+                    <th>Pulse</th>
+                    <th>BP</th>
+                    <th>RR</th>
+                    <th>SpO2 (%)</th>
+                    <th>Pain</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-v>
+                  <tr>
+                    <td>{{ v.recordedAt | date: 'medium' }}</td>
+                    <td>{{ v.temperature ?? '-' }}</td>
+                    <td>{{ v.pulse ?? '-' }}</td>
+                    <td>{{ v.bpSystolic && v.bpDiastolic ? v.bpSystolic + '/' + v.bpDiastolic : '-' }}</td>
+                    <td>{{ v.respiratoryRate ?? '-' }}</td>
+                    <td>{{ v.spO2 ?? '-' }}</td>
+                    <td>{{ v.painScale ?? '-' }}</td>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                  <tr>
+                    <td colspan="7" class="text-center p-6 text-slate-500">No vitals recorded yet.</td>
+                  </tr>
+                </ng-template>
+              </p-table>
             </div>
           </p-tabpanel>
+          }
+
+          @if (auth.hasPermission('encounter.read')) {
+          <p-tabpanel value="notes">
+            <div class="flex flex-col gap-4">
+              @if (auth.hasPermission('encounter.manage')) {
+              <div class="flex justify-end">
+                <p-button label="Add Note" icon="pi pi-plus" size="small" (onClick)="openNoteModal()"></p-button>
+              </div>
+              }
+              @if (notesLoading()) {
+              <div class="text-center text-slate-500 py-6"><i class="pi pi-spin pi-spinner"></i></div>
+              } @else if (notes().length === 0) {
+              <div class="text-center text-slate-500 py-12">
+                <i class="pi pi-file text-4xl mb-3 opacity-50"></i>
+                <p>No clinical notes yet.</p>
+              </div>
+              } @else {
+              <div class="flex flex-col gap-3">
+                @for (n of notes(); track n.id) {
+                <div class="p-4 rounded-xl border border-slate-200 bg-white/60">
+                  <div class="flex items-center justify-between mb-2">
+                    <p-tag [value]="n.status" severity="info" [rounded]="true"></p-tag>
+                    <span class="text-xs text-slate-400">{{ n.createdAt | date: 'medium' }}</span>
+                  </div>
+                  @if (n.chiefComplaint) {
+                  <div class="text-sm"><span class="font-semibold text-slate-700">Chief Complaint:</span> {{ n.chiefComplaint }}</div>
+                  }
+                  @if (n.historyOfPresentingIllness) {
+                  <div class="text-sm mt-1"><span class="font-semibold text-slate-700">History:</span> {{ n.historyOfPresentingIllness }}</div>
+                  }
+                  @if (n.physicalExamination) {
+                  <div class="text-sm mt-1"><span class="font-semibold text-slate-700">Examination:</span> {{ n.physicalExamination }}</div>
+                  }
+                  @if (n.plan) {
+                  <div class="text-sm mt-1"><span class="font-semibold text-slate-700">Plan:</span> {{ n.plan }}</div>
+                  }
+                </div>
+                }
+              </div>
+              }
+            </div>
+          </p-tabpanel>
+
+          <p-tabpanel value="diagnoses">
+            <div class="flex flex-col gap-4">
+              @if (auth.hasPermission('encounter.manage')) {
+              <div class="flex justify-end">
+                <p-button label="Add Diagnosis" icon="pi pi-plus" size="small" (onClick)="openDiagnosisModal()"></p-button>
+              </div>
+              }
+              <p-table [value]="diagnoses()" [loading]="diagnosesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th>ICD-10</th>
+                    <th>Description</th>
+                    <th>Primary</th>
+                    <th>Recorded</th>
+                    @if (auth.hasPermission('encounter.manage')) {
+                    <th class="w-16">Actions</th>
+                    }
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-d>
+                  <tr>
+                    <td class="font-mono">{{ d.icd10Code || '-' }}</td>
+                    <td>{{ d.description }}</td>
+                    <td>
+                      @if (d.isPrimary) {
+                      <p-tag value="Primary" severity="success" [rounded]="true"></p-tag>
+                      }
+                    </td>
+                    <td>{{ d.createdAt | date: 'medium' }}</td>
+                    @if (auth.hasPermission('encounter.manage')) {
+                    <td>
+                      <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="removeDiagnosis(d)"></p-button>
+                    </td>
+                    }
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                  <tr>
+                    <td [attr.colspan]="auth.hasPermission('encounter.manage') ? 5 : 4" class="text-center p-6 text-slate-500">No diagnoses recorded yet.</td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </div>
+          </p-tabpanel>
+
+          <p-tabpanel value="prescriptions">
+            <div class="flex flex-col gap-4">
+              @if (auth.hasPermission('encounter.manage')) {
+              <div class="flex justify-end">
+                <p-button label="Add Prescription" icon="pi pi-plus" size="small" (onClick)="openPrescriptionModal()"></p-button>
+              </div>
+              }
+              <p-table [value]="prescriptions()" [loading]="prescriptionsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th>Medication</th>
+                    <th>Dosage</th>
+                    <th>Frequency</th>
+                    <th>Route</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    @if (auth.hasPermission('encounter.manage')) {
+                    <th class="w-16">Actions</th>
+                    }
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-p>
+                  <tr>
+                    <td class="font-medium">{{ p.medicationName }}</td>
+                    <td>{{ p.dosage }}</td>
+                    <td>{{ p.frequency }}</td>
+                    <td>{{ p.route }}</td>
+                    <td>{{ p.durationDays }} days</td>
+                    <td><p-tag [value]="p.status" severity="info" [rounded]="true"></p-tag></td>
+                    @if (auth.hasPermission('encounter.manage')) {
+                    <td>
+                      <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="removePrescription(p)"></p-button>
+                    </td>
+                    }
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                  <tr>
+                    <td [attr.colspan]="auth.hasPermission('encounter.manage') ? 7 : 6" class="text-center p-6 text-slate-500">No prescriptions recorded yet.</td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </div>
+          </p-tabpanel>
+          }
         </p-tabpanels>
       </p-tabs>
     </div>
   </div>
   }
 </div>
+
+<!-- Record Vitals Modal -->
+<p-dialog header="Record Vitals" [(visible)]="showVitalModal" [modal]="true" [style]="{ width: '550px' }" styleClass="glass-modal">
+  <div class="grid grid-cols-2 gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="vitalHeight" class="text-sm font-medium text-slate-700">Height (cm)</label>
+      <p-inputNumber inputId="vitalHeight" [ngModel]="vitalForm().height" (ngModelChange)="vitalForm.set({ ...vitalForm(), height: $event })" class="w-full"></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="vitalWeight" class="text-sm font-medium text-slate-700">Weight (kg)</label>
+      <p-inputNumber inputId="vitalWeight" [ngModel]="vitalForm().weight" (ngModelChange)="vitalForm.set({ ...vitalForm(), weight: $event })" class="w-full"></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="vitalTemp" class="text-sm font-medium text-slate-700">Temperature (&deg;C)</label>
+      <p-inputNumber inputId="vitalTemp" [ngModel]="vitalForm().temperature" (ngModelChange)="vitalForm.set({ ...vitalForm(), temperature: $event })" [minFractionDigits]="1" class="w-full"></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="vitalPulse" class="text-sm font-medium text-slate-700">Pulse (bpm)</label>
+      <p-inputNumber inputId="vitalPulse" [ngModel]="vitalForm().pulse" (ngModelChange)="vitalForm.set({ ...vitalForm(), pulse: $event })" class="w-full"></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="vitalBpSys" class="text-sm font-medium text-slate-700">BP Systolic</label>
+      <p-inputNumber inputId="vitalBpSys" [ngModel]="vitalForm().bpSystolic" (ngModelChange)="vitalForm.set({ ...vitalForm(), bpSystolic: $event })" class="w-full"></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="vitalBpDia" class="text-sm font-medium text-slate-700">BP Diastolic</label>
+      <p-inputNumber inputId="vitalBpDia" [ngModel]="vitalForm().bpDiastolic" (ngModelChange)="vitalForm.set({ ...vitalForm(), bpDiastolic: $event })" class="w-full"></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="vitalRR" class="text-sm font-medium text-slate-700">Respiratory Rate</label>
+      <p-inputNumber inputId="vitalRR" [ngModel]="vitalForm().respiratoryRate" (ngModelChange)="vitalForm.set({ ...vitalForm(), respiratoryRate: $event })" class="w-full"></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="vitalSpO2" class="text-sm font-medium text-slate-700">SpO2 (%)</label>
+      <p-inputNumber inputId="vitalSpO2" [ngModel]="vitalForm().spO2" (ngModelChange)="vitalForm.set({ ...vitalForm(), spO2: $event })" class="w-full"></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="vitalPain" class="text-sm font-medium text-slate-700">Pain Scale (0-10)</label>
+      <p-inputNumber inputId="vitalPain" [ngModel]="vitalForm().painScale" (ngModelChange)="vitalForm.set({ ...vitalForm(), painScale: $event })" [min]="0" [max]="10" class="w-full"></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="vitalNotes" class="text-sm font-medium text-slate-700">Notes</label>
+      <textarea pTextarea id="vitalNotes" [ngModel]="vitalForm().triageNotes" (ngModelChange)="vitalForm.set({ ...vitalForm(), triageNotes: $event })" rows="2" class="w-full"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showVitalModal.set(false)"></p-button>
+      <p-button label="Save" [loading]="vitalSaving()" (onClick)="submitVital()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Add Note Modal -->
+<p-dialog header="Add Clinical Note" [(visible)]="showNoteModal" [modal]="true" [style]="{ width: '600px' }" styleClass="glass-modal">
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="noteChief" class="text-sm font-medium text-slate-700">Chief Complaint</label>
+      <textarea pTextarea id="noteChief" [ngModel]="noteForm().chiefComplaint" (ngModelChange)="noteForm.set({ ...noteForm(), chiefComplaint: $event })" rows="2" class="w-full"></textarea>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="noteHistory" class="text-sm font-medium text-slate-700">History of Presenting Illness</label>
+      <textarea pTextarea id="noteHistory" [ngModel]="noteForm().historyOfPresentingIllness" (ngModelChange)="noteForm.set({ ...noteForm(), historyOfPresentingIllness: $event })" rows="2" class="w-full"></textarea>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="noteExam" class="text-sm font-medium text-slate-700">Physical Examination</label>
+      <textarea pTextarea id="noteExam" [ngModel]="noteForm().physicalExamination" (ngModelChange)="noteForm.set({ ...noteForm(), physicalExamination: $event })" rows="2" class="w-full"></textarea>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="notePlan" class="text-sm font-medium text-slate-700">Plan</label>
+      <textarea pTextarea id="notePlan" [ngModel]="noteForm().plan" (ngModelChange)="noteForm.set({ ...noteForm(), plan: $event })" rows="2" class="w-full"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showNoteModal.set(false)"></p-button>
+      <p-button label="Save" [loading]="noteSaving()" (onClick)="submitNote()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Add Diagnosis Modal -->
+<p-dialog header="Add Diagnosis" [(visible)]="showDiagnosisModal" [modal]="true" [style]="{ width: '500px' }" styleClass="glass-modal">
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="dxIcd10" class="text-sm font-medium text-slate-700">ICD-10 Code</label>
+      <input id="dxIcd10" pInputText [ngModel]="diagnosisForm().icd10Code" (ngModelChange)="diagnosisForm.set({ ...diagnosisForm(), icd10Code: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="dxDescription" class="text-sm font-medium text-slate-700">Description</label>
+      <textarea pTextarea id="dxDescription" [ngModel]="diagnosisForm().description" (ngModelChange)="diagnosisForm.set({ ...diagnosisForm(), description: $event })" rows="2" class="w-full"></textarea>
+    </div>
+    <div class="flex items-center gap-2">
+      <p-checkbox [binary]="true" inputId="isPrimary" [ngModel]="diagnosisForm().isPrimary" (ngModelChange)="diagnosisForm.set({ ...diagnosisForm(), isPrimary: $event })"></p-checkbox>
+      <label for="isPrimary" class="text-sm text-slate-700 cursor-pointer">Primary Diagnosis</label>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showDiagnosisModal.set(false)"></p-button>
+      <p-button label="Save" [loading]="diagnosisSaving()" (onClick)="submitDiagnosis()" [disabled]="!diagnosisForm().description"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Add Prescription Modal -->
+<p-dialog header="Add Prescription" [(visible)]="showPrescriptionModal" [modal]="true" [style]="{ width: '550px' }" styleClass="glass-modal">
+  <div class="grid grid-cols-2 gap-4 py-4">
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="rxMed" class="text-sm font-medium text-slate-700">Medication Name</label>
+      <input id="rxMed" pInputText [ngModel]="prescriptionForm().medicationName" (ngModelChange)="prescriptionForm.set({ ...prescriptionForm(), medicationName: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="rxDosage" class="text-sm font-medium text-slate-700">Dosage</label>
+      <input id="rxDosage" pInputText [ngModel]="prescriptionForm().dosage" (ngModelChange)="prescriptionForm.set({ ...prescriptionForm(), dosage: $event })" placeholder="e.g. 500mg" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="rxFrequency" class="text-sm font-medium text-slate-700">Frequency</label>
+      <input id="rxFrequency" pInputText [ngModel]="prescriptionForm().frequency" (ngModelChange)="prescriptionForm.set({ ...prescriptionForm(), frequency: $event })" placeholder="e.g. Twice daily" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="rxRoute" class="text-sm font-medium text-slate-700">Route</label>
+      <input id="rxRoute" pInputText [ngModel]="prescriptionForm().route" (ngModelChange)="prescriptionForm.set({ ...prescriptionForm(), route: $event })" placeholder="e.g. Oral" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="rxDuration" class="text-sm font-medium text-slate-700">Duration (days)</label>
+      <p-inputNumber inputId="rxDuration" [ngModel]="prescriptionForm().durationDays" (ngModelChange)="prescriptionForm.set({ ...prescriptionForm(), durationDays: $event })" [min]="1" class="w-full"></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="rxNotes" class="text-sm font-medium text-slate-700">Notes</label>
+      <textarea pTextarea id="rxNotes" [ngModel]="prescriptionForm().notes" (ngModelChange)="prescriptionForm.set({ ...prescriptionForm(), notes: $event })" rows="2" class="w-full"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showPrescriptionModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="prescriptionSaving()"
+        (onClick)="submitPrescription()"
+        [disabled]="!prescriptionForm().medicationName || !prescriptionForm().dosage || !prescriptionForm().frequency || !prescriptionForm().route"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

@@ -78,6 +78,16 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./patients/patient-detail.js').then((m) => m.PatientDetail),
         canActivate: [permissionGuard('patients.read')],
       },
+      {
+        path: 'clinical/triage',
+        loadComponent: () => import('./triage/triage-list.js').then((m) => m.TriageList),
+        canActivate: [permissionGuard('triage.read')],
+      },
+      {
+        path: 'clinical/triage/:id',
+        loadComponent: () => import('./triage/triage-detail.js').then((m) => m.TriageDetail),
+        canActivate: [permissionGuard('triage.read')],
+      },
     ],
   },
 ];

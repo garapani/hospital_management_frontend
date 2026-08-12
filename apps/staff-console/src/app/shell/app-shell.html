@@ -55,8 +55,18 @@
         <i class="pi pi-user text-base"></i>
         Patients (PMI)
       </a>
-      } 
-      
+      } @if (auth.hasPermission('triage.read')) {
+      <a
+        routerLink="/clinical/triage"
+        routerLinkActive="gradient-bg text-white font-semibold"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      >
+        <i class="pi pi-heart text-base"></i>
+        Triage / ER
+      </a>
+      }
+
       @if (auth.hasPermission('identity.accounts.manage') ||
       auth.hasPermission('master-data.manage') ||
       auth.hasPermission('reporting.read')) {

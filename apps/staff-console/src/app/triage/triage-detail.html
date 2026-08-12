@@ -1,0 +1,135 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex items-center gap-4">
+    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (onClick)="goBack()"></p-button>
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
+        @if (entry(); as e) {
+        {{ displayName(e) }}
+        @if (e.colorCode) {
+        <p-tag [value]="e.colorCode" [severity]="colorSeverity(e.colorCode)" [rounded]="true"></p-tag>
+        }
+        } @else {
+        Loading Triage Entry...
+        }
+      </h1>
+      @if (entry(); as e) {
+      <p class="text-sm text-slate-500 mt-1">Status: {{ e.status }}</p>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+  <div class="flex-1 flex items-center justify-center">
+    <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
+  </div>
+  } @else if (entry(); as e) {
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="glass-panel p-6 rounded-2xl shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl md:col-span-1 flex flex-col gap-4">
+      <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Arrival Details</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Gender</div>
+          <div class="font-medium text-slate-900">{{ e.gender || 'N/A' }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Estimated Age</div>
+          <div class="font-medium text-slate-900">{{ e.estimatedAge || 'N/A' }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Arrival Mode</div>
+          <div class="font-medium text-slate-900">{{ e.arrivalMode || 'N/A' }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Brought By</div>
+          <div class="font-medium text-slate-900">{{ e.broughtBy || 'N/A' }}</div>
+        </div>
+        <div class="col-span-2">
+          <div class="text-xs text-slate-500 mb-1">Chief Complaint</div>
+          <div class="font-medium text-slate-900">{{ e.chiefComplaint || 'N/A' }}</div>
+        </div>
+        @if (e.isPoliceCase) {
+        <div class="col-span-2">
+          <p-tag value="Police Case" severity="danger" [rounded]="true"></p-tag>
+        </div>
+        }
+      </div>
+
+      <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2 mt-2">Patient Link</h3>
+      @if (e.patientId) {
+      <a [routerLink]="['/clinical/patients', e.patientId]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">
+        <i class="pi pi-user mr-1"></i> View Linked Patient Record
+      </a>
+      } @else if (auth.hasPermission('triage.manage')) {
+      <div class="flex gap-2">
+        <input
+          pInputText
+          [ngModel]="patientIdInput()"
+          (ngModelChange)="patientIdInput.set($event)"
+          placeholder="Patient ID"
+          class="flex-1"
+        />
+        <p-button label="Link" [loading]="linkingPatient()" [disabled]="!patientIdInput().trim()" (onClick)="linkPatient()"></p-button>
+      </div>
+      } @else {
+      <p class="text-sm text-slate-500">Not linked to a patient record.</p>
+      }
+    </div>
+
+    <div class="glass-panel p-6 rounded-2xl shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl md:col-span-2 flex flex-col gap-4">
+      <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Triage Assessment</h3>
+
+      @if (auth.hasPermission('triage.manage')) {
+      <div class="grid grid-cols-2 gap-4">
+        <div class="flex flex-col gap-2">
+          <label for="triageAcuity" class="text-sm font-medium text-slate-700">Acuity Level (1-5)</label>
+          <input
+            id="triageAcuity"
+            pInputText
+            type="number"
+            min="1"
+            max="5"
+            [ngModel]="acuityLevel()"
+            (ngModelChange)="acuityLevel.set($event ? +$event : null)"
+            class="w-full"
+          />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="triageColorCode" class="text-sm font-medium text-slate-700">Color Code</label>
+          <p-select
+            inputId="triageColorCode"
+            [options]="colorCodes"
+            [ngModel]="colorCode()"
+            (ngModelChange)="colorCode.set($event)"
+            placeholder="Select"
+            [showClear]="true"
+            styleClass="w-full"
+          ></p-select>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label for="triageStatus" class="text-sm font-medium text-slate-700">Status</label>
+          <p-select inputId="triageStatus" [options]="statuses" [ngModel]="status()" (ngModelChange)="status.set($event)" styleClass="w-full"></p-select>
+        </div>
+        <div class="flex flex-col gap-2 col-span-2">
+          <label for="triageRemarks" class="text-sm font-medium text-slate-700">Discharge Remarks</label>
+          <textarea pTextarea id="triageRemarks" [ngModel]="dischargeRemarks()" (ngModelChange)="dischargeRemarks.set($event)" rows="3" class="w-full"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <p-button label="Save Assessment" icon="pi pi-check" [loading]="saving()" (onClick)="saveAssessment()"></p-button>
+      </div>
+      } @else {
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Acuity Level</div>
+          <div class="font-medium text-slate-900">{{ e.acuityLevel ?? 'Not assessed' }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Triaged By</div>
+          <div class="font-medium text-slate-900">{{ e.triagedBy || 'N/A' }}</div>
+        </div>
+      </div>
+      }
+    </div>
+  </div>
+  }
+</div>
