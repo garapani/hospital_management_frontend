@@ -1,0 +1,232 @@
+<div class="h-full flex flex-col gap-6">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight text-slate-900">
+      Audit Trail
+    </h1>
+    <p class="text-sm text-slate-500 mt-1">
+      Read-only compliance and debugging view of system events.
+    </p>
+  </div>
+
+  <!-- Filters Panel -->
+  <div
+    class="glass-panel rounded-2xl p-4 shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl flex flex-wrap gap-4 items-end"
+  >
+    <div class="flex flex-col gap-1 w-48">
+      <label for="startDate" class="text-xs font-semibold text-slate-600"
+        >Start Date *</label
+      >
+      <input
+        id="startDate"
+        pInputText
+        type="datetime-local"
+        [ngModel]="filters().startDate"
+        (ngModelChange)="filters.set({ ...filters(), startDate: $event })"
+        class="w-full text-sm p-2"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1 w-48">
+      <label for="endDate" class="text-xs font-semibold text-slate-600"
+        >End Date *</label
+      >
+      <input
+        id="endDate"
+        pInputText
+        type="datetime-local"
+        [ngModel]="filters().endDate"
+        (ngModelChange)="filters.set({ ...filters(), endDate: $event })"
+        class="w-full text-sm p-2"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1 w-40">
+      <label for="tableName" class="text-xs font-semibold text-slate-600"
+        >Table Name</label
+      >
+      <input
+        id="tableName"
+        pInputText
+        [ngModel]="filters().tableName"
+        (ngModelChange)="filters.set({ ...filters(), tableName: $event })"
+        placeholder="e.g. accounts"
+        class="w-full text-sm p-2"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1 w-40">
+      <label for="action" class="text-xs font-semibold text-slate-600"
+        >Action</label
+      >
+      <p-select
+        inputId="action"
+        [options]="actionOptions"
+        [ngModel]="filters().action"
+        (ngModelChange)="filters.set({ ...filters(), action: $event })"
+        styleClass="w-full text-sm"
+      ></p-select>
+    </div>
+
+    <div class="flex flex-col gap-1 w-48">
+      <label for="correlationId" class="text-xs font-semibold text-slate-600"
+        >Correlation ID</label
+      >
+      <input
+        id="correlationId"
+        pInputText
+        [ngModel]="filters().correlationId"
+        (ngModelChange)="filters.set({ ...filters(), correlationId: $event })"
+        placeholder="UUID"
+        class="w-full text-sm p-2"
+      />
+    </div>
+
+    <p-button
+      label="Search"
+      icon="pi pi-search"
+      (onClick)="applyFilters()"
+      [disabled]="!filters().startDate || !filters().endDate"
+    ></p-button>
+  </div>
+
+  <!-- Results Table -->
+  <div
+    class="glass-panel flex-1 rounded-2xl overflow-hidden shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl"
+  >
+    <p-table
+      [value]="records()"
+      [lazy]="true"
+      (onLazyLoad)="onLazyLoad($event)"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [totalRecords]="totalRecords()"
+      [first]="firstRecord()"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines border-none"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Occurred At</th>
+          <th>Table Name</th>
+          <th>Action</th>
+          <th>Record ID</th>
+          <th>Changed By</th>
+          <th class="w-24">Diff</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-record>
+        <tr class="hover:bg-sky-50/50 transition-colors">
+          <td class="whitespace-nowrap">
+            {{ record.occurredAt | date: 'medium' }}
+          </td>
+          <td class="font-medium text-slate-800">{{ record.tableName }}</td>
+          <td>
+            @if (record.action === 'create') {
+            <p-tag value="Create" severity="success" [rounded]="true"></p-tag>
+            } @else if (record.action === 'update') {
+            <p-tag value="Update" severity="info" [rounded]="true"></p-tag>
+            } @else if (record.action === 'delete') {
+            <p-tag value="Delete" severity="danger" [rounded]="true"></p-tag>
+            } @else {
+            <p-tag
+              [value]="record.action"
+              severity="secondary"
+              [rounded]="true"
+            ></p-tag>
+            }
+          </td>
+          <td class="text-xs font-mono text-slate-500">
+            {{ record.recordId }}
+          </td>
+          <td class="text-xs text-slate-500">
+            {{ record.changedByAccountId || 'System' }}
+          </td>
+          <td class="text-center">
+            <p-button
+              icon="pi pi-file"
+              styleClass="p-button-text p-button-secondary p-button-sm p-button-rounded"
+              (onClick)="viewDetail(record)"
+            ></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-8 text-slate-500">
+            No audit records found for the selected filters.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Record Detail Modal -->
+<p-dialog
+  header="Audit Record Detail"
+  [(visible)]="showDetailModal"
+  [modal]="true"
+  [style]="{ width: '700px' }"
+  styleClass="glass-modal"
+>
+  @if (selectedRecord(); as record) {
+  <div class="flex flex-col gap-6 py-4">
+    <div
+      class="grid grid-cols-2 gap-4 text-sm bg-white/40 p-4 rounded-xl border border-white/60"
+    >
+      <div>
+        <div class="text-slate-500 mb-1">Table Name</div>
+        <div class="font-medium text-slate-900">{{ record.tableName }}</div>
+      </div>
+      <div>
+        <div class="text-slate-500 mb-1">Record ID</div>
+        <div class="font-mono text-slate-900 text-xs">
+          {{ record.recordId }}
+        </div>
+      </div>
+      <div>
+        <div class="text-slate-500 mb-1">Occurred At</div>
+        <div class="font-medium text-slate-900">
+          {{ record.occurredAt | date: 'medium' }}
+        </div>
+      </div>
+      <div>
+        <div class="text-slate-500 mb-1">Changed By (Account ID)</div>
+        <div class="font-mono text-slate-900 text-xs">
+          {{ record.changedByAccountId || 'System (No Auth Context)' }}
+        </div>
+      </div>
+      @if (record.correlationId) {
+      <div
+        class="col-span-2 flex items-center justify-between bg-sky-50/50 p-2 rounded border border-sky-100"
+      >
+        <div>
+          <div class="text-slate-500 mb-1 text-xs">Correlation ID</div>
+          <div class="font-mono text-slate-900 text-xs">
+            {{ record.correlationId }}
+          </div>
+        </div>
+        <p-button
+          label="View Related Events"
+          icon="pi pi-search"
+          size="small"
+          [text]="true"
+          (onClick)="viewRelatedEvents()"
+        ></p-button>
+      </div>
+      }
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <h3 class="text-sm font-semibold text-slate-800">Diff / Payload</h3>
+      <div
+        class="bg-slate-900 rounded-xl p-4 overflow-x-auto max-h-96 overflow-y-auto"
+      >
+        <pre class="text-green-400 text-xs font-mono m-0">
+{{ record.diff | json }}</pre>
+      </div>
+    </div>
+  </div>
+  }
+</p-dialog>

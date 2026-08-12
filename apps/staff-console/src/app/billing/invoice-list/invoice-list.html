@@ -1,25 +1,31 @@
 <div class="flex flex-col gap-6">
-  <div>
-    <h1 class="text-2xl font-semibold text-surface-900">Invoices</h1>
-    <p class="text-sm text-surface-500">Filter invoices by patient ID</p>
-  </div>
+  <div class="glass-panel p-6 flex flex-col gap-6">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Invoices</h1>
+      <p class="text-sm text-slate-500 mt-1">Filter invoices by patient ID</p>
+    </div>
 
-  <div class="flex items-end gap-3">
-    <label class="flex flex-col gap-1">
-      <span class="text-sm text-surface-700">Patient ID</span>
-      <input
-        pInputText
-        [ngModel]="patientIdFilter()"
-        (ngModelChange)="patientIdFilter.set($event)"
-        (keyup.enter)="applyPatientFilter()"
-        placeholder="Filter by patient ID"
-        class="w-64"
+    <div class="flex items-end gap-3">
+      <label class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-slate-700">Patient ID</span>
+        <input
+          pInputText
+          [ngModel]="patientIdFilter()"
+          (ngModelChange)="patientIdFilter.set($event)"
+          (keyup.enter)="applyPatientFilter()"
+          placeholder="Filter by patient ID"
+          class="w-64 bg-white/60 border-white/50 backdrop-blur-sm rounded-lg"
+        />
+      </label>
+      <p-button
+        label="Filter"
+        (onClick)="applyPatientFilter()"
+        styleClass="gradient-bg rounded-lg border-none shadow-md px-6"
       />
-    </label>
-    <p-button label="Filter" (onClick)="applyPatientFilter()" />
+    </div>
   </div>
 
-  <div class="overflow-hidden rounded-xl border border-surface-200 bg-white">
+  <div class="glass-panel overflow-hidden">
     <p-table
       [value]="invoices()"
       [lazy]="true"
@@ -31,31 +37,72 @@
       [totalRecords]="totalRecords()"
       [loading]="loading()"
       dataKey="id"
+      styleClass="p-datatable-sm"
     >
       <ng-template pTemplate="header">
         <tr>
-          <th>Reference</th>
-          <th>Patient ID</th>
-          <th>Total</th>
-          <th>Paid</th>
-          <th>Status</th>
-          <th>Updated</th>
-          <th></th>
+          <th class="bg-transparent border-b border-white/50 text-slate-600">
+            Reference
+          </th>
+          <th class="bg-transparent border-b border-white/50 text-slate-600">
+            Patient ID
+          </th>
+          <th class="bg-transparent border-b border-white/50 text-slate-600">
+            Total
+          </th>
+          <th class="bg-transparent border-b border-white/50 text-slate-600">
+            Paid
+          </th>
+          <th class="bg-transparent border-b border-white/50 text-slate-600">
+            Status
+          </th>
+          <th class="bg-transparent border-b border-white/50 text-slate-600">
+            Updated
+          </th>
+          <th
+            class="bg-transparent border-b border-white/50 text-slate-600"
+          ></th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-invoice>
-        <tr>
-          <td>{{ reference(invoice) }}</td>
-          <td>{{ invoice.patientId }}</td>
-          <td>{{ invoice.totalAmount | number: '1.2-2' }}</td>
-          <td>{{ invoice.paidAmount | number: '1.2-2' }}</td>
-          <td><p-tag [value]="invoice.status" [severity]="statusSeverity(invoice.status)" /></td>
-          <td>{{ invoice.updatedAt | date: 'short' }}</td>
-          <td><a [routerLink]="['/billing/invoices', invoice.id]" class="text-sm font-medium text-primary-700 hover:text-primary-800">View</a></td>
+        <tr class="hover:bg-white/40 transition-colors">
+          <td class="font-semibold text-slate-700 border-b border-white/30">
+            {{ reference(invoice) }}
+          </td>
+          <td class="text-slate-600 border-b border-white/30">
+            {{ invoice.patientId }}
+          </td>
+          <td class="font-medium text-slate-700 border-b border-white/30">
+            {{ invoice.totalAmount | number: '1.2-2' }}
+          </td>
+          <td class="text-slate-600 border-b border-white/30">
+            {{ invoice.paidAmount | number: '1.2-2' }}
+          </td>
+          <td class="border-b border-white/30">
+            <p-tag
+              [value]="invoice.status"
+              [severity]="statusSeverity(invoice.status)"
+              styleClass="rounded-full px-3"
+            />
+          </td>
+          <td class="text-slate-600 border-b border-white/30">
+            {{ invoice.updatedAt | date: 'short' }}
+          </td>
+          <td class="border-b border-white/30">
+            <a
+              [routerLink]="['/billing/invoices', invoice.id]"
+              class="text-sm font-semibold gradient-text hover:opacity-80"
+              >View</a
+            >
+          </td>
         </tr>
       </ng-template>
       <ng-template pTemplate="emptymessage">
-        <tr><td colspan="7" class="py-8 text-center text-sm text-surface-500">No invoices found.</td></tr>
+        <tr>
+          <td colspan="7" class="py-8 text-center text-sm text-slate-500">
+            No invoices found.
+          </td>
+        </tr>
       </ng-template>
     </p-table>
   </div>

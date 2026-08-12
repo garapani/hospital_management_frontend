@@ -3,4 +3,6 @@
 export const environment = {
   production: true,
   apiBaseUrl: '/api',
+  // Placeholder, same caveat as apiBaseUrl above — no real tenant-resolution mechanism exists yet.
+  tenantId: 'demo',
 };

@@ -1,0 +1,207 @@
+@if (loading()) {
+<div class="flex items-center justify-center h-64">
+  <i class="pi pi-spinner pi-spin text-4xl text-sky-500"></i>
+</div>
+} @else if (accountData(); as data) {
+<div class="h-full flex flex-col gap-6 max-w-5xl mx-auto">
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4">
+    <div class="flex gap-4 items-center">
+      <p-button
+        icon="pi pi-arrow-left"
+        styleClass="p-button-rounded p-button-text p-button-secondary bg-white/50 backdrop-blur-sm"
+        routerLink="/admin/users"
+      ></p-button>
+      <div>
+        <h1
+          class="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3"
+        >
+          {{ data.account.displayName }} @if (data.account.lockedUntil) {
+          <p-tag value="Locked" severity="danger" [rounded]="true"></p-tag>
+          } @else if (!data.account.isActive) {
+          <p-tag value="Inactive" severity="warn" [rounded]="true"></p-tag>
+          } @else {
+          <p-tag value="Active" severity="success" [rounded]="true"></p-tag>
+          }
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+          {{ data.account.username }} &bull; {{ data.account.email }}
+        </p>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      @if (data.account.lockedUntil) {
+      <p-button
+        label="Unlock Account"
+        icon="pi pi-unlock"
+        severity="success"
+        (onClick)="unlock()"
+      ></p-button>
+      } @if (data.account.isActive) {
+      <p-button
+        label="Deactivate"
+        icon="pi pi-ban"
+        severity="danger"
+        (onClick)="deactivate()"
+      ></p-button>
+      } @else {
+      <p-button
+        label="Reactivate"
+        icon="pi pi-check"
+        severity="success"
+        (onClick)="reactivate()"
+      ></p-button>
+      }
+    </div>
+  </div>
+
+  <div class="grid grid-cols-3 gap-6">
+    <!-- Info Panel -->
+    <div
+      class="col-span-1 glass-panel rounded-2xl p-6 shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl flex flex-col gap-4 self-start"
+    >
+      <h2 class="text-lg font-semibold text-slate-800">Account Info</h2>
+      <div class="flex flex-col gap-3 text-sm">
+        <div>
+          <div class="text-slate-500 mb-1">Created At</div>
+          <div class="font-medium text-slate-900">
+            {{ data.account.createdAt | date: 'medium' }}
+          </div>
+        </div>
+        <div>
+          <div class="text-slate-500 mb-1">Needs Password Update</div>
+          <div class="font-medium text-slate-900">
+            {{ data.account.needsPasswordUpdate ? 'Yes' : 'No' }}
+          </div>
+        </div>
+        <div>
+          <div class="text-slate-500 mb-1">Failed Login Attempts</div>
+          <div class="font-medium text-slate-900">
+            {{ data.account.failedLoginAttempts }}
+          </div>
+        </div>
+        @if (data.account.lockedUntil) {
+        <div>
+          <div class="text-slate-500 mb-1 text-red-600">Locked Until</div>
+          <div class="font-medium text-slate-900">
+            {{ data.account.lockedUntil | date: 'medium' }}
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+
+    <!-- Roles Panel -->
+    <div
+      class="col-span-2 glass-panel rounded-2xl p-6 shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl flex flex-col gap-4"
+    >
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-800">Role Assignments</h2>
+        <p-button
+          label="Assign Role"
+          icon="pi pi-plus"
+          size="small"
+          (onClick)="openAssignModal()"
+        ></p-button>
+      </div>
+
+      @if (data.roleNames.length === 0) {
+      <div
+        class="text-slate-500 text-center p-8 bg-white/40 rounded-xl border border-slate-100"
+      >
+        No roles assigned to this account.
+      </div>
+      } @else {
+      <div class="flex flex-wrap gap-2">
+        @for (roleName of data.roleNames; track roleName) {
+        <div
+          class="px-3 py-1.5 bg-sky-50 text-sky-700 border border-sky-100 rounded-lg text-sm font-medium flex items-center gap-2"
+        >
+          <i class="pi pi-shield"></i>
+          {{ roleName }}
+        </div>
+        }
+      </div>
+      <div class="text-xs text-slate-400 mt-2">
+        <i class="pi pi-info-circle mr-1"></i> Time-bound role assignments and
+        historical revocation are visible via backend. Only active roles are
+        displayed here for simplicity.
+      </div>
+      }
+    </div>
+  </div>
+</div>
+}
+
+<p-dialog
+  header="Assign Role"
+  [(visible)]="showAssignModal"
+  [modal]="true"
+  [style]="{ width: '400px' }"
+  styleClass="glass-modal"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="roleName" class="text-sm font-medium text-slate-700"
+        >Role Name</label
+      >
+      <input
+        pInputText
+        id="roleName"
+        [ngModel]="assignForm().roleName"
+        (ngModelChange)="assignForm.set({ ...assignForm(), roleName: $event })"
+        placeholder="e.g. Doctor, Nurse, Hospital Admin"
+        autocomplete="off"
+        class="w-full"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="startDate" class="text-sm font-medium text-slate-700"
+        >Start Date (Optional)</label
+      >
+      <input
+        pInputText
+        id="startDate"
+        type="datetime-local"
+        [ngModel]="assignForm().startDate"
+        (ngModelChange)="assignForm.set({ ...assignForm(), startDate: $event })"
+        class="w-full text-sm"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="endDate" class="text-sm font-medium text-slate-700"
+        >End Date (Optional)</label
+      >
+      <input
+        pInputText
+        id="endDate"
+        type="datetime-local"
+        [ngModel]="assignForm().endDate"
+        (ngModelChange)="assignForm.set({ ...assignForm(), endDate: $event })"
+        class="w-full text-sm"
+      />
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [text]="true"
+        (onClick)="showAssignModal.set(false)"
+      ></p-button>
+      <p-button
+        label="Assign"
+        [loading]="assignLoading()"
+        (onClick)="submitAssign()"
+        [disabled]="!assignForm().roleName"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

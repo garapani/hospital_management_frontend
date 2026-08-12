@@ -1,0 +1,265 @@
+<p-toast></p-toast>
+<div class="h-full flex flex-col gap-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900">
+        Patient Master Index
+      </h1>
+      <p class="text-sm text-slate-500 mt-1">
+        Search, register, and manage patient demographics across the hospital.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="relative">
+        <i
+          class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+        ></i>
+        <input
+          pInputText
+          type="text"
+          placeholder="Search by name, phone, or ID..."
+          class="pl-10 w-80 glass-input"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          (keyup.enter)="search()"
+        />
+      </div>
+      <p-button
+        label="Register Patient"
+        icon="pi pi-user-plus"
+        (onClick)="openRegistration()"
+        styleClass="shadow-sm"
+      ></p-button>
+    </div>
+  </div>
+
+  <div
+    class="glass-panel flex-1 rounded-2xl overflow-hidden shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl"
+  >
+    <p-table
+      [value]="patients()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      (onLazyLoad)="onLazyLoad($event)"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [totalRecords]="totalRecords()"
+      [first]="firstRecord()"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines border-none"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="w-24">Patient ID</th>
+          <th>Name</th>
+          <th>Gender</th>
+          <th>Date of Birth</th>
+          <th>Phone</th>
+          <th class="w-24 text-center">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-patient>
+        <tr class="hover:bg-sky-50/50 transition-colors">
+          <td class="font-mono text-xs text-sky-600 font-semibold">
+            {{ patient.patientNo }}
+          </td>
+          <td class="font-medium text-slate-900">
+            {{ patient.firstName }} {{ patient.middleName || '' }}
+            {{ patient.lastName }}
+          </td>
+          <td class="text-slate-600">{{ patient.gender }}</td>
+          <td class="text-slate-600">
+            {{ patient.dateOfBirth ? (patient.dateOfBirth | date) : 'N/A' }}
+            @if (patient.age) {
+            <span class="text-xs text-slate-400">({{ patient.age }})</span>
+            }
+          </td>
+          <td class="text-slate-600 font-mono text-sm">
+            {{ patient.phoneNumber || 'N/A' }}
+          </td>
+          <td class="text-center">
+            <p-button
+              icon="pi pi-chevron-right"
+              styleClass="p-button-text p-button-secondary p-button-sm p-button-rounded"
+              (onClick)="viewPatient(patient)"
+            ></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-8 text-slate-500">
+            No patients found matching your search.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Registration Modal -->
+<p-dialog
+  header="Patient Registration"
+  [(visible)]="showRegistrationModal"
+  [modal]="true"
+  [style]="{ width: '700px' }"
+  styleClass="glass-modal"
+  [draggable]="false"
+>
+  @if (showDuplicateWarning()) {
+  <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 mb-6">
+    <div class="flex items-start gap-3">
+      <i class="pi pi-exclamation-triangle text-amber-500 text-xl mt-1"></i>
+      <div>
+        <h4 class="font-semibold text-amber-900">Possible Duplicate Found</h4>
+        <p class="text-sm text-amber-700 mt-1">
+          One or more patients in the system have very similar details. Please
+          verify if this patient is already registered.
+        </p>
+        <div class="mt-3 flex flex-col gap-2">
+          @for (match of duplicateMatches(); track match.id) {
+          <div class="bg-white/60 p-2 rounded flex justify-between items-center text-sm">
+            <div>
+              <span class="font-medium text-slate-800">{{ match.firstName }} {{ match.lastName }}</span>
+              <span class="text-slate-500 ml-2">({{ match.patientNo }})</span>
+            </div>
+            <div class="text-slate-500 font-mono text-xs">
+               {{ match.phoneNumber || 'No phone' }}
+            </div>
+            <p-button label="View Profile" size="small" [text]="true" (onClick)="viewPatient(match)"></p-button>
+          </div>
+          }
+        </div>
+        <div class="mt-4 flex justify-end">
+          <p-button
+            label="Register as New Patient Anyway"
+            severity="warn"
+            icon="pi pi-check"
+            size="small"
+            (onClick)="proceedWithDuplicate()"
+          ></p-button>
+        </div>
+      </div>
+    </div>
+  </div>
+  } @else {
+  <div class="flex flex-col gap-5 py-2">
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-1">
+        <label for="firstName" class="text-xs font-semibold text-slate-600">First Name *</label>
+        <input
+          id="firstName"
+          pInputText
+          [ngModel]="patientForm().firstName"
+          (ngModelChange)="patientForm.set({ ...patientForm(), firstName: $event })"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label for="lastName" class="text-xs font-semibold text-slate-600">Last Name *</label>
+        <input
+          id="lastName"
+          pInputText
+          [ngModel]="patientForm().lastName"
+          (ngModelChange)="patientForm.set({ ...patientForm(), lastName: $event })"
+        />
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-4">
+      <div class="flex flex-col gap-1">
+        <label for="gender" class="text-xs font-semibold text-slate-600">Gender *</label>
+        <p-select
+          inputId="gender"
+          [options]="genderOptions"
+          [ngModel]="patientForm().gender"
+          (ngModelChange)="patientForm.set({ ...patientForm(), gender: $event })"
+          styleClass="w-full"
+        ></p-select>
+      </div>
+      <div class="flex flex-col gap-1">
+        <label for="dob" class="text-xs font-semibold text-slate-600">Date of Birth</label>
+        <input
+          id="dob"
+          pInputText
+          type="date"
+          [ngModel]="patientForm().dateOfBirth"
+          (ngModelChange)="patientForm.set({ ...patientForm(), dateOfBirth: $event })"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label for="bg" class="text-xs font-semibold text-slate-600">Blood Group</label>
+        <p-select
+          inputId="bg"
+          [options]="bloodGroupOptions"
+          [ngModel]="patientForm().bloodGroup"
+          (ngModelChange)="patientForm.set({ ...patientForm(), bloodGroup: $event })"
+          styleClass="w-full"
+        ></p-select>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-1">
+        <label for="phone" class="text-xs font-semibold text-slate-600">Phone Number</label>
+        <input
+          id="phone"
+          pInputText
+          [ngModel]="patientForm().phoneNumber"
+          (ngModelChange)="patientForm.set({ ...patientForm(), phoneNumber: $event })"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label for="email" class="text-xs font-semibold text-slate-600">Email Address</label>
+        <input
+          id="email"
+          pInputText
+          type="email"
+          [ngModel]="patientForm().email"
+          (ngModelChange)="patientForm.set({ ...patientForm(), email: $event })"
+        />
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-1">
+        <label for="idType" class="text-xs font-semibold text-slate-600">Government ID Type</label>
+        <input
+          id="idType"
+          pInputText
+          placeholder="e.g. Passport, SSN"
+          [ngModel]="patientForm().governmentIdType"
+          (ngModelChange)="patientForm.set({ ...patientForm(), governmentIdType: $event })"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label for="idNumber" class="text-xs font-semibold text-slate-600">ID Number</label>
+        <input
+          id="idNumber"
+          pInputText
+          [ngModel]="patientForm().governmentIdNumber"
+          (ngModelChange)="patientForm.set({ ...patientForm(), governmentIdNumber: $event })"
+        />
+      </div>
+    </div>
+  </div>
+  }
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [text]="true"
+        (onClick)="showRegistrationModal.set(false)"
+      ></p-button>
+      <p-button
+        label="Register"
+        icon="pi pi-check"
+        (onClick)="checkAndSubmit()"
+        [loading]="isSaving()"
+        [disabled]="!patientForm().firstName || !patientForm().lastName || showDuplicateWarning()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

@@ -1,28 +1,88 @@
-<div class="flex min-h-screen items-center justify-center bg-surface-50 p-6">
-  <form
-    [formGroup]="form"
-    (ngSubmit)="submit()"
-    class="flex w-full max-w-sm flex-col gap-5 rounded-xl bg-white p-8 shadow-md shadow-surface-200/60"
+<div class="flex min-h-screen">
+  <div
+    class="hidden w-[450px] shrink-0 flex-col justify-center gap-6 gradient-bg px-14 text-white md:flex"
   >
-    <div class="flex flex-col gap-1">
-      <h1 class="text-xl font-semibold text-primary-700">MediCare OS</h1>
-      <p class="text-sm text-surface-500">Staff console sign in</p>
+    <div class="flex items-center gap-3 text-2xl font-bold tracking-tight">
+      <i class="pi pi-heart-fill text-white drop-shadow-md text-xl"></i>
+      MediCare OS
     </div>
+    <p class="text-3xl font-bold leading-tight drop-shadow-sm">
+      Hospital ops,<br />one screen at a time.
+    </p>
+    <p class="text-base text-white/90">
+      Sign in with your staff account to continue.
+    </p>
 
-    <div class="flex flex-col gap-1">
-      <label for="username" class="text-sm text-surface-700">Username</label>
-      <input pInputText id="username" formControlName="username" autocomplete="username" />
-    </div>
+    <!-- Abstract decorative element -->
+    <div
+      class="absolute bottom-10 left-10 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl"
+    ></div>
+    <div
+      class="absolute top-20 right-0 w-48 h-48 bg-sky-200 opacity-20 rounded-full blur-2xl"
+    ></div>
+  </div>
 
-    <div class="flex flex-col gap-1">
-      <label for="password" class="text-sm text-surface-700">Password</label>
-      <p-password inputId="password" formControlName="password" [feedback]="false" [toggleMask]="true" autocomplete="current-password" />
-    </div>
+  <div class="flex flex-1 items-center justify-center relative p-6">
+    <form
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      class="flex w-full max-w-sm flex-col gap-6 p-10 glass-panel z-10"
+    >
+      <div class="flex flex-col gap-2 md:hidden">
+        <h1 class="text-2xl font-bold gradient-text">MediCare OS</h1>
+        <p class="text-sm text-slate-500">
+          Hospital ops, one screen at a time.
+        </p>
+      </div>
+      <div class="flex flex-col gap-1">
+        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">
+          Sign in
+        </h2>
+        <p class="text-sm text-slate-500">Staff console</p>
+      </div>
 
-    @if (errorMessage(); as message) {
+      <div class="flex flex-col gap-2 mt-2">
+        <label for="username" class="text-sm font-medium text-slate-700"
+          >Username</label
+        >
+        <p-iconfield>
+          <p-inputicon class="pi pi-user text-slate-400" />
+          <input
+            pInputText
+            id="username"
+            formControlName="username"
+            autocomplete="username"
+            class="w-full bg-white/60 border-white/50 backdrop-blur-sm rounded-lg"
+          />
+        </p-iconfield>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="password" class="text-sm font-medium text-slate-700"
+          >Password</label
+        >
+        <p-password
+          inputId="password"
+          formControlName="password"
+          [feedback]="false"
+          [toggleMask]="true"
+          autocomplete="current-password"
+          styleClass="w-full"
+          inputStyleClass="w-full bg-white/60 border-white/50 backdrop-blur-sm rounded-lg"
+        />
+      </div>
+
+      @if (errorMessage(); as message) {
       <p-message severity="error">{{ message }}</p-message>
-    }
+      }
 
-    <p-button type="submit" label="Log in" [loading]="submitting()" [disabled]="form.invalid" />
-  </form>
+      <p-button
+        type="submit"
+        label="Log in"
+        [loading]="submitting()"
+        [disabled]="form.invalid"
+        styleClass="w-full mt-4 gradient-bg border-none rounded-lg font-semibold py-3"
+      />
+    </form>
+  </div>
 </div>

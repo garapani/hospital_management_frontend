@@ -1,0 +1,434 @@
+<div class="h-full flex flex-col gap-6">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight text-slate-900">
+      Master Data
+    </h1>
+    <p class="text-sm text-slate-500 mt-1">
+      Manage Departments, Wards, and Lookups.
+    </p>
+  </div>
+
+  <div
+    class="glass-panel flex-1 rounded-2xl overflow-hidden shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl"
+  >
+    <p-tabs value="0">
+      <p-tablist>
+        <p-tab value="0">Departments</p-tab>
+        <p-tab value="1">Wards</p-tab>
+      </p-tablist>
+
+      <p-tabpanels styleClass="p-0">
+        <!-- DEPARTMENTS TAB -->
+        <p-tabpanel value="0">
+          <div class="p-4 flex flex-col gap-4">
+            <div class="flex justify-end">
+              <p-button
+                label="Add Department"
+                icon="pi pi-plus"
+                size="small"
+                (onClick)="openDeptModal()"
+              ></p-button>
+            </div>
+            <p-table
+              [value]="departments()"
+              [loading]="deptLoading()"
+              [rowHover]="true"
+              styleClass="p-datatable-sm p-datatable-gridlines"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Parent Dept</th>
+                  <th>Appt. Applicable</th>
+                  <th>Status</th>
+                  <th class="w-32">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-dept>
+                <tr>
+                  <td class="font-medium">{{ dept.departmentCode }}</td>
+                  <td>{{ dept.departmentName }}</td>
+                  <td class="text-slate-500">
+                    {{ dept.parentDepartmentId || '-' }}
+                  </td>
+                  <td>
+                    <i
+                      class="pi"
+                      [class.pi-check]="dept.isAppointmentApplicable"
+                      [class.text-green-500]="dept.isAppointmentApplicable"
+                      [class.pi-times]="!dept.isAppointmentApplicable"
+                      [class.text-slate-300]="!dept.isAppointmentApplicable"
+                    ></i>
+                  </td>
+                  <td>
+                    @if (dept.isActive) {
+                    <p-tag
+                      value="Active"
+                      severity="success"
+                      [rounded]="true"
+                    ></p-tag>
+                    } @else {
+                    <p-tag
+                      value="Inactive"
+                      severity="warn"
+                      [rounded]="true"
+                    ></p-tag>
+                    }
+                  </td>
+                  <td>
+                    <p-button
+                      [icon]="dept.isActive ? 'pi pi-ban' : 'pi pi-check'"
+                      [severity]="dept.isActive ? 'danger' : 'success'"
+                      [text]="true"
+                      size="small"
+                      (onClick)="toggleDept(dept)"
+                    ></p-button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+
+        <!-- WARDS TAB -->
+        <p-tabpanel value="1">
+          <div class="p-4 flex flex-col gap-4">
+            <div class="flex justify-end">
+              <p-button
+                label="Add Ward"
+                icon="pi pi-plus"
+                size="small"
+                (onClick)="openWardModal()"
+              ></p-button>
+            </div>
+            <p-table
+              [value]="wards()"
+              [loading]="wardLoading()"
+              [rowHover]="true"
+              styleClass="p-datatable-sm p-datatable-gridlines"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Bed Capacity</th>
+                  <th>Status</th>
+                  <th class="w-48">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-ward>
+                <tr>
+                  <td class="font-medium">{{ ward.wardCode }}</td>
+                  <td>{{ ward.wardName }}</td>
+                  <td class="text-slate-500">{{ ward.wardType }}</td>
+                  <td>{{ ward.bedCapacity }}</td>
+                  <td>
+                    @if (ward.isActive) {
+                    <p-tag
+                      value="Active"
+                      severity="success"
+                      [rounded]="true"
+                    ></p-tag>
+                    } @else {
+                    <p-tag
+                      value="Inactive"
+                      severity="warn"
+                      [rounded]="true"
+                    ></p-tag>
+                    }
+                  </td>
+                  <td>
+                    <div class="flex gap-2">
+                      <p-button
+                        icon="pi pi-bed"
+                        label="Beds"
+                        size="small"
+                        [text]="true"
+                        (onClick)="openBedsModal(ward)"
+                      ></p-button>
+                      <p-button
+                        [icon]="ward.isActive ? 'pi pi-ban' : 'pi pi-check'"
+                        [severity]="ward.isActive ? 'danger' : 'success'"
+                        [text]="true"
+                        size="small"
+                        (onClick)="toggleWard(ward)"
+                      ></p-button>
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+
+
+
+      </p-tabpanels>
+    </p-tabs>
+  </div>
+</div>
+
+<!-- Department Modal -->
+<p-dialog
+  header="Add Department"
+  [(visible)]="showDeptModal"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  styleClass="glass-modal"
+>
+  <div class="flex flex-col gap-4 py-4">
+    @if (deptError()) {
+    <div
+      class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2"
+    >
+      <i class="pi pi-exclamation-circle"></i>
+      {{ deptError() }}
+    </div>
+    }
+
+    <div class="flex flex-col gap-2">
+      <label for="deptCode" class="text-sm font-medium text-slate-700"
+        >Department Code</label
+      >
+      <input
+        id="deptCode"
+        pInputText
+        [ngModel]="deptForm().departmentCode"
+        (ngModelChange)="deptForm.set({ ...deptForm(), departmentCode: $event })"
+        class="w-full"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="deptName" class="text-sm font-medium text-slate-700"
+        >Department Name</label
+      >
+      <input
+        id="deptName"
+        pInputText
+        [ngModel]="deptForm().departmentName"
+        (ngModelChange)="deptForm.set({ ...deptForm(), departmentName: $event })"
+        class="w-full"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="parentDept" class="text-sm font-medium text-slate-700"
+        >Parent Department</label
+      >
+      <p-select
+        inputId="parentDept"
+        [options]="getAvailableParents()"
+        [ngModel]="deptForm().parentDepartmentId"
+        (ngModelChange)="deptForm.set({ ...deptForm(), parentDepartmentId: $event })"
+        placeholder="Select a parent"
+        [showClear]="true"
+        styleClass="w-full"
+      ></p-select>
+    </div>
+
+    <div class="flex items-center gap-2 mt-2">
+      <p-checkbox
+        [binary]="true"
+        inputId="appt"
+        [ngModel]="deptForm().isAppointmentApplicable"
+        (ngModelChange)="deptForm.set({ ...deptForm(), isAppointmentApplicable: $event })"
+      ></p-checkbox>
+      <label for="appt" class="text-sm text-slate-700 cursor-pointer"
+        >Appointments Applicable</label
+      >
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [text]="true"
+        (onClick)="showDeptModal.set(false)"
+      ></p-button>
+      <p-button
+        label="Save"
+        [loading]="deptSaving()"
+        (onClick)="submitDept()"
+        [disabled]="!deptForm().departmentCode || !deptForm().departmentName"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Ward Modal -->
+<p-dialog
+  header="Add Ward"
+  [(visible)]="showWardModal"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  styleClass="glass-modal"
+>
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="wardCode" class="text-sm font-medium text-slate-700"
+        >Ward Code</label
+      >
+      <input
+        id="wardCode"
+        pInputText
+        [ngModel]="wardForm().wardCode"
+        (ngModelChange)="wardForm.set({ ...wardForm(), wardCode: $event })"
+        class="w-full"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="wardName" class="text-sm font-medium text-slate-700"
+        >Ward Name</label
+      >
+      <input
+        id="wardName"
+        pInputText
+        [ngModel]="wardForm().wardName"
+        (ngModelChange)="wardForm.set({ ...wardForm(), wardName: $event })"
+        class="w-full"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="wardType" class="text-sm font-medium text-slate-700"
+        >Ward Type</label
+      >
+      <input
+        id="wardType"
+        pInputText
+        [ngModel]="wardForm().wardType"
+        (ngModelChange)="wardForm.set({ ...wardForm(), wardType: $event })"
+        placeholder="e.g. ICU, General"
+        class="w-full"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="bedCap" class="text-sm font-medium text-slate-700"
+        >Bed Capacity</label
+      >
+      <input
+        id="bedCap"
+        pInputText
+        type="number"
+        [ngModel]="wardForm().bedCapacity"
+        (ngModelChange)="wardForm.set({ ...wardForm(), bedCapacity: +$event })"
+        class="w-full"
+      />
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [text]="true"
+        (onClick)="showWardModal.set(false)"
+      ></p-button>
+      <p-button
+        label="Save"
+        [loading]="wardSaving()"
+        (onClick)="submitWard()"
+        [disabled]="!wardForm().wardCode || !wardForm().wardName"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Beds Modal -->
+<p-dialog
+  header="Manage Beds - {{ selectedWard()?.wardName }}"
+  [(visible)]="showBedsModal"
+  [modal]="true"
+  [style]="{ width: '700px' }"
+  styleClass="glass-modal"
+>
+  <div class="flex flex-col gap-6 py-2">
+    <!-- Add Bed Form -->
+    <div class="flex items-end gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+      <div class="flex-1 flex flex-col gap-2">
+        <label for="bedNo" class="text-xs font-semibold text-slate-600">Bed Number</label>
+        <input
+          id="bedNo"
+          pInputText
+          placeholder="e.g. B-01"
+          [ngModel]="bedForm().bedNumber"
+          (ngModelChange)="bedForm.set({ ...bedForm(), bedNumber: $event })"
+        />
+      </div>
+      <div class="flex-1 flex flex-col gap-2">
+        <label for="bedType" class="text-xs font-semibold text-slate-600">Bed Type</label>
+        <input
+          id="bedType"
+          pInputText
+          placeholder="e.g. Standard, VIP"
+          [ngModel]="bedForm().bedType"
+          (ngModelChange)="bedForm.set({ ...bedForm(), bedType: $event })"
+        />
+      </div>
+      <p-button
+        label="Add Bed"
+        icon="pi pi-plus"
+        [loading]="bedSaving()"
+        (onClick)="submitBed()"
+        [disabled]="!bedForm().bedNumber"
+      ></p-button>
+    </div>
+
+    <!-- Beds Table -->
+    <p-table
+      [value]="beds()"
+      [loading]="bedsLoading()"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Bed No</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th class="w-32">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-bed>
+        <tr>
+          <td class="font-medium font-mono text-slate-700">{{ bed.bedNumber }}</td>
+          <td>{{ bed.bedType || '-' }}</td>
+          <td>
+            <p-tag
+              [value]="bed.status"
+              [severity]="bed.status === 'Available' ? 'success' : (bed.status === 'Occupied' ? 'warn' : 'secondary')"
+              [rounded]="true"
+            ></p-tag>
+          </td>
+          <td>
+            <p-button
+              [icon]="bed.isActive ? 'pi pi-ban' : 'pi pi-check'"
+              [severity]="bed.isActive ? 'danger' : 'success'"
+              [text]="true"
+              size="small"
+              (onClick)="toggleBed(bed)"
+              pTooltip="Toggle Active Status"
+            ></p-button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="text-center p-6 text-slate-500">
+            No beds configured for this ward yet.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</p-dialog>
+
+

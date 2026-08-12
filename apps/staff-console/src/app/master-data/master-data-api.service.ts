@@ -1,0 +1,91 @@
+import { Injectable, inject } from '@angular/core';
+import { ApiClientService } from '@org/api-client';
+import { Observable } from 'rxjs';
+import {
+  Department,
+  Ward,
+  Bed,
+  Role,
+  CreateRoleDto,
+  DepartmentCatalog,
+  CreateDepartmentCatalogDto,
+} from './master-data.model.js';
+
+@Injectable({ providedIn: 'root' })
+export class MasterDataApiService {
+  private readonly api = inject(ApiClientService);
+
+  listDepartments(): Observable<Department[]> {
+    return this.api.get<Department[]>('/departments');
+  }
+
+  getDepartment(id: string): Observable<Department> {
+    return this.api.get<Department>(`/departments/${id}`);
+  }
+
+  createDepartment(dto: Partial<Department>): Observable<Department> {
+    return this.api.post<Department>('/departments', dto);
+  }
+
+  deactivateDepartment(id: string): Observable<Department> {
+    return this.api.patch<Department>(`/departments/${id}/deactivate`, {});
+  }
+
+  reactivateDepartment(id: string): Observable<Department> {
+    return this.api.patch<Department>(`/departments/${id}/reactivate`, {});
+  }
+
+  listWards(): Observable<Ward[]> {
+    return this.api.get<Ward[]>('/wards');
+  }
+
+  getWard(id: string): Observable<Ward> {
+    return this.api.get<Ward>(`/wards/${id}`);
+  }
+
+  createWard(dto: Partial<Ward>): Observable<Ward> {
+    return this.api.post<Ward>('/wards', dto);
+  }
+
+  deactivateWard(id: string): Observable<Ward> {
+    return this.api.patch<Ward>(`/wards/${id}/deactivate`, {});
+  }
+
+  reactivateWard(id: string): Observable<Ward> {
+    return this.api.patch<Ward>(`/wards/${id}/reactivate`, {});
+  }
+
+  listBedsByWard(wardId: string): Observable<Bed[]> {
+    return this.api.get<Bed[]>(`/wards/${wardId}/beds`);
+  }
+
+  createBed(wardId: string, dto: Partial<Bed>): Observable<Bed> {
+    return this.api.post<Bed>(`/wards/${wardId}/beds`, dto);
+  }
+
+  deactivateBed(id: string): Observable<Bed> {
+    return this.api.patch<Bed>(`/beds/${id}/deactivate`, {});
+  }
+
+  reactivateBed(id: string): Observable<Bed> {
+    return this.api.patch<Bed>(`/beds/${id}/reactivate`, {});
+  }
+
+  getRoles(): Observable<Role[]> {
+    return this.api.get<Role[]>('/roles');
+  }
+
+  createRole(dto: CreateRoleDto): Observable<Role> {
+    return this.api.post<Role>('/roles', dto);
+  }
+
+  listDepartmentCatalogs(): Observable<DepartmentCatalog[]> {
+    return this.api.get<DepartmentCatalog[]>('/catalogs/departments');
+  }
+
+  createDepartmentCatalog(
+    dto: CreateDepartmentCatalogDto,
+  ): Observable<DepartmentCatalog> {
+    return this.api.post<DepartmentCatalog>('/catalogs/departments', dto);
+  }
+}

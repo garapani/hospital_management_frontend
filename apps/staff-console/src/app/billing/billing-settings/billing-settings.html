@@ -1,0 +1,68 @@
+<div class="h-full flex flex-col gap-6 max-w-4xl mx-auto">
+  <div>
+    <h1 class="text-3xl font-bold tracking-tight text-slate-900">
+      Billing Settings
+    </h1>
+    <p class="text-sm text-slate-500 mt-1">
+      Manage global billing configurations like GSTIN and Legal Name.
+    </p>
+  </div>
+
+  <div class="glass-panel p-8 rounded-2xl border border-white/40 shadow-sm bg-white/60 backdrop-blur-xl">
+    @if (loading()) {
+      <div class="flex justify-center items-center py-12">
+        <i class="pi pi-spinner pi-spin text-4xl text-sky-500"></i>
+      </div>
+    } @else {
+      <div class="flex flex-col gap-6">
+        <div class="flex flex-col gap-2">
+          <label for="hospitalLegalName" class="font-medium text-slate-700">Hospital Legal Name</label>
+          <input
+            id="hospitalLegalName"
+            pInputText
+            [ngModel]="settingsForm().hospitalLegalName"
+            (ngModelChange)="settingsForm.set({ ...settingsForm(), hospitalLegalName: $event })"
+            class="w-full"
+            placeholder="e.g. NextGen Hospital PVT LTD"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-6">
+          <div class="flex flex-col gap-2">
+            <label for="gstin" class="font-medium text-slate-700">GSTIN</label>
+            <input
+              id="gstin"
+              pInputText
+              [ngModel]="settingsForm().gstin"
+              (ngModelChange)="settingsForm.set({ ...settingsForm(), gstin: $event })"
+              class="w-full uppercase"
+              placeholder="e.g. 29ABCDE1234F1Z5"
+            />
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label for="stateCode" class="font-medium text-slate-700">State Code</label>
+            <input
+              id="stateCode"
+              pInputText
+              [ngModel]="settingsForm().stateCode"
+              (ngModelChange)="settingsForm.set({ ...settingsForm(), stateCode: $event })"
+              class="w-full"
+              placeholder="e.g. 29"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end mt-4">
+          <p-button
+            label="Save Settings"
+            icon="pi pi-save"
+            [loading]="saving()"
+            (onClick)="save()"
+            [disabled]="!settingsForm().hospitalLegalName || !settingsForm().gstin || !settingsForm().stateCode"
+          ></p-button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

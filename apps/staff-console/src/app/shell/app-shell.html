@@ -1,18 +1,114 @@
-<div class="flex min-h-screen">
-  <aside class="flex w-60 shrink-0 flex-col bg-primary-900 px-3 py-5 text-white">
-    <div class="mb-8 px-3 text-base font-semibold tracking-tight">MediCare OS</div>
-    <nav class="flex flex-col gap-1">
+<div class="flex min-h-screen relative overflow-hidden">
+  <aside
+    class="flex w-64 shrink-0 flex-col bg-white/60 backdrop-blur-xl border-r border-white/40 shadow-sm px-4 py-6 text-slate-800 z-10 relative"
+  >
+    <div
+      class="mb-8 px-4 text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-blue-600"
+    >
+      MediCare OS
+    </div>
+    <nav class="flex flex-col gap-2">
+      @if (auth.hasPermission('system-admin.tenants.manage')) {
+      <a
+        routerLink="/tenants"
+        routerLinkActive="gradient-bg text-white font-semibold"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      >
+        <i class="pi pi-building text-base"></i>
+        Tenants
+      </a>
+      } @if (auth.hasPermission('master-data.manage')) {
+      <a
+        routerLink="/admin/global-catalog"
+        routerLinkActive="gradient-bg text-white font-semibold"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      >
+        <i class="pi pi-globe text-base"></i>
+        Global Catalog
+      </a>
+      } @if (auth.hasPermission('billing.manage') &&
+      !auth.hasPermission('system-admin.tenants.manage')) {
       <a
         routerLink="/billing/invoices"
-        routerLinkActive="bg-white/10 text-white font-semibold"
-        class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-primary-100 hover:bg-white/5"
+        routerLinkActive="gradient-bg text-white font-semibold"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
       >
-        <i class="pi pi-receipt text-sm"></i>
+        <i class="pi pi-receipt text-base"></i>
         Invoices
       </a>
+      }
+      @if (auth.hasPermission('patients.read')) {
+      <div
+        class="mt-4 mb-2 px-4 text-xs font-semibold tracking-wider text-slate-400 uppercase"
+      >
+        Clinical
+      </div>
+      <a
+        routerLink="/clinical/patients"
+        routerLinkActive="gradient-bg text-white font-semibold"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      >
+        <i class="pi pi-user text-base"></i>
+        Patients (PMI)
+      </a>
+      } 
+      
+      @if (auth.hasPermission('identity.accounts.manage') ||
+      auth.hasPermission('master-data.manage') ||
+      auth.hasPermission('reporting.read')) {
+      <div
+        class="mt-4 mb-2 px-4 text-xs font-semibold tracking-wider text-slate-400 uppercase"
+      >
+        Administration
+      </div>
+
+      @if (auth.hasPermission('identity.accounts.manage')) {
+      <a
+        routerLink="/admin/users"
+        routerLinkActive="gradient-bg text-white font-semibold"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      >
+        <i class="pi pi-users text-base"></i>
+        Staff Accounts
+      </a>
+      } @if (auth.hasPermission('master-data.manage')) {
+        <a
+          routerLink="/admin/master-data"
+          routerLinkActive="gradient-bg text-white font-semibold"
+          [routerLinkActiveOptions]="{ exact: false }"
+          class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+        >
+          <i class="pi pi-database text-base"></i>
+          Master Data
+        </a>
+        <a
+          routerLink="/admin/billing-settings"
+          routerLinkActive="gradient-bg text-white font-semibold"
+          [routerLinkActiveOptions]="{ exact: false }"
+          class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+        >
+          <i class="pi pi-cog text-base"></i>
+          Billing Settings
+        </a>
+      } @if (auth.hasPermission('reporting.read')) {
+      <a
+        routerLink="/admin/audit"
+        routerLinkActive="gradient-bg text-white font-semibold"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      >
+        <i class="pi pi-history text-base"></i>
+        Audit Trail
+      </a>
+      } }
     </nav>
   </aside>
-  <main class="flex-1 bg-surface-50 p-8">
+  <main class="flex-1 p-8 overflow-y-auto relative z-10">
     <router-outlet></router-outlet>
   </main>
 </div>

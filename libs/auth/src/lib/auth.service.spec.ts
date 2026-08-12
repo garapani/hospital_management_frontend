@@ -1,12 +1,17 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { Router, provideRouter } from '@angular/router';
 import { Buffer } from 'node:buffer';
-import { API_BASE_URL } from '@org/api-client';
+import { API_BASE_URL, TENANT_ID } from '@org/api-client';
 import { AuthService } from './auth.service.js';
 
-function fakeAccessToken(overrides: Partial<Record<string, unknown>> = {}): string {
+function fakeAccessToken(
+  overrides: Partial<Record<string, unknown>> = {},
+): string {
   const payload = {
     sub: 'account-1',
     hospitalId: 'hospital-1',
@@ -15,7 +20,9 @@ function fakeAccessToken(overrides: Partial<Record<string, unknown>> = {}): stri
     type: 'access',
     ...overrides,
   };
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const header = Buffer.from(
+    JSON.stringify({ alg: 'HS256', typ: 'JWT' }),
+  ).toString('base64url');
   const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
   return `${header}.${body}.fake-signature`;
 }
@@ -32,6 +39,7 @@ describe('AuthService', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: API_BASE_URL, useValue: 'https://gateway.example/api' },
+        { provide: TENANT_ID, useValue: 'demo' },
       ],
     });
     service = TestBed.inject(AuthService);
@@ -64,7 +72,10 @@ describe('AuthService', () => {
     service.login('jdoe', 'wrong').subscribe((result) => (outcome = result));
 
     const req = httpMock.expectOne('https://gateway.example/api/auth/login');
-    req.flush({ message: 'Account locked', retryAfterSeconds: 300 }, { status: 423, statusText: 'Locked' });
+    req.flush(
+      { message: 'Account locked', retryAfterSeconds: 300 },
+      { status: 423, statusText: 'Locked' },
+    );
 
     expect(outcome).toEqual({ kind: 'locked', retryAfterSeconds: 300 });
     expect(service.isAuthenticated()).toBe(false);
@@ -76,7 +87,10 @@ describe('AuthService', () => {
     service.login('jdoe', 'wrong').subscribe((result) => (outcome = result));
 
     const req = httpMock.expectOne('https://gateway.example/api/auth/login');
-    req.flush({ message: 'Invalid username or password' }, { status: 401, statusText: 'Unauthorized' });
+    req.flush(
+      { message: 'Invalid username or password' },
+      { status: 401, statusText: 'Unauthorized' },
+    );
 
     expect(outcome).toEqual({ kind: 'invalidCredentials' });
     expect(service.isAuthenticated()).toBe(false);
@@ -93,13 +107,20 @@ describe('AuthService', () => {
 
       service.refreshAccessToken().subscribe((token) => (result = token));
 
-      const req = httpMock.expectOne('https://gateway.example/api/auth/refresh');
+      const req = httpMock.expectOne(
+        'https://gateway.example/api/auth/refresh',
+      );
       expect(req.request.body).toEqual({ refreshToken: 'refresh-token-1' });
-      req.flush({ accessToken: newAccessToken, refreshToken: 'refresh-token-2' });
+      req.flush({
+        accessToken: newAccessToken,
+        refreshToken: 'refresh-token-2',
+      });
 
       expect(result).toBe(newAccessToken);
       expect(service.getAccessToken()).toBe(newAccessToken);
-      expect(sessionStorage.getItem('auth.refreshToken')).toBe('refresh-token-2');
+      expect(sessionStorage.getItem('auth.refreshToken')).toBe(
+        'refresh-token-2',
+      );
     });
 
     it('shares one in-flight HTTP call across concurrent callers', () => {
@@ -109,21 +130,35 @@ describe('AuthService', () => {
       service.refreshAccessToken().subscribe((token) => results.push(token));
       service.refreshAccessToken().subscribe((token) => results.push(token));
 
-      const req = httpMock.expectOne('https://gateway.example/api/auth/refresh');
-      req.flush({ accessToken: newAccessToken, refreshToken: 'refresh-token-2' });
+      const req = httpMock.expectOne(
+        'https://gateway.example/api/auth/refresh',
+      );
+      req.flush({
+        accessToken: newAccessToken,
+        refreshToken: 'refresh-token-2',
+      });
 
       expect(results).toEqual([newAccessToken, newAccessToken]);
     });
 
     it('clears the session and redirects to login when refresh fails', () => {
       const router = TestBed.inject(Router);
-      const navigateSpy = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+      const navigateSpy = jest
+        .spyOn(router, 'navigateByUrl')
+        .mockResolvedValue(true);
       let erroredWith: unknown;
 
-      service.refreshAccessToken().subscribe({ error: (err) => (erroredWith = err) });
+      service
+        .refreshAccessToken()
+        .subscribe({ error: (err) => (erroredWith = err) });
 
-      const req = httpMock.expectOne('https://gateway.example/api/auth/refresh');
-      req.flush({ message: 'Invalid or expired refresh token' }, { status: 401, statusText: 'Unauthorized' });
+      const req = httpMock.expectOne(
+        'https://gateway.example/api/auth/refresh',
+      );
+      req.flush(
+        { message: 'Invalid or expired refresh token' },
+        { status: 401, statusText: 'Unauthorized' },
+      );
 
       expect(erroredWith).toBeDefined();
       expect(service.isAuthenticated()).toBe(false);
@@ -135,9 +170,10 @@ describe('AuthService', () => {
   describe('hasPermission', () => {
     it('reflects the permissions embedded in the current access token', () => {
       service.login('jdoe', 'secret').subscribe();
-      httpMock
-        .expectOne('https://gateway.example/api/auth/login')
-        .flush({ accessToken: fakeAccessToken({ permissions: ['billing.manage'] }), refreshToken: 'r' });
+      httpMock.expectOne('https://gateway.example/api/auth/login').flush({
+        accessToken: fakeAccessToken({ permissions: ['billing.manage'] }),
+        refreshToken: 'r',
+      });
 
       expect(service.hasPermission('billing.manage')).toBe(true);
       expect(service.hasPermission('billing.settle')).toBe(false);
@@ -151,12 +187,15 @@ describe('AuthService', () => {
   describe('logout', () => {
     it('clears tokens and navigates to /login', () => {
       const router = TestBed.inject(Router);
-      const navigateSpy = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+      const navigateSpy = jest
+        .spyOn(router, 'navigateByUrl')
+        .mockResolvedValue(true);
 
       service.login('jdoe', 'secret').subscribe();
-      httpMock
-        .expectOne('https://gateway.example/api/auth/login')
-        .flush({ accessToken: fakeAccessToken(), refreshToken: 'refresh-token-1' });
+      httpMock.expectOne('https://gateway.example/api/auth/login').flush({
+        accessToken: fakeAccessToken(),
+        refreshToken: 'refresh-token-1',
+      });
 
       service.logout();
 
