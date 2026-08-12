@@ -60,20 +60,19 @@ affirmative reason before you invoke it — "this feels like a big/multi-file ch
 reason.** Before invoking any `superpowers:*` skill on frontend work, stop and re-read this section.
 
 **Fast track (default for ~everything, matching the backend's MVP-fast-track convention
-established 2026-08-09 — see the backend repo's `CLAUDE.md`, "The MVP Fast Track"):** spec directly
-into the conversation via `mattpocock-skills:to-spec`'s template → implement via
-`mattpocock-skills:implement` (TDD at component/service boundaries via `mattpocock-skills:tdd`) →
-`mattpocock-skills:code-review` → commit. This covers: a new list/detail/form screen, a UI-only
+established 2026-08-09 — see the backend repo's `CLAUDE.md`, "The MVP Fast Track"):** implement
+directly via `superpowers:test-driven-development` at component/service boundaries (no separate `to-spec` step) →
+`superpowers:requesting-code-review` → commit. This covers: a new list/detail/form screen, a UI-only
 fix, a styling/design-system pass (however many screens or files it touches — **"redesign the
 frontend" / "make it more elegant" is fast-track work**, not a signal to go heavyweight), a shared
-CSS/theme-token change, anything where the answer to "does this establish a *new shared library or
-service boundary* other code must integrate against" is no.
+CSS/theme-token change, anything where the answer to "does this establish a _new shared library or
+service boundary_ other code must integrate against" is no.
 
 **Heavyweight pipeline — only when the answer to that question is yes**, e.g.: introducing a new
 shared library (`libs/api-client`, `libs/auth` were built this way), a new cross-cutting service
 contract (the auth interceptor's refresh-token protocol), or a decision every future screen must
 follow and getting it wrong is expensive to unwind later. If you're not sure, default to fast
-track — the fast track's own review step (`mattpocock-skills:code-review`) is the safety net for a
+track — the fast track's own review step (`superpowers:requesting-code-review`) is the safety net for a
 misjudged scope call, and is far cheaper to recover from than an unnecessary heavyweight run.
 
 **Incident (2026-08-09):** a design refresh (navy theme preset + sidebar shell + 3 existing screens
@@ -82,8 +81,8 @@ then `subagent-driven-development`'s per-task implementer+reviewer dispatch (6 t
 whole-branch review and fix wave: ~15 subagent dispatches total for what was, functionally,
 template-only changes plus one config file. The task was misjudged as "architectural" because it
 touched the shell/theme; the actual bar (new shared library/service boundary) was never met.
-`/to-spec` + direct implementation would have covered it at a fraction of the cost. This section
-was rewritten immediately after to make that judgment call explicit rather than left implicit.
+`/tdd` + direct implementation would have covered it at a fraction of the cost. This section was
+rewritten immediately after to make that judgment call explicit rather than left implicit.
 
 ## Shared libraries
 
@@ -96,7 +95,7 @@ component/service.
   paths with `API_BASE_URL` (provided in `app.config.ts` from `src/environments/environment.ts`,
   swapped for `environment.production.ts` on prod builds via `project.json`'s `fileReplacements` —
   never hardcode a Gateway origin in a component). Errors normalize to `ApiError { status, message,
-  body }`.
+body }`.
 - **`AuthService`** (`@org/auth`) — `login`/`logout`/`hasPermission`/`isAuthenticated`/
   `currentUser` signals. Access token lives in memory only (gone on reload by design); refresh
   token in `sessionStorage`. `hasPermission()` reads JWT claims for UI gating only — it is never a
@@ -173,7 +172,7 @@ component/service.
 - **Excluding a lib from prebundling means esbuild now expects it in the TS program**: once
   externalization is off, `@angular/build`'s compiler plugin needs the lib's `.ts` files literally
   covered by `apps/staff-console/tsconfig.app.json`'s `include`/`exclude` — TS project
-  `references` to a lib's `tsconfig.lib.json` are a *separate* composite compilation unit and
+  `references` to a lib's `tsconfig.lib.json` are a _separate_ composite compilation unit and
   don't fold that source into the app's own ts.Program, so Angular's AOT plugin errors with "Files
   containing Angular metadata... must be part of the TypeScript compilation." `tsconfig.app.json`
   now includes `../../libs/auth/src/**/*.ts` and `../../libs/api-client/src/**/*.ts` (with
@@ -181,11 +180,15 @@ component/service.
   entries. This in turn changes the project's inferred `rootDir` (now spans `apps/staff-console`
   and `libs/`), which trips `tsc --build`'s `--emitDeclarationOnly` validation (TS5011/TS5069)
   unless `rootDir`/`declaration` are set explicitly — see the file for the working values.
-- **Theming lives in `app.config.ts`, not per-component CSS.** The navy preset
-  (`definePreset(Aura, {...})`) seeds every `primary-*`/`surface-*` Tailwind class used across
-  screens (via `tailwindcss-primeui`). A new screen should reuse those classes, not introduce a new
-  color or a component-local stylesheet. See `new/docs/technical-design/Development-Standards.md`
-  §21 for the exact class vocabulary.
+- **Theming lives in `app.config.ts`, not per-component CSS.** The preset
+  (`definePreset(Aura, {...})` — `OceanBreezePreset` as of 2026-08-12, superseding the original navy
+  one) seeds every `primary-*`/`surface-*` Tailwind class used across screens (via
+  `tailwindcss-primeui`), plus a set of `glass-*`/`gradient-*` utility classes in `styles.css` for
+  the glassmorphism look. A new screen should reuse those classes, not introduce a new color or a
+  component-local stylesheet — and if it introduces a new `glass-*`/`gradient-*` class name, that
+  class must actually be defined in `styles.css`'s `@layer tailwind-utilities` (an undefined class
+  referenced in a template silently renders unstyled; nothing in typecheck/lint/tests catches it).
+  See `new/docs/technical-design/Development-Standards.md` §21 for the exact class vocabulary.
 - **`apps/staff-console/tsconfig.spec.json` must not set `moduleResolution` to `"node10"`** — it
   extends `tsconfig.base.json` directly (not `./tsconfig.json`), so it inherits
   `customConditions`, and TypeScript hard-errors (TS5098) on that combination regardless of
