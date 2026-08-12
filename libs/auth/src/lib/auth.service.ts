@@ -1,9 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiClientService, ApiError } from '@org/api-client';
-import { Observable, catchError, finalize, map, of, shareReplay, throwError } from 'rxjs';
+import { Observable, catchError, finalize, map, of, throwError } from 'rxjs';
 import { AccessTokenClaims } from './access-token-claims.js';
-import { decodeAccessToken } from './decode-access-token.js';
+import { decodeAccessToken, isTokenExpired } from './decode-access-token.js';
 import { LoginOutcome } from './login-outcome.js';
 import { TokenStorage } from './token-storage.js';
 
@@ -73,14 +73,23 @@ export class AuthService {
           return throwError(() => error);
         }),
         finalize(() => (this.refreshInFlight = null)),
-        shareReplay(1),
       );
 
     return this.refreshInFlight;
   }
 
-  logout(): void {
-    this.clearSession();
+  logout(): Observable<void> {
+    const refreshToken = this.tokens.getRefreshToken();
+    if (!refreshToken) {
+      // No refresh token to invalidate, just clear local session
+      this.clearSession();
+      return of(undefined);
+    }
+
+    // Call server-side logout to invalidate refresh token
+    return this.apiClient.post('/auth/logout', { refreshToken }).pipe(
+      finalize(() => this.clearSession()),
+    );
   }
 
   /** Clears stored tokens AND navigates to /login — called on logout and on unrecoverable
@@ -89,6 +98,11 @@ export class AuthService {
     this.tokens.clear();
     this.claims.set(null);
     void this.router.navigateByUrl('/login');
+  }
+
+  /** Checks if the current access token is expired or about to expire (with buffer). */
+  isAccessTokenExpired(): boolean {
+    return isTokenExpired(this.claims());
   }
 
   getAccessToken(): string | null {

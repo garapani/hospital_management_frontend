@@ -4,4 +4,6 @@ export interface AccessTokenClaims {
   roles: string[];
   permissions: string[];
   type: 'access';
+  exp?: number; // Unix timestamp (seconds) when token expires
+  iat?: number; // Unix timestamp (seconds) when token was issued
 }
