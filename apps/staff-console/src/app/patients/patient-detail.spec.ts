@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthService } from '@org/auth';
 import { PatientDetail } from './patient-detail.js';
@@ -66,5 +66,20 @@ describe('PatientDetail', () => {
 
     expect(vitalsApi.listByPatient).not.toHaveBeenCalled();
     expect(encountersApi.getNotesByPatient).not.toHaveBeenCalled();
+  });
+
+  it('navigates to Appointments with the patient pre-filled when booking', async () => {
+    const { fixture } = setup([]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const router = TestBed.inject(Router);
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    fixture.componentInstance.bookAppointment(patient);
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/clinical/appointments'], {
+      queryParams: { patientId: 'patient-1', firstName: 'Jane', lastName: 'Doe', contactNumber: undefined },
+    });
   });
 });

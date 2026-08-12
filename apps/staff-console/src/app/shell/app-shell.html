@@ -40,12 +40,14 @@
         Invoices
       </a>
       }
-      @if (auth.hasPermission('patients.read')) {
+      @if (auth.hasPermission('patients.read') || auth.hasPermission('appointment.read') ||
+      auth.hasPermission('triage.read')) {
       <div
         class="mt-4 mb-2 px-4 text-xs font-semibold tracking-wider text-slate-400 uppercase"
       >
         Clinical
       </div>
+      @if (auth.hasPermission('patients.read')) {
       <a
         routerLink="/clinical/patients"
         routerLinkActive="gradient-bg text-white font-semibold"
@@ -54,6 +56,16 @@
       >
         <i class="pi pi-user text-base"></i>
         Patients (PMI)
+      </a>
+      } @if (auth.hasPermission('appointment.read')) {
+      <a
+        routerLink="/clinical/appointments"
+        routerLinkActive="gradient-bg text-white font-semibold"
+        [routerLinkActiveOptions]="{ exact: false }"
+        class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      >
+        <i class="pi pi-calendar text-base"></i>
+        Appointments
       </a>
       } @if (auth.hasPermission('triage.read')) {
       <a
@@ -65,6 +77,7 @@
         <i class="pi pi-heart text-base"></i>
         Triage / ER
       </a>
+      }
       }
 
       @if (auth.hasPermission('identity.accounts.manage') ||

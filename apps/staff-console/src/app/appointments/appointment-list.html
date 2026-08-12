@@ -1,0 +1,124 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900">Appointments</h1>
+      <p class="text-sm text-slate-500 mt-1">Schedule and manage patient appointments.</p>
+    </div>
+    @if (auth.hasPermission('appointment.manage')) {
+    <p-button label="New Appointment" icon="pi pi-plus" (onClick)="openCreateModal()"></p-button>
+    }
+  </div>
+
+  <div class="glass-panel rounded-2xl shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl p-4 flex flex-wrap items-end gap-3">
+    <div class="flex flex-col gap-2">
+      <label for="filterDate" class="text-xs font-semibold text-slate-600">Date</label>
+      <input id="filterDate" pInputText type="date" [ngModel]="dateFilter()" (ngModelChange)="dateFilter.set($event)" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="filterStatus" class="text-xs font-semibold text-slate-600">Status</label>
+      <p-select
+        inputId="filterStatus"
+        [options]="statuses"
+        [ngModel]="statusFilter()"
+        (ngModelChange)="statusFilter.set($event)"
+        placeholder="All"
+        [showClear]="true"
+        styleClass="w-40"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="filterDoctor" class="text-xs font-semibold text-slate-600">Doctor ID</label>
+      <input id="filterDoctor" pInputText [ngModel]="doctorIdFilter()" (ngModelChange)="doctorIdFilter.set($event)" placeholder="Optional" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="filterDept" class="text-xs font-semibold text-slate-600">Department ID</label>
+      <input id="filterDept" pInputText [ngModel]="departmentIdFilter()" (ngModelChange)="departmentIdFilter.set($event)" placeholder="Optional" />
+    </div>
+    <p-button label="Apply" size="small" severity="secondary" (onClick)="applyFilters()"></p-button>
+  </div>
+
+  <div class="glass-panel flex-1 rounded-2xl overflow-hidden shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl p-4">
+    <p-table [value]="appointments()" [loading]="loading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Patient</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th class="w-24">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-appt>
+        <tr>
+          <td class="font-medium">{{ displayName(appt) }}</td>
+          <td>{{ appt.appointmentDate | date }}</td>
+          <td>{{ appt.appointmentTime }}</td>
+          <td>{{ appt.appointmentType }}</td>
+          <td><p-tag [value]="appt.status" [severity]="statusSeverity(appt.status)" [rounded]="true"></p-tag></td>
+          <td>
+            <a [routerLink]="['/clinical/appointments', appt.id]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View</a>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-6 text-slate-500">No appointments found for the selected filters.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- New Appointment Modal -->
+<p-dialog header="New Appointment" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '550px' }" styleClass="glass-modal">
+  <div class="grid grid-cols-2 gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="apptFirstName" class="text-sm font-medium text-slate-700">First Name</label>
+      <input id="apptFirstName" pInputText [ngModel]="createForm().firstName" (ngModelChange)="createForm.set({ ...createForm(), firstName: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="apptLastName" class="text-sm font-medium text-slate-700">Last Name</label>
+      <input id="apptLastName" pInputText [ngModel]="createForm().lastName" (ngModelChange)="createForm.set({ ...createForm(), lastName: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="apptContact" class="text-sm font-medium text-slate-700">Contact Number</label>
+      <input id="apptContact" pInputText [ngModel]="createForm().contactNumber" (ngModelChange)="createForm.set({ ...createForm(), contactNumber: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="apptDate" class="text-sm font-medium text-slate-700">Date</label>
+      <input id="apptDate" pInputText type="date" [ngModel]="createForm().appointmentDate" (ngModelChange)="createForm.set({ ...createForm(), appointmentDate: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="apptTime" class="text-sm font-medium text-slate-700">Time</label>
+      <input id="apptTime" pInputText type="time" [ngModel]="createForm().appointmentTime" (ngModelChange)="createForm.set({ ...createForm(), appointmentTime: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="apptDoctor" class="text-sm font-medium text-slate-700">Doctor ID</label>
+      <input id="apptDoctor" pInputText [ngModel]="createForm().doctorId" (ngModelChange)="createForm.set({ ...createForm(), doctorId: $event })" placeholder="Optional" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="apptDept" class="text-sm font-medium text-slate-700">Department ID</label>
+      <input id="apptDept" pInputText [ngModel]="createForm().departmentId" (ngModelChange)="createForm.set({ ...createForm(), departmentId: $event })" placeholder="Optional" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="apptType" class="text-sm font-medium text-slate-700">Appointment Type</label>
+      <input id="apptType" pInputText [ngModel]="createForm().appointmentType" (ngModelChange)="createForm.set({ ...createForm(), appointmentType: $event })" placeholder="e.g. New Visit, Follow-up" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="apptReason" class="text-sm font-medium text-slate-700">Reason</label>
+      <input id="apptReason" pInputText [ngModel]="createForm().reason" (ngModelChange)="createForm.set({ ...createForm(), reason: $event })" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCreateModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="saving()"
+        (onClick)="submitCreate()"
+        [disabled]="!createForm().firstName || !createForm().lastName || !createForm().contactNumber || !createForm().appointmentDate || !createForm().appointmentTime || !createForm().appointmentType"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

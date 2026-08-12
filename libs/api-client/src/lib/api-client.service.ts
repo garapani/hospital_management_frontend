@@ -41,6 +41,16 @@ export class ApiClientService {
       .pipe(catchError(this.normalizeError));
   }
 
+  put<T>(
+    path: string,
+    body: unknown,
+    options?: RequestOptions,
+  ): Observable<T> {
+    return this.http
+      .put<T>(this.url(path), body, { ...options, headers: this.headers() })
+      .pipe(catchError(this.normalizeError));
+  }
+
   delete<T>(path: string, options?: RequestOptions): Observable<T> {
     return this.http
       .delete<T>(this.url(path), { ...options, headers: this.headers() })

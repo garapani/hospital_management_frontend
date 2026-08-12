@@ -133,6 +133,17 @@ export class PatientDetail implements OnInit {
     this.router.navigate(['/clinical/patients']);
   }
 
+  bookAppointment(patient: Patient) {
+    this.router.navigate(['/clinical/appointments'], {
+      queryParams: {
+        patientId: patient.id,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        contactNumber: patient.phoneNumber,
+      },
+    });
+  }
+
   // --- Vitals ---
   loadVitals(patientId: string) {
     this.vitalsLoading.set(true);

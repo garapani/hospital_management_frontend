@@ -49,6 +49,17 @@ describe('ApiClientService', () => {
     }
   });
 
+  it('sends PUT requests with the request body', () => {
+    let result: unknown;
+    service.put('/appointments/123', { status: 'Completed' }).subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('https://gateway.example/api/appointments/123');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({ status: 'Completed' });
+    req.flush({ id: '123', status: 'Completed' });
+    expect(result).toEqual({ id: '123', status: 'Completed' });
+  });
+
   it('normalizes a failed request into an ApiError with status and message', () => {
     let captured: unknown;
     service.post('/invoices', { amount: 10 }).subscribe({

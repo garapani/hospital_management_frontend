@@ -95,8 +95,10 @@
           <p-tabpanel value="appointments">
             <div class="text-center text-slate-500 py-12">
               <i class="pi pi-calendar text-4xl mb-3 opacity-50"></i>
-              <p>No upcoming appointments.</p>
-              <p-button label="Book Appointment" [text]="true" size="small" class="mt-2"></p-button>
+              <p>View or book this patient's appointments in the Appointments screen.</p>
+              @if (auth.hasPermission('appointment.manage')) {
+              <p-button label="Book Appointment" [text]="true" size="small" class="mt-2" (onClick)="bookAppointment(p)"></p-button>
+              }
             </div>
           </p-tabpanel>
           <p-tabpanel value="admissions">
