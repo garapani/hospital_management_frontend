@@ -71,3 +71,7 @@ Thumbs.db
 
 # Original rules preserved
 *.log
+out-tsc
+.nx/cache
+.nx/workspace-data
+.angular/cache
