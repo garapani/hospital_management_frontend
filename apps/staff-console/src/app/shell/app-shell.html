@@ -130,6 +130,15 @@
       </a>
       } }
     </nav>
+    <div class="mt-auto pt-6 border-t border-white/40">
+      <button
+        (click)="logout()"
+        class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200 w-full"
+      >
+        <i class="pi pi-sign-out text-base"></i>
+        Logout
+      </button>
+    </div>
   </aside>
   <main class="flex-1 p-8 overflow-y-auto relative z-10">
     <router-outlet></router-outlet>

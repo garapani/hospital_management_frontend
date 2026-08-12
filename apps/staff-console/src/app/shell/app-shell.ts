@@ -9,4 +9,8 @@ import { AuthService } from '@org/auth';
 })
 export class AppShell {
   readonly auth = inject(AuthService);
+
+  logout(): void {
+    this.auth.logout().subscribe();
+  }
 }
