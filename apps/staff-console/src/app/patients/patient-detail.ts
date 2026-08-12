@@ -243,7 +243,12 @@ export class PatientDetail implements OnInit {
   removeDiagnosis(diagnosis: Diagnosis) {
     const patientId = this.patient()?.id;
     if (!patientId) return;
-    this.encountersApi.deleteDiagnosis(diagnosis.id).subscribe(() => this.loadDiagnoses(patientId));
+    this.encountersApi.deleteDiagnosis(diagnosis.id).subscribe({
+      next: () => this.loadDiagnoses(patientId),
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete diagnosis' });
+      },
+    });
   }
 
   // --- Prescriptions ---
@@ -285,6 +290,11 @@ export class PatientDetail implements OnInit {
   removePrescription(prescription: Prescription) {
     const patientId = this.patient()?.id;
     if (!patientId) return;
-    this.encountersApi.deletePrescription(prescription.id).subscribe(() => this.loadPrescriptions(patientId));
+    this.encountersApi.deletePrescription(prescription.id).subscribe({
+      next: () => this.loadPrescriptions(patientId),
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete prescription' });
+      },
+    });
   }
 }

@@ -426,7 +426,7 @@
         label="Save"
         [loading]="prescriptionSaving()"
         (onClick)="submitPrescription()"
-        [disabled]="!prescriptionForm().medicationName || !prescriptionForm().dosage || !prescriptionForm().frequency || !prescriptionForm().route"
+        [disabled]="!prescriptionForm().medicationName || !prescriptionForm().dosage || !prescriptionForm().frequency || !prescriptionForm().route || !prescriptionForm().durationDays"
       ></p-button>
     </div>
   </ng-template>
