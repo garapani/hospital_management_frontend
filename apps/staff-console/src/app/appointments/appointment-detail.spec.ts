@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { AuthService } from '@org/auth';
 import { AppointmentDetail } from './appointment-detail.js';
 import { AppointmentsApiService, Appointment } from './appointments-api.service.js';
@@ -57,6 +57,34 @@ describe('AppointmentDetail', () => {
     expect(fixture.componentInstance.status()).toBe('Scheduled');
   });
 
+  it('excludes Cancelled from the general edit form status options', () => {
+    const { fixture } = setup();
+    expect(fixture.componentInstance.statuses.map((s) => s.value)).not.toContain('Cancelled');
+  });
+
+  it('clears the loading flag when the initial load errors', async () => {
+    const appointmentsApi = {
+      getById: jest.fn().mockReturnValue(throwError(() => new Error('boom'))),
+    } as unknown as AppointmentsApiService;
+    const auth = { hasPermission: () => true } as unknown as AuthService;
+    const activatedRoute = { paramMap: of(convertToParamMap({ id: 'appt-1' })) } as unknown as ActivatedRoute;
+    TestBed.configureTestingModule({
+      imports: [AppointmentDetail],
+      providers: [
+        provideRouter([]),
+        { provide: AppointmentsApiService, useValue: appointmentsApi },
+        { provide: AuthService, useValue: auth },
+        { provide: ActivatedRoute, useValue: activatedRoute },
+      ],
+    });
+    const fixture = TestBed.createComponent(AppointmentDetail);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.loading()).toBe(false);
+  });
+
   it('saves changes via update', async () => {
     const { fixture, appointmentsApi } = setup();
     fixture.detectChanges();
@@ -72,6 +100,17 @@ describe('AppointmentDetail', () => {
     expect(fixture.componentInstance.appointment()?.status).toBe('Completed');
   });
 
+  it('clears the saving flag when update errors', async () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (appointmentsApi.update as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));
+
+    fixture.componentInstance.saveChanges();
+
+    expect(fixture.componentInstance.saving()).toBe(false);
+  });
+
   it('cancels the appointment with remarks and closes the modal', async () => {
     const { fixture, appointmentsApi } = setup();
     fixture.detectChanges();
@@ -83,5 +122,19 @@ describe('AppointmentDetail', () => {
     expect(appointmentsApi.cancel).toHaveBeenCalledWith('appt-1', 'No show');
     expect(fixture.componentInstance.appointment()?.status).toBe('Cancelled');
     expect(fixture.componentInstance.showCancelModal()).toBe(false);
+  });
+
+  it('clears the cancelling flag and keeps the modal open when cancel errors', async () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (appointmentsApi.cancel as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));
+
+    fixture.componentInstance.showCancelModal.set(true);
+    fixture.componentInstance.cancelRemarks.set('No show');
+    fixture.componentInstance.confirmCancel();
+
+    expect(fixture.componentInstance.cancelling()).toBe(false);
+    expect(fixture.componentInstance.showCancelModal()).toBe(true);
   });
 });

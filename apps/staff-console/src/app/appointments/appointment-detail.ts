@@ -39,7 +39,9 @@ export class AppointmentDetail implements OnInit {
 
   readonly displayName = appointmentDisplayName;
   readonly statusSeverity = appointmentStatusSeverity;
-  readonly statuses = APPOINTMENT_STATUSES.map((s) => ({ label: s, value: s }));
+  // Excludes 'Cancelled' — that transition must go through confirmCancel(), which enforces
+  // the backend's required cancelledRemarks; this general edit form has no remarks field.
+  readonly statuses = APPOINTMENT_STATUSES.filter((s) => s !== 'Cancelled').map((s) => ({ label: s, value: s }));
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {

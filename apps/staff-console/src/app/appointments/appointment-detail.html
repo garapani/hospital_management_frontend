@@ -77,7 +77,13 @@
         </div>
       </div>
       <div class="flex justify-end">
-        <p-button label="Save Changes" icon="pi pi-check" [loading]="saving()" (onClick)="saveChanges()"></p-button>
+        <p-button
+          label="Save Changes"
+          icon="pi pi-check"
+          [loading]="saving()"
+          (onClick)="saveChanges()"
+          [disabled]="!appointmentType().trim()"
+        ></p-button>
       </div>
       } @else {
       <div class="grid grid-cols-2 gap-4">

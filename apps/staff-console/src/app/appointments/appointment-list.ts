@@ -64,20 +64,21 @@ export class AppointmentList {
   constructor() {
     this.load();
 
-    const params = this.route.snapshot.queryParamMap;
-    const patientId = params.get('patientId');
-    if (patientId) {
-      this.createForm.set({
-        patientId,
-        firstName: params.get('firstName') ?? '',
-        lastName: params.get('lastName') ?? '',
-        contactNumber: params.get('contactNumber') ?? '',
-        appointmentDate: today(),
-        appointmentTime: '',
-        appointmentType: '',
-      });
-      this.showCreateModal.set(true);
-    }
+    this.route.queryParamMap.subscribe((params) => {
+      const patientId = params.get('patientId');
+      if (patientId) {
+        this.createForm.set({
+          patientId,
+          firstName: params.get('firstName') ?? '',
+          lastName: params.get('lastName') ?? '',
+          contactNumber: params.get('contactNumber') ?? '',
+          appointmentDate: today(),
+          appointmentTime: '',
+          appointmentType: '',
+        });
+        this.showCreateModal.set(true);
+      }
+    });
   }
 
   load(): void {
