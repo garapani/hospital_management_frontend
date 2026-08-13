@@ -1,7 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiClientService, ApiError } from '@org/api-client';
-import { Observable, catchError, finalize, map, of, throwError } from 'rxjs';
+import { Observable, catchError, finalize, map, of, shareReplay, throwError } from 'rxjs';
 import { AccessTokenClaims } from './access-token-claims.js';
 import { decodeAccessToken, isTokenExpired } from './decode-access-token.js';
 import { LoginOutcome } from './login-outcome.js';
@@ -72,6 +72,7 @@ export class AuthService {
           this.clearSession();
           return throwError(() => error);
         }),
+        shareReplay(1),
         finalize(() => (this.refreshInFlight = null)),
       );
 
@@ -87,7 +88,7 @@ export class AuthService {
     }
 
     // Call server-side logout to invalidate refresh token
-    return this.apiClient.post('/auth/logout', { refreshToken }).pipe(
+    return this.apiClient.post<void>('/auth/logout', { refreshToken }).pipe(
       finalize(() => this.clearSession()),
     );
   }

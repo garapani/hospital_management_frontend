@@ -35,7 +35,7 @@ export class InvoicesApiService {
    * Convenience method for dashboard to get invoices with pagination.
    * Overloaded signature to support list(page, limit) syntax.
    */
-  listByPage(page: number = 1, limit: number = 10): Observable<InvoiceListResult> {
+  listByPage(page = 1, limit = 10): Observable<InvoiceListResult> {
     return this.list({ page, limit });
   }
 }

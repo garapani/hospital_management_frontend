@@ -33,7 +33,7 @@ export function decodeAccessToken(token: string): AccessTokenClaims | null {
  * Returns true if the token is expired or if exp claim is missing.
  * Uses a 30-second buffer to proactively refresh before actual expiry.
  */
-export function isTokenExpired(claims: AccessTokenClaims | null, bufferSeconds: number = 30): boolean {
+export function isTokenExpired(claims: AccessTokenClaims | null, bufferSeconds = 30): boolean {
   if (!claims?.exp) {
     // If no exp claim, assume token is expired (conservative approach)
     return true;

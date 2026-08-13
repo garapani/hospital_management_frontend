@@ -29,8 +29,9 @@ export class AppShell {
   // Computed properties
   readonly userInitials = computed(() => {
     const user = this.currentUser();
-    if (!user?.name) return 'AU';
-    return user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const label = user?.roles[0];
+    if (!label) return 'AU';
+    return label.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
   });
   
   logout(): void {
@@ -56,7 +57,7 @@ export class AppShell {
   }
   
   currentUser() {
-    return this.auth.getCurrentUser();
+    return this.auth.currentUser();
   }
   
   closeMenus(): void {

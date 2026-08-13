@@ -197,7 +197,8 @@ describe('AuthService', () => {
         refreshToken: 'refresh-token-1',
       });
 
-      service.logout();
+      service.logout().subscribe();
+      httpMock.expectOne('https://gateway.example/api/auth/logout').flush(null);
 
       expect(service.isAuthenticated()).toBe(false);
       expect(service.getAccessToken()).toBeNull();

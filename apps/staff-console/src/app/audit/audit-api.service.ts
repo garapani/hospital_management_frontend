@@ -34,7 +34,7 @@ export class AuditApiService {
    * Convenience method for dashboard to get recent audit logs.
    * Returns an array of audit records (extracted from paginated response).
    */
-  list(page: number = 1, limit: number = 10): Observable<AuditRecord[]> {
+  list(page = 1, limit = 10): Observable<AuditRecord[]> {
     return new Observable((observer) => {
       this.search({ page, limit }).subscribe({
         next: (response) => {

@@ -218,8 +218,8 @@
           @if (userMenuOpen()) {
             <div class="absolute right-0 mt-2 w-56 glass-panel rounded-xl shadow-lg border border-white/50 py-2 z-50">
               <div class="px-4 py-3 border-b border-white/30">
-                <p class="text-sm font-semibold text-slate-800">{{ currentUser()?.name || 'Admin User' }}</p>
-                <p class="text-xs text-slate-500">{{ currentUser()?.email || 'admin@medicare.os' }}</p>
+                <p class="text-sm font-semibold text-slate-800">{{ currentUser()?.roles?.[0] || 'Admin User' }}</p>
+                <p class="text-xs text-slate-500">{{ currentUser()?.hospitalId || 'admin@medicare.os' }}</p>
               </div>
               <a routerLink="/admin/profile" class="flex items-center gap-3 px-4 py-2 text-sm text-slate-600 hover:bg-white/80 transition-colors">
                 <i class="pi pi-user text-sm"></i>

@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -23,6 +24,7 @@ interface StatCard {
 
 @Component({
   imports: [
+    DatePipe,
     RouterModule,
     TableModule,
     ButtonModule,
@@ -96,7 +98,7 @@ export class AdminDashboard {
       const tenantCount = tenants?.length || 0;
       const userCount = users?.length || 0;
       const activeTenants = tenants?.filter((t: any) => t.status === 'active').length || 0;
-      const pendingInvoices = invoices?.filter((i: any) => i.status === 'pending').length || 0;
+      const pendingInvoices = invoices?.data.filter((i: any) => i.status === 'pending').length || 0;
 
       // Calculate stats
       this.stats.set([
