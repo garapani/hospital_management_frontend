@@ -1,4 +1,3 @@
-```
 # Dependencies
 node_modules/
 
@@ -6,6 +5,13 @@ node_modules/
 dist/
 build/
 target/
+out-tsc/
+*.tsbuildinfo
+
+# Angular / Nx caches
+.angular/
+.nx/cache
+.nx/workspace-data
 
 # Environment
 .env
@@ -66,4 +72,3 @@ htmlcov/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-```
