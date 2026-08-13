@@ -4,7 +4,7 @@ import { AppShell } from './shell/app-shell.js';
 import { Login } from './login/login.js';
 
 export const appRoutes: Route[] = [
-  { path: '', pathMatch: 'full', redirectTo: 'tenants' },
+  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'login', component: Login },
   {
     path: '',
@@ -15,6 +15,11 @@ export const appRoutes: Route[] = [
     // 'always' forces authGuard to actually run on every navigation, not just first entry.
     runGuardsAndResolvers: 'always',
     children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./admin-dashboard/admin-dashboard.js').then((m) => m.AdminDashboard),
+        canActivate: [permissionGuard(Permissions.TENANTS_MANAGE)],
+      },
       {
         path: 'tenants',
         loadComponent: () => import('./tenants/tenant-list/tenant-list.js').then((m) => m.TenantList),
