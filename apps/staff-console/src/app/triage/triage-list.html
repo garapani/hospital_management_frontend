@@ -13,12 +13,12 @@
     <p-table [value]="entries()" [loading]="loading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
       <ng-template pTemplate="header">
         <tr>
-          <th>Name</th>
-          <th>Arrival</th>
-          <th>Chief Complaint</th>
-          <th>Acuity</th>
-          <th>Status</th>
-          <th class="w-24">Actions</th>
+          <th class="table-header-cell">Name</th>
+          <th class="table-header-cell">Arrival</th>
+          <th class="table-header-cell">Chief Complaint</th>
+          <th class="table-header-cell">Acuity</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell w-24">Actions</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-entry>

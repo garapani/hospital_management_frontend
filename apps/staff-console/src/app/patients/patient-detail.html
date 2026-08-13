@@ -120,13 +120,13 @@
               <p-table [value]="vitals()" [loading]="vitalsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
                 <ng-template pTemplate="header">
                   <tr>
-                    <th>Recorded</th>
-                    <th>Temp (&deg;C)</th>
-                    <th>Pulse</th>
-                    <th>BP</th>
-                    <th>RR</th>
-                    <th>SpO2 (%)</th>
-                    <th>Pain</th>
+                    <th class="table-header-cell">Recorded</th>
+                    <th class="table-header-cell">Temp (&deg;C)</th>
+                    <th class="table-header-cell">Pulse</th>
+                    <th class="table-header-cell">BP</th>
+                    <th class="table-header-cell">RR</th>
+                    <th class="table-header-cell">SpO2 (%)</th>
+                    <th class="table-header-cell">Pain</th>
                   </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-v>
@@ -202,12 +202,12 @@
               <p-table [value]="diagnoses()" [loading]="diagnosesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
                 <ng-template pTemplate="header">
                   <tr>
-                    <th>ICD-10</th>
-                    <th>Description</th>
-                    <th>Primary</th>
-                    <th>Recorded</th>
+                    <th class="table-header-cell">ICD-10</th>
+                    <th class="table-header-cell">Description</th>
+                    <th class="table-header-cell">Primary</th>
+                    <th class="table-header-cell">Recorded</th>
                     @if (auth.hasPermission('encounter.manage')) {
-                    <th class="w-16">Actions</th>
+                    <th class="table-header-cell w-16">Actions</th>
                     }
                   </tr>
                 </ng-template>
@@ -247,14 +247,14 @@
               <p-table [value]="prescriptions()" [loading]="prescriptionsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
                 <ng-template pTemplate="header">
                   <tr>
-                    <th>Medication</th>
-                    <th>Dosage</th>
-                    <th>Frequency</th>
-                    <th>Route</th>
-                    <th>Duration</th>
-                    <th>Status</th>
+                    <th class="table-header-cell">Medication</th>
+                    <th class="table-header-cell">Dosage</th>
+                    <th class="table-header-cell">Frequency</th>
+                    <th class="table-header-cell">Route</th>
+                    <th class="table-header-cell">Duration</th>
+                    <th class="table-header-cell">Status</th>
                     @if (auth.hasPermission('encounter.manage')) {
-                    <th class="w-16">Actions</th>
+                    <th class="table-header-cell w-16">Actions</th>
                     }
                   </tr>
                 </ng-template>

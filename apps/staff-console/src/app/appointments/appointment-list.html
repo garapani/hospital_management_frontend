@@ -41,12 +41,12 @@
     <p-table [value]="appointments()" [loading]="loading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
       <ng-template pTemplate="header">
         <tr>
-          <th>Patient</th>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Type</th>
-          <th>Status</th>
-          <th class="w-24">Actions</th>
+          <th class="table-header-cell">Patient</th>
+          <th class="table-header-cell">Date</th>
+          <th class="table-header-cell">Time</th>
+          <th class="table-header-cell">Type</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell w-24">Actions</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-appt>

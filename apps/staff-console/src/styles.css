@@ -44,4 +44,8 @@
   .glass-modal {
     @apply bg-white/80 backdrop-blur-xl border border-white/40 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)];
   }
+
+  .table-header-cell {
+    @apply bg-slate-100/80 border-b border-slate-300/70 text-slate-500 text-xs font-semibold uppercase tracking-wider;
+  }
 }
