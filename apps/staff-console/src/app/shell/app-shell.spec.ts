@@ -25,6 +25,6 @@ describe('AppShell', () => {
     // Nav links are permission-gated (AuthService.hasPermission) — with no session, none
     // render, so this only asserts the shell chrome itself, not any specific nav item.
     expect(compiled.querySelector('router-outlet')).toBeTruthy();
-    expect(compiled.textContent).toContain('MediCare OS');
+    expect(compiled.textContent).toContain('Vaidya');
   });
 });

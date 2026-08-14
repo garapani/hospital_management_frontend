@@ -7,7 +7,7 @@
 
 @layer tailwind-base {
   body {
-    @apply bg-slate-50 text-slate-900 m-0 p-0 font-sans antialiased;
+    @apply bg-primary-50 text-slate-900 m-0 p-0 font-sans antialiased;
   }
 
   /*
@@ -66,16 +66,17 @@
   }
 
   /*
-   * Accent tokens. Indigo is the single action colour: primary buttons, active nav, links.
-   * Status colours (emerald/amber/rose) are reserved for state and never used for actions,
-   * so a coloured element in this UI always means the same thing.
+   * Accent tokens. The Vaidya brand teal (primary-*, driven by app.config.ts's VaidyaTealPreset)
+   * is the single action colour: primary buttons, active nav, links. Status colours
+   * (emerald/amber/rose) are reserved for state and never used for actions, so a coloured
+   * element in this UI always means the same thing.
    */
   .accent-bg {
-    @apply bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition-colors;
+    @apply bg-primary-600 text-white shadow-sm hover:bg-primary-700 transition-colors;
   }
 
   .accent-text {
-    @apply text-indigo-600;
+    @apply text-primary-600;
   }
 
   /* Sidebar entry, and its active state. Solid fill — no gradient. */
@@ -85,7 +86,7 @@
   }
 
   .nav-item-active {
-    @apply bg-indigo-600 text-white font-semibold shadow-sm hover:bg-indigo-600 hover:text-white;
+    @apply bg-primary-600 text-white font-semibold shadow-sm hover:bg-primary-600 hover:text-white;
   }
 
   .nav-section-label {

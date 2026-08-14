@@ -1,15 +1,15 @@
-<div class="flex min-h-screen bg-slate-50">
+<div class="flex min-h-screen bg-primary-50">
   <!--
-    Brand panel. Deliberately not a flat block of colour: a dark indigo base with two large,
+    Brand panel. Deliberately not a flat block of colour: a dark brand-teal base with two large,
     very low-contrast radial washes gives it depth without reintroducing the glassmorphism
     (blurred translucent blobs) this design replaced.
   -->
   <div
-    class="relative hidden w-[46%] max-w-[640px] shrink-0 flex-col justify-between overflow-hidden bg-indigo-700 px-14 py-12 text-white lg:flex"
+    class="relative hidden w-[46%] max-w-[640px] shrink-0 flex-col justify-between overflow-hidden bg-primary-700 px-14 py-12 text-white lg:flex"
     style="
       background-image:
         radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.14), transparent 45%),
-        radial-gradient(circle at 85% 85%, rgba(30, 27, 75, 0.55), transparent 55%);
+        radial-gradient(circle at 85% 85%, rgba(4, 30, 32, 0.55), transparent 55%);
     "
   >
     <div class="flex items-center gap-2.5">
@@ -18,36 +18,36 @@
       >
         <i class="pi pi-plus text-sm font-bold"></i>
       </span>
-      <span class="text-lg font-bold tracking-tight">MediCare OS</span>
+      <span class="text-lg font-bold tracking-tight">Vaidya</span>
     </div>
 
     <div class="flex flex-col gap-5">
       <h1 class="text-4xl font-bold leading-[1.15] tracking-tight">
         Hospital operations,<br />one screen at a time.
       </h1>
-      <p class="max-w-md text-base leading-relaxed text-indigo-100">
+      <p class="max-w-md text-base leading-relaxed text-primary-100">
         Patient records, scheduling, triage and billing — for the whole hospital, in a single
         place.
       </p>
 
-      <ul class="mt-2 flex flex-col gap-3 text-sm text-indigo-50">
+      <ul class="mt-2 flex flex-col gap-3 text-sm text-primary-50">
         <li class="flex items-center gap-3">
-          <i class="pi pi-shield text-indigo-200"></i>
+          <i class="pi pi-shield text-primary-200"></i>
           Every record scoped to your hospital
         </li>
         <li class="flex items-center gap-3">
-          <i class="pi pi-history text-indigo-200"></i>
+          <i class="pi pi-history text-primary-200"></i>
           Full audit trail on every change
         </li>
         <li class="flex items-center gap-3">
-          <i class="pi pi-lock text-indigo-200"></i>
+          <i class="pi pi-lock text-primary-200"></i>
           Role-based access for every team
         </li>
       </ul>
     </div>
 
-    <p class="text-xs text-indigo-200">
-      &copy; {{ currentYear }} MediCare OS
+    <p class="text-xs text-primary-200">
+      &copy; {{ currentYear }} Vaidya
     </p>
   </div>
 
@@ -61,11 +61,11 @@
       <!-- Brand mark, shown only when the left panel is hidden -->
       <div class="flex items-center gap-2.5 lg:hidden">
         <span
-          class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white"
+          class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-white"
         >
           <i class="pi pi-plus text-sm font-bold"></i>
         </span>
-        <span class="text-lg font-bold tracking-tight text-slate-900">MediCare OS</span>
+        <span class="text-lg font-bold tracking-tight text-slate-900">Vaidya</span>
       </div>
 
       <div class="flex flex-col gap-2">
@@ -75,7 +75,7 @@
             class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
             [class]="
               isPlatformConsole
-                ? 'bg-indigo-50 text-indigo-700'
+                ? 'bg-primary-50 text-primary-700'
                 : 'bg-slate-100 text-slate-600'
             "
           >

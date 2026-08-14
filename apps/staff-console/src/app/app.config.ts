@@ -13,26 +13,28 @@ import { authInterceptor, provideAuthBootstrap, PLATFORM_TENANT_ID } from '@org/
 import { environment } from '../environments/environment';
 import { appRoutes } from './app.routes';
 
-// Ocean Breeze (Teal & Blue) ramp for the Glassmorphism aesthetic.
 /**
- * Indigo primary on cool slate neutrals. Must stay in sync with the accent tokens in styles.css
- * (`accent-bg`, `nav-item-active`) — PrimeNG components and hand-rolled elements sit side by side
- * on the same screen, so a drift between the two shows up immediately as two different blues.
+ * Vaidya brand teal on cool slate neutrals. Must stay in sync with the accent tokens in
+ * styles.css (`accent-bg`, `nav-item-active`) — PrimeNG components and hand-rolled elements sit
+ * side by side on the same screen, so a drift between the two shows up immediately as two
+ * different teals. `600` is the brand's primary hex (`#006D77`, PRD "Brand colors"); `50` is the
+ * brand's background/surface hex (`#F0FDFD`) rather than a derived tint, so both brand colors stay
+ * the single source of truth other components (e.g. `body`'s `bg-primary-50`) pull from.
  */
-const IndigoSlatePreset = definePreset(Aura, {
+const VaidyaTealPreset = definePreset(Aura, {
   semantic: {
     primary: {
-      50: '#eef2ff',
-      100: '#e0e7ff',
-      200: '#c7d2fe',
-      300: '#a5b4fc',
-      400: '#818cf8',
-      500: '#6366f1',
-      600: '#4f46e5', // main action colour — matches .accent-bg
-      700: '#4338ca',
-      800: '#3730a3',
-      900: '#312e81',
-      950: '#1e1b4b',
+      50: '#f0fdfd',
+      100: '#e5f4f5',
+      200: '#c4eaee',
+      300: '#95dee4',
+      400: '#57d0db',
+      500: '#1ec3d2',
+      600: '#006d77', // main action colour — matches .accent-bg
+      700: '#02575e',
+      800: '#044349',
+      900: '#043034',
+      950: '#041e20',
     },
     colorScheme: {
       light: {
@@ -100,7 +102,7 @@ export const appConfig: ApplicationConfig = {
     provideAuthBootstrap(),
     providePrimeNG({
       theme: {
-        preset: IndigoSlatePreset,
+        preset: VaidyaTealPreset,
         options: {
           darkModeSelector: false,
           cssLayer: {

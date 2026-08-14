@@ -106,7 +106,7 @@ export class AdminDashboard {
           title: 'Total Tenants',
           value: tenantCount,
           icon: 'pi pi-building',
-          color: 'bg-indigo-50 text-indigo-600',
+          color: 'bg-primary-50 text-primary-600',
           trend: '+2 this month',
           trendUp: true,
         },
