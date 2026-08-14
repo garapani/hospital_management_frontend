@@ -55,7 +55,10 @@ export class UserDetail {
       },
       error: () => {
         this.loading.set(false);
-        this.router.navigate(['/admin/users']);
+        // Relative to this route's own matched path ('admin/users/:id' or 'platform/admins/:id')
+        // so the redirect lands back on whichever list screen the user came from — this component
+        // is reused verbatim under both the tenant and platform route trees.
+        this.router.navigate(['..'], { relativeTo: this.route });
       },
     });
   }

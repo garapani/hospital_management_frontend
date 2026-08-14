@@ -1,35 +1,65 @@
 import { Route } from '@angular/router';
-import { authGuard, permissionGuard, Permissions } from '@org/auth';
+import { permissionGuard, platformGuard, tenantGuard, Permissions } from '@org/auth';
 import { AppShell } from './shell/app-shell.js';
+import { PlatformShell } from './shell/platform-shell.js';
 import { Login } from './login/login.js';
+import { rootRedirectGuard } from './root-redirect.guard.js';
 
 export const appRoutes: Route[] = [
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+  // Bare '' cannot redirect to a fixed URL: the two audiences have different landing pages, and
+  // a fixed target would bounce every user of the other audience off a guard.
+  { path: '', pathMatch: 'full', canActivate: [rootRedirectGuard], children: [] },
   { path: 'login', component: Login },
   {
     path: '',
-    component: AppShell,
-    canActivate: [authGuard],
-    // Angular reuses this parent route node across sibling-to-sibling navigation within the
-    // shell and, by default, skips re-running canActivate when the node itself is reused —
-    // 'always' forces authGuard to actually run on every navigation, not just first entry.
+    component: PlatformShell,
+    canActivate: [platformGuard],
     runGuardsAndResolvers: 'always',
     children: [
       {
-        path: 'dashboard',
+        path: 'platform/dashboard',
         loadComponent: () => import('./admin-dashboard/admin-dashboard.js').then((m) => m.AdminDashboard),
-        canActivate: [permissionGuard(Permissions.TENANTS_MANAGE)],
       },
       {
-        path: 'tenants',
+        path: 'platform/tenants',
         loadComponent: () => import('./tenants/tenant-list/tenant-list.js').then((m) => m.TenantList),
-        canActivate: [permissionGuard(Permissions.TENANTS_MANAGE)],
       },
       {
-        path: 'tenants/:id',
+        path: 'platform/tenants/:id',
         loadComponent: () => import('./tenants/tenant-detail/tenant-detail.js').then((m) => m.TenantDetail),
-        canActivate: [permissionGuard(Permissions.TENANTS_MANAGE)],
       },
+      {
+        path: 'platform/catalog',
+        loadComponent: () => import('./global-catalog/global-catalog-list.js').then((m) => m.GlobalCatalogList),
+      },
+      // Same components as the tenant tree's /admin/users and /admin/audit: both are scoped by the
+      // JWT's tenant, so under a platform admin they resolve to platform admins and the platform
+      // audit trail with no parameterization.
+      {
+        path: 'platform/admins',
+        loadComponent: () => import('./users/user-list.js').then((m) => m.UserList),
+      },
+      {
+        path: 'platform/admins/:id',
+        loadComponent: () => import('./users/user-detail.js').then((m) => m.UserDetail),
+      },
+      {
+        path: 'platform/audit',
+        loadComponent: () => import('./audit/audit-list.js').then((m) => m.AuditList),
+      },
+    ],
+  },
+  {
+    path: '',
+    component: AppShell,
+    // tenantGuard alone: its first branch already redirects unauthenticated users to /login, so
+    // pairing it with authGuard would be redundant and asymmetric with the platform tree above.
+    canActivate: [tenantGuard],
+    // Angular reuses this parent route node across sibling-to-sibling navigation within the
+    // shell and, by default, skips re-running canActivate when the node itself is reused —
+    // 'always' forces the guard to actually run on every navigation, not just first entry.
+    runGuardsAndResolvers: 'always',
+    children: [
       {
         path: 'billing/invoices',
         loadComponent: () => import('./billing/invoice-list/invoice-list.js').then((m) => m.InvoiceList),
@@ -58,14 +88,6 @@ export const appRoutes: Route[] = [
       {
         path: 'admin/master-data',
         loadComponent: () => import('./master-data/master-data-list.js').then((m) => m.MasterDataList),
-        canActivate: [permissionGuard(Permissions.MASTER_DATA_MANAGE)],
-      },
-      {
-        path: 'admin/global-catalog',
-        loadComponent: () => import('./global-catalog/global-catalog-list.js').then((m) => m.GlobalCatalogList),
-        // Backend requires master-data.manage on every /catalogs/departments and /roles route
-        // (MasterDataController) — Super Admin holds both permissions (seed-rbac-catalog.ts),
-        // so gating on this one matches what the API actually enforces.
         canActivate: [permissionGuard(Permissions.MASTER_DATA_MANAGE)],
       },
       {
@@ -105,4 +127,5 @@ export const appRoutes: Route[] = [
       },
     ],
   },
+  { path: '**', redirectTo: '' },
 ];

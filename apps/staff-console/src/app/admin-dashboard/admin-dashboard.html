@@ -9,13 +9,13 @@
       <p-button
         label="Provision Tenant"
         icon="pi pi-plus"
-        routerLink="/tenants"
+        routerLink="/platform/tenants"
         styleClass="gradient-bg rounded-full border-none shadow-md px-6"
       />
       <p-button
         label="Create Account"
         icon="pi pi-user-plus"
-        routerLink="/admin/users"
+        routerLink="/platform/admins"
         severity="secondary"
         styleClass="rounded-full border-none shadow-md px-6"
       />
@@ -122,7 +122,7 @@
       <h3 class="text-lg font-bold text-slate-800 mb-4">Quick Actions</h3>
       <div class="grid grid-cols-2 gap-3">
         <button
-          routerLink="/tenants"
+          routerLink="/platform/tenants"
           class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/60 hover:bg-white/90 transition-colors"
         >
           <div class="w-10 h-10 rounded-full gradient-bg flex items-center justify-center">
@@ -131,7 +131,7 @@
           <span class="text-xs font-medium text-slate-700">New Tenant</span>
         </button>
         <button
-          routerLink="/admin/users"
+          routerLink="/platform/admins"
           class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/60 hover:bg-white/90 transition-colors"
         >
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
@@ -140,16 +140,16 @@
           <span class="text-xs font-medium text-slate-700">Add User</span>
         </button>
         <button
-          routerLink="/admin/master-data"
+          routerLink="/platform/catalog"
           class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/60 hover:bg-white/90 transition-colors"
         >
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
             <i class="pi pi-database text-white"></i>
           </div>
-          <span class="text-xs font-medium text-slate-700">Master Data</span>
+          <span class="text-xs font-medium text-slate-700">Global Catalog</span>
         </button>
         <button
-          routerLink="/admin/audit"
+          routerLink="/platform/audit"
           class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/60 hover:bg-white/90 transition-colors"
         >
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
@@ -166,7 +166,7 @@
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-bold text-slate-800">Recently Provisioned Tenants</h3>
       <a
-        routerLink="/tenants"
+        routerLink="/platform/tenants"
         class="text-sm font-semibold gradient-text hover:opacity-80"
         >View All</a
       >
@@ -221,7 +221,7 @@
           </td>
           <td class="border-b border-white/30">
             <a
-              [routerLink]="['/tenants', tenant.hospitalId]"
+              [routerLink]="['/platform/tenants', tenant.hospitalId]"
               class="text-sm font-semibold gradient-text hover:opacity-80"
               >View</a
             >
