@@ -206,4 +206,32 @@ describe('AuthService', () => {
       expect(navigateSpy).toHaveBeenCalledWith('/login');
     });
   });
+
+  describe('isPlatformAdmin', () => {
+    function loginAsTenant(hospitalId: string): void {
+      service.login('jdoe', 'secret').subscribe();
+      httpMock
+        .expectOne('https://gateway.example/api/auth/login')
+        .flush({
+          accessToken: fakeAccessToken({ hospitalId }),
+          refreshToken: 'refresh-token-1',
+        });
+    }
+
+    it('is true when the token claims the platform tenant', () => {
+      loginAsTenant('__platform');
+
+      expect(service.isPlatformAdmin()).toBe(true);
+    });
+
+    it('is false when the token claims a hospital tenant', () => {
+      loginAsTenant('demo');
+
+      expect(service.isPlatformAdmin()).toBe(false);
+    });
+
+    it('is false when unauthenticated', () => {
+      expect(service.isPlatformAdmin()).toBe(false);
+    });
+  });
 });

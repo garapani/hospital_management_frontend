@@ -6,3 +6,4 @@ export * from './lib/access-token-claims.js';
 export * from './lib/login-outcome.js';
 export * from './lib/decode-access-token.js';
 export * from './lib/permissions.js';
+export * from './lib/platform-tenant.js';

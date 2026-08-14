@@ -5,6 +5,7 @@ import { Observable, catchError, finalize, map, of, shareReplay, throwError } fr
 import { AccessTokenClaims } from './access-token-claims.js';
 import { decodeAccessToken, isTokenExpired } from './decode-access-token.js';
 import { LoginOutcome } from './login-outcome.js';
+import { PLATFORM_TENANT_ID } from './platform-tenant.js';
 import { TokenStorage } from './token-storage.js';
 
 interface LoginResponse {
@@ -23,6 +24,14 @@ export class AuthService {
 
   readonly isAuthenticated = computed(() => this.claims() !== null);
   readonly currentUser = this.claims.asReadonly();
+
+  /**
+   * Derived from the JWT's hospitalId claim rather than a role name: the backend issues the claim,
+   * so a tenant-resident user cannot forge it, and it stays correct if roles are ever renamed.
+   */
+  readonly isPlatformAdmin = computed(
+    () => this.claims()?.hospitalId === PLATFORM_TENANT_ID,
+  );
 
   login(username: string, password: string): Observable<LoginOutcome> {
     return this.apiClient.post<LoginResponse>('/auth/login', { username, password }).pipe(
