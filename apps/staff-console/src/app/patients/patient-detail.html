@@ -9,7 +9,7 @@
         (onClick)="goBack()"
       ></p-button>
       <div>
-        <h1 class="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
+        <h1 class="page-title flex items-center gap-3">
           @if(patient(); as p) {
             {{ p.firstName }} {{ p.middleName || '' }} {{ p.lastName }}
             @if(p.isActive) {
@@ -39,7 +39,7 @@
   } @else if (patient(); as p) {
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <!-- Demographics Card -->
-    <div class="glass-panel p-6 rounded-2xl shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl md:col-span-1 flex flex-col gap-4">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Demographics</h3>
       
       <div class="grid grid-cols-2 gap-4">
@@ -76,7 +76,7 @@
     </div>
 
     <!-- Clinical Workspace (Tabs) -->
-    <div class="glass-panel rounded-2xl shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl md:col-span-2 overflow-hidden flex flex-col">
+    <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 overflow-hidden flex flex-col">
       <p-tabs value="appointments" styleClass="w-full h-full flex flex-col">
         <p-tablist>
           <p-tab value="appointments"><i class="pi pi-calendar mr-2"></i> Appointments</p-tab>
@@ -91,7 +91,7 @@
           }
         </p-tablist>
 
-        <p-tabpanels class="flex-1 bg-white/40 p-6 overflow-y-auto">
+        <p-tabpanels class="flex-1 bg-white p-6 overflow-y-auto">
           <p-tabpanel value="appointments">
             <div class="text-center text-slate-500 py-12">
               <i class="pi pi-calendar text-4xl mb-3 opacity-50"></i>
@@ -168,7 +168,7 @@
               } @else {
               <div class="flex flex-col gap-3">
                 @for (n of notes(); track n.id) {
-                <div class="p-4 rounded-xl border border-slate-200 bg-white/60">
+                <div class="p-4 rounded-xl border border-slate-200 bg-white">
                   <div class="flex items-center justify-between mb-2">
                     <p-tag [value]="n.status" severity="info" [rounded]="true"></p-tag>
                     <span class="text-xs text-slate-400">{{ n.createdAt | date: 'medium' }}</span>
@@ -290,7 +290,7 @@
 </div>
 
 <!-- Record Vitals Modal -->
-<p-dialog header="Record Vitals" [(visible)]="showVitalModal" [modal]="true" [style]="{ width: '550px' }" styleClass="glass-modal">
+<p-dialog header="Record Vitals" [(visible)]="showVitalModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">
   <div class="grid grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2">
       <label for="vitalHeight" class="text-sm font-medium text-slate-700">Height (cm)</label>
@@ -342,7 +342,7 @@
 </p-dialog>
 
 <!-- Add Note Modal -->
-<p-dialog header="Add Clinical Note" [(visible)]="showNoteModal" [modal]="true" [style]="{ width: '600px' }" styleClass="glass-modal">
+<p-dialog header="Add Clinical Note" [(visible)]="showNoteModal" [modal]="true" [style]="{ width: '600px' }" styleClass="surface-modal">
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
       <label for="noteChief" class="text-sm font-medium text-slate-700">Chief Complaint</label>
@@ -370,7 +370,7 @@
 </p-dialog>
 
 <!-- Add Diagnosis Modal -->
-<p-dialog header="Add Diagnosis" [(visible)]="showDiagnosisModal" [modal]="true" [style]="{ width: '500px' }" styleClass="glass-modal">
+<p-dialog header="Add Diagnosis" [(visible)]="showDiagnosisModal" [modal]="true" [style]="{ width: '500px' }" styleClass="surface-modal">
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
       <label for="dxIcd10" class="text-sm font-medium text-slate-700">ICD-10 Code</label>
@@ -394,7 +394,7 @@
 </p-dialog>
 
 <!-- Add Prescription Modal -->
-<p-dialog header="Add Prescription" [(visible)]="showPrescriptionModal" [modal]="true" [style]="{ width: '550px' }" styleClass="glass-modal">
+<p-dialog header="Add Prescription" [(visible)]="showPrescriptionModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">
   <div class="grid grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2 col-span-2">
       <label for="rxMed" class="text-sm font-medium text-slate-700">Medication Name</label>

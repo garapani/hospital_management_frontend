@@ -1,6 +1,6 @@
 <div class="h-full flex flex-col gap-6">
   <div>
-    <h1 class="text-3xl font-bold tracking-tight text-slate-900">
+    <h1 class="page-title">
       Master Data
     </h1>
     <p class="text-sm text-slate-500 mt-1">
@@ -9,7 +9,7 @@
   </div>
 
   <div
-    class="glass-panel flex-1 rounded-2xl overflow-hidden shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl"
+    class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white"
   >
     <p-tabs value="0">
       <p-tablist>
@@ -176,7 +176,7 @@
   [(visible)]="showDeptModal"
   [modal]="true"
   [style]="{ width: '450px' }"
-  styleClass="glass-modal"
+  styleClass="surface-modal"
 >
   <div class="flex flex-col gap-4 py-4">
     @if (deptError()) {
@@ -266,7 +266,7 @@
   [(visible)]="showWardModal"
   [modal]="true"
   [style]="{ width: '450px' }"
-  styleClass="glass-modal"
+  styleClass="surface-modal"
 >
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
@@ -348,7 +348,7 @@
   [(visible)]="showBedsModal"
   [modal]="true"
   [style]="{ width: '700px' }"
-  styleClass="glass-modal"
+  styleClass="surface-modal"
 >
   <div class="flex flex-col gap-6 py-2">
     <!-- Add Bed Form -->

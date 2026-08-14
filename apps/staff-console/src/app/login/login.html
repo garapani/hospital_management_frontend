@@ -1,6 +1,6 @@
 <div class="flex min-h-screen">
   <div
-    class="hidden w-[450px] shrink-0 flex-col justify-center gap-6 gradient-bg px-14 text-white md:flex"
+    class="hidden w-[450px] shrink-0 flex-col justify-center gap-6 accent-bg px-14 text-white md:flex"
   >
     <div class="flex items-center gap-3 text-2xl font-bold tracking-tight">
       <i class="pi pi-heart-fill text-white drop-shadow-md text-xl"></i>
@@ -26,16 +26,16 @@
     <form
       [formGroup]="form"
       (ngSubmit)="submit()"
-      class="flex w-full max-w-sm flex-col gap-6 p-10 glass-panel z-10"
+      class="flex w-full max-w-sm flex-col gap-6 p-10 surface-panel z-10"
     >
       <div class="flex flex-col gap-2 md:hidden">
-        <h1 class="text-2xl font-bold gradient-text">MediCare OS</h1>
+        <h1 class="text-2xl font-bold accent-text">MediCare OS</h1>
         <p class="text-sm text-slate-500">
           Hospital ops, one screen at a time.
         </p>
       </div>
       <div class="flex flex-col gap-1">
-        <h2 class="text-3xl font-bold text-slate-800 tracking-tight">
+        <h2 class="page-title">
           Sign in
         </h2>
         <p class="text-sm text-slate-500">Staff console</p>
@@ -52,7 +52,7 @@
             id="username"
             formControlName="username"
             autocomplete="username"
-            class="w-full bg-white/60 border-white/50 backdrop-blur-sm rounded-lg"
+            class="w-full bg-white border-slate-200 rounded-lg"
           />
         </p-iconfield>
       </div>
@@ -68,7 +68,7 @@
           [toggleMask]="true"
           autocomplete="current-password"
           styleClass="w-full"
-          inputStyleClass="w-full bg-white/60 border-white/50 backdrop-blur-sm rounded-lg"
+          inputStyleClass="w-full bg-white border-slate-200 rounded-lg"
         />
       </div>
 
@@ -81,7 +81,7 @@
         label="Log in"
         [loading]="submitting()"
         [disabled]="form.invalid"
-        styleClass="w-full mt-4 gradient-bg border-none rounded-lg font-semibold py-3"
+        styleClass="w-full mt-4 accent-bg border-none rounded-lg font-semibold py-3"
       />
     </form>
   </div>

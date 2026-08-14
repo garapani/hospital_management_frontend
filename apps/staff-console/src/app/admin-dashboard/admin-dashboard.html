@@ -1,23 +1,23 @@
 <div class="flex flex-col gap-6">
   <!-- Header -->
-  <div class="flex items-center justify-between glass-panel p-6">
+  <div class="flex items-center justify-between surface-panel p-6">
     <div>
-      <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Super Admin Dashboard</h1>
-      <p class="text-sm text-slate-500 mt-1">System overview and quick insights</p>
+      <h1 class="page-title">Super Admin Dashboard</h1>
+      <p class="page-subtitle">System overview and quick insights</p>
     </div>
     <div class="flex gap-2">
       <p-button
         label="Provision Tenant"
         icon="pi pi-plus"
         routerLink="/platform/tenants"
-        styleClass="gradient-bg rounded-full border-none shadow-md px-6"
+        styleClass="accent-bg rounded-lg border-none px-5"
       />
       <p-button
         label="Create Account"
         icon="pi pi-user-plus"
         routerLink="/platform/admins"
         severity="secondary"
-        styleClass="rounded-full border-none shadow-md px-6"
+        styleClass="rounded-lg border-none px-5"
       />
     </div>
   </div>
@@ -30,22 +30,22 @@
   <!-- Stats Grid -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     @for (stat of stats(); track stat.title) {
-    <div class="glass-panel p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+    <div class="surface-card p-6 hover:shadow-md transition-shadow">
       <div class="flex items-start justify-between mb-4">
         <div>
           <p class="text-sm text-slate-500 font-medium">{{ stat.title }}</p>
-          <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ stat.value }}</h3>
+          <h3 class="text-3xl font-bold text-slate-900 mt-1 tabular-nums">{{ stat.value }}</h3>
         </div>
         <div
-          class="w-12 h-12 rounded-xl bg-gradient-to-br {{ stat.color }} flex items-center justify-center shadow-lg"
+          class="w-10 h-10 rounded-lg {{ stat.color }} flex items-center justify-center"
         >
-          <i class="{{ stat.icon }} text-white text-xl"></i>
+          <i class="{{ stat.icon }} text-lg"></i>
         </div>
       </div>
       <div class="flex items-center gap-2">
         <span
-          class="text-xs font-semibold px-2 py-1 rounded-full"
-          [class]="stat.trendUp ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+          class="text-xs font-medium px-2 py-1 rounded-full"
+          [class]="stat.trendUp ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'"
         >
           {{ stat.trend }}
         </span>
@@ -57,7 +57,7 @@
   <!-- Charts and Tables Row -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Chart -->
-    <div class="lg:col-span-2 glass-panel p-6 rounded-2xl shadow-sm">
+    <div class="lg:col-span-2 surface-panel p-6 rounded-xl shadow-sm">
       <h3 class="text-lg font-bold text-slate-800 mb-4">Tenant Growth</h3>
       <div class="h-64">
         <p-chart
@@ -69,12 +69,12 @@
     </div>
 
     <!-- Recent Audit Logs -->
-    <div class="glass-panel p-6 rounded-2xl shadow-sm">
+    <div class="surface-panel p-6 rounded-xl shadow-sm">
       <h3 class="text-lg font-bold text-slate-800 mb-4">Recent Activity</h3>
       <div class="flex flex-col gap-3">
         @for (log of recentAuditLogs(); track log.id; let i = $index) {
         <div
-          class="flex items-start gap-3 p-3 rounded-lg bg-white/50 hover:bg-white/80 transition-colors"
+          class="flex items-start gap-3 p-3 rounded-lg bg-white hover:bg-slate-100 transition-colors"
         >
           <div class="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0"></div>
           <div class="flex-1 min-w-0">
@@ -96,7 +96,7 @@
   <!-- Activity Heatmap & Quick Actions -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <!-- Activity Heatmap -->
-    <div class="glass-panel p-6 rounded-2xl shadow-sm">
+    <div class="surface-panel p-6 rounded-xl shadow-sm">
       <h3 class="text-lg font-bold text-slate-800 mb-4">Weekly Activity Heatmap</h3>
       <div class="flex flex-col gap-2">
         @for (day of activityDays; track day) {
@@ -118,42 +118,42 @@
     </div>
     
     <!-- Quick Actions Panel -->
-    <div class="glass-panel p-6 rounded-2xl shadow-sm">
+    <div class="surface-panel p-6 rounded-xl shadow-sm">
       <h3 class="text-lg font-bold text-slate-800 mb-4">Quick Actions</h3>
       <div class="grid grid-cols-2 gap-3">
         <button
           routerLink="/platform/tenants"
-          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/60 hover:bg-white/90 transition-colors"
+          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
         >
-          <div class="w-10 h-10 rounded-full gradient-bg flex items-center justify-center">
-            <i class="pi pi-building text-white"></i>
+          <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <i class="pi pi-building"></i>
           </div>
           <span class="text-xs font-medium text-slate-700">New Tenant</span>
         </button>
         <button
           routerLink="/platform/admins"
-          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/60 hover:bg-white/90 transition-colors"
+          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
         >
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-            <i class="pi pi-user-plus text-white"></i>
+          <div class="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+            <i class="pi pi-user-plus"></i>
           </div>
           <span class="text-xs font-medium text-slate-700">Add User</span>
         </button>
         <button
           routerLink="/platform/catalog"
-          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/60 hover:bg-white/90 transition-colors"
+          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
         >
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-            <i class="pi pi-database text-white"></i>
+          <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <i class="pi pi-database"></i>
           </div>
           <span class="text-xs font-medium text-slate-700">Global Catalog</span>
         </button>
         <button
           routerLink="/platform/audit"
-          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/60 hover:bg-white/90 transition-colors"
+          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
         >
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
-            <i class="pi pi-history text-white"></i>
+          <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+            <i class="pi pi-history"></i>
           </div>
           <span class="text-xs font-medium text-slate-700">Audit Logs</span>
         </button>
@@ -162,12 +162,12 @@
   </div>
 
   <!-- Recent Tenants Table -->
-  <div class="glass-panel p-6 rounded-2xl shadow-sm">
+  <div class="surface-panel p-6 rounded-xl shadow-sm">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-lg font-bold text-slate-800">Recently Provisioned Tenants</h3>
       <a
         routerLink="/platform/tenants"
-        class="text-sm font-semibold gradient-text hover:opacity-80"
+        class="text-sm font-semibold accent-text hover:opacity-80"
         >View All</a
       >
     </div>
@@ -196,14 +196,14 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-tenant>
-        <tr class="hover:bg-white/40 transition-colors">
-          <td class="font-semibold text-slate-700 border-b border-white/30">
+        <tr class="hover:bg-slate-100 transition-colors">
+          <td class="font-semibold text-slate-700 border-b border-slate-200">
             {{ tenant.hospitalName }}
           </td>
-          <td class="text-slate-600 border-b border-white/30">
+          <td class="text-slate-600 border-b border-slate-200">
             {{ tenant.hospitalId }}
           </td>
-          <td class="border-b border-white/30">
+          <td class="border-b border-slate-200">
             <p-tag
               [value]="tenant.status"
               [severity]="
@@ -216,13 +216,13 @@
               styleClass="rounded-full px-3"
             />
           </td>
-          <td class="text-slate-600 border-b border-white/30">
+          <td class="text-slate-600 border-b border-slate-200">
             {{ tenant.createdAt | date: 'short' }}
           </td>
-          <td class="border-b border-white/30">
+          <td class="border-b border-slate-200">
             <a
               [routerLink]="['/platform/tenants', tenant.hospitalId]"
-              class="text-sm font-semibold gradient-text hover:opacity-80"
+              class="text-sm font-semibold accent-text hover:opacity-80"
               >View</a
             >
           </td>

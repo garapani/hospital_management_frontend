@@ -8,44 +8,101 @@
 @layer tailwind-base {
   body {
     @apply bg-slate-50 text-slate-900 m-0 p-0 font-sans antialiased;
-    /* Soft mesh gradient background for glass effects to pop against */
-    background-image:
-      radial-gradient(at 0% 0%, hsla(200, 100%, 95%, 1) 0px, transparent 50%),
-      radial-gradient(
-        at 100% 100%,
-        hsla(210, 100%, 95%, 1) 0px,
-        transparent 50%
-      );
-    background-attachment: fixed;
+  }
+
+  /*
+   * `@import 'tailwindcss/theme'` brings the design tokens but NOT preflight, so anchors keep the
+   * browser's default underline. Every link in the app — nav entries included — was rendering
+   * underlined because of it. Reset here rather than sprinkling `no-underline` on each link.
+   */
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /*
+   * Same missing-preflight cause: bare <button> keeps the UA's grey border and background, which
+   * made the sidebar's Logout entry render as a boxed control next to borderless nav links.
+   * PrimeNG's own button styles live in a later cascade layer, so they still win over this.
+   */
+  button {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
   }
 }
 
 @layer tailwind-utilities {
-  .glass-panel {
-    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl;
+  /*
+   * Surface tokens. Solid, opaque surfaces on a cool slate page — depth comes from a crisp
+   * border plus a two-stop shadow, never from translucency. Anything that needs to sit above
+   * the page uses one of these three rather than hand-rolling a background.
+   */
+
+  /* Primary container: page sections, tables, forms. */
+  .surface-panel {
+    @apply bg-white border border-slate-200 rounded-xl
+           shadow-[0_1px_2px_rgb(15_23_42_/_0.04),0_8px_24px_rgb(15_23_42_/_0.06)];
   }
 
-  .glass-card {
-    @apply bg-white/60 backdrop-blur-md border border-white/50 shadow-sm rounded-xl;
+  /* Secondary container: stat tiles and cards nested inside a panel. */
+  .surface-card {
+    @apply bg-white border border-slate-200 rounded-lg
+           shadow-[0_1px_2px_rgb(15_23_42_/_0.05)];
   }
 
-  .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-blue-600;
+  /* Dialogs sit higher than panels, so they carry a deeper shadow. */
+  .surface-modal {
+    @apply bg-white border border-slate-200 rounded-xl
+           shadow-[0_20px_48px_rgb(15_23_42_/_0.16)];
   }
 
-  .gradient-bg {
-    @apply bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-blue-500/30;
+  /* Inset control on a white surface — reads as recessed rather than raised. */
+  .surface-input {
+    @apply bg-slate-50 border border-slate-300 rounded-lg;
   }
 
-  .glass-input {
-    @apply bg-white/70 backdrop-blur-sm border border-white/50 rounded-lg;
+  /*
+   * Accent tokens. Indigo is the single action colour: primary buttons, active nav, links.
+   * Status colours (emerald/amber/rose) are reserved for state and never used for actions,
+   * so a coloured element in this UI always means the same thing.
+   */
+  .accent-bg {
+    @apply bg-indigo-600 text-white shadow-sm hover:bg-indigo-700 transition-colors;
   }
 
-  .glass-modal {
-    @apply bg-white/80 backdrop-blur-xl border border-white/40 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.08)];
+  .accent-text {
+    @apply text-indigo-600;
   }
 
+  /* Sidebar entry, and its active state. Solid fill — no gradient. */
+  .nav-item {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium
+           text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors;
+  }
+
+  .nav-item-active {
+    @apply bg-indigo-600 text-white font-semibold shadow-sm hover:bg-indigo-600 hover:text-white;
+  }
+
+  .nav-section-label {
+    @apply mt-6 mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-400;
+  }
+
+  /* Table header band: tinted, uppercase, clearly distinct from the data rows below. */
   .table-header-cell {
-    @apply bg-slate-100/80 border-b border-slate-300/70 text-slate-500 text-xs font-semibold uppercase tracking-wider;
+    @apply bg-slate-50 border-b border-slate-200 text-slate-500
+           text-xs font-semibold uppercase tracking-wider;
+  }
+
+  .page-title {
+    @apply text-2xl font-bold text-slate-900 tracking-tight;
+  }
+
+  .page-subtitle {
+    @apply text-sm text-slate-500 mt-1;
   }
 }

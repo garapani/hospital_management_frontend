@@ -2,7 +2,7 @@
   <div class="flex items-center gap-4">
     <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (onClick)="goBack()"></p-button>
     <div>
-      <h1 class="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
+      <h1 class="page-title flex items-center gap-3">
         @if (entry(); as e) {
         {{ displayName(e) }}
         @if (e.colorCode) {
@@ -24,7 +24,7 @@
   </div>
   } @else if (entry(); as e) {
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="glass-panel p-6 rounded-2xl shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl md:col-span-1 flex flex-col gap-4">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Arrival Details</h3>
       <div class="grid grid-cols-2 gap-4">
         <div>
@@ -75,7 +75,7 @@
       }
     </div>
 
-    <div class="glass-panel p-6 rounded-2xl shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl md:col-span-2 flex flex-col gap-4">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Triage Assessment</h3>
 
       @if (auth.hasPermission('triage.manage')) {

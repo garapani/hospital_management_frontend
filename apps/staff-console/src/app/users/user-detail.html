@@ -9,12 +9,12 @@
     <div class="flex gap-4 items-center">
       <p-button
         icon="pi pi-arrow-left"
-        styleClass="p-button-rounded p-button-text p-button-secondary bg-white/50 backdrop-blur-sm"
+        styleClass="p-button-rounded p-button-text p-button-secondary bg-white"
         routerLink=".."
       ></p-button>
       <div>
         <h1
-          class="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3"
+          class="page-title flex items-center gap-3"
         >
           {{ data.account.displayName }} @if (data.account.lockedUntil) {
           <p-tag value="Locked" severity="danger" [rounded]="true"></p-tag>
@@ -59,7 +59,7 @@
   <div class="grid grid-cols-3 gap-6">
     <!-- Info Panel -->
     <div
-      class="col-span-1 glass-panel rounded-2xl p-6 shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl flex flex-col gap-4 self-start"
+      class="col-span-1 surface-panel rounded-xl p-6 shadow-sm border border-slate-200 bg-white flex flex-col gap-4 self-start"
     >
       <h2 class="text-lg font-semibold text-slate-800">Account Info</h2>
       <div class="flex flex-col gap-3 text-sm">
@@ -94,7 +94,7 @@
 
     <!-- Roles Panel -->
     <div
-      class="col-span-2 glass-panel rounded-2xl p-6 shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl flex flex-col gap-4"
+      class="col-span-2 surface-panel rounded-xl p-6 shadow-sm border border-slate-200 bg-white flex flex-col gap-4"
     >
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold text-slate-800">Role Assignments</h2>
@@ -108,7 +108,7 @@
 
       @if (data.roleNames.length === 0) {
       <div
-        class="text-slate-500 text-center p-8 bg-white/40 rounded-xl border border-slate-100"
+        class="text-slate-500 text-center p-8 bg-white rounded-xl border border-slate-100"
       >
         No roles assigned to this account.
       </div>
@@ -139,7 +139,7 @@
   [(visible)]="showAssignModal"
   [modal]="true"
   [style]="{ width: '400px' }"
-  styleClass="glass-modal"
+  styleClass="surface-modal"
   [draggable]="false"
   [resizable]="false"
 >

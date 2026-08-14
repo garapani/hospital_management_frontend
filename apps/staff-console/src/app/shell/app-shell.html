@@ -3,9 +3,9 @@
     @if (auth.hasPermission('billing.manage')) {
     <a
       routerLink="/billing/invoices"
-      routerLinkActive="gradient-bg text-white font-semibold"
+      routerLinkActive="nav-item-active"
       [routerLinkActiveOptions]="{ exact: false }"
-      class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      class="nav-item"
     >
       <i class="pi pi-receipt text-base"></i>
       Invoices
@@ -13,15 +13,15 @@
     }
     @if (auth.hasPermission('patients.read') || auth.hasPermission('appointment.read') ||
     auth.hasPermission('triage.read')) {
-    <div class="mt-4 mb-2 px-4 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+    <div class="nav-section-label">
       Clinical
     </div>
     @if (auth.hasPermission('patients.read')) {
     <a
       routerLink="/clinical/patients"
-      routerLinkActive="gradient-bg text-white font-semibold"
+      routerLinkActive="nav-item-active"
       [routerLinkActiveOptions]="{ exact: false }"
-      class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      class="nav-item"
     >
       <i class="pi pi-user text-base"></i>
       Patients (PMI)
@@ -29,9 +29,9 @@
     } @if (auth.hasPermission('appointment.read')) {
     <a
       routerLink="/clinical/appointments"
-      routerLinkActive="gradient-bg text-white font-semibold"
+      routerLinkActive="nav-item-active"
       [routerLinkActiveOptions]="{ exact: false }"
-      class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      class="nav-item"
     >
       <i class="pi pi-calendar text-base"></i>
       Appointments
@@ -39,9 +39,9 @@
     } @if (auth.hasPermission('triage.read')) {
     <a
       routerLink="/clinical/triage"
-      routerLinkActive="gradient-bg text-white font-semibold"
+      routerLinkActive="nav-item-active"
       [routerLinkActiveOptions]="{ exact: false }"
-      class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      class="nav-item"
     >
       <i class="pi pi-heart text-base"></i>
       Triage / ER
@@ -50,15 +50,15 @@
     }
     @if (auth.hasPermission('identity.accounts.manage') ||
     auth.hasPermission('master-data.manage') || auth.hasPermission('reporting.read')) {
-    <div class="mt-4 mb-2 px-4 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+    <div class="nav-section-label">
       Administration
     </div>
     @if (auth.hasPermission('identity.accounts.manage')) {
     <a
       routerLink="/admin/users"
-      routerLinkActive="gradient-bg text-white font-semibold"
+      routerLinkActive="nav-item-active"
       [routerLinkActiveOptions]="{ exact: false }"
-      class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      class="nav-item"
     >
       <i class="pi pi-users text-base"></i>
       Staff Accounts
@@ -66,18 +66,18 @@
     } @if (auth.hasPermission('master-data.manage')) {
     <a
       routerLink="/admin/master-data"
-      routerLinkActive="gradient-bg text-white font-semibold"
+      routerLinkActive="nav-item-active"
       [routerLinkActiveOptions]="{ exact: false }"
-      class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      class="nav-item"
     >
       <i class="pi pi-database text-base"></i>
       Master Data
     </a>
     <a
       routerLink="/admin/billing-settings"
-      routerLinkActive="gradient-bg text-white font-semibold"
+      routerLinkActive="nav-item-active"
       [routerLinkActiveOptions]="{ exact: false }"
-      class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      class="nav-item"
     >
       <i class="pi pi-cog text-base"></i>
       Billing Settings
@@ -85,9 +85,9 @@
     } @if (auth.hasPermission('reporting.read')) {
     <a
       routerLink="/admin/audit"
-      routerLinkActive="gradient-bg text-white font-semibold"
+      routerLinkActive="nav-item-active"
       [routerLinkActiveOptions]="{ exact: false }"
-      class="flex items-center gap-3 rounded-full px-4 py-3 text-sm text-slate-600 hover:bg-white/80 transition-colors duration-200"
+      class="nav-item"
     >
       <i class="pi pi-history text-base"></i>
       Audit Trail

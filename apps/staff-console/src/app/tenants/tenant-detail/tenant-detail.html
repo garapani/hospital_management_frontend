@@ -1,5 +1,5 @@
 <div class="flex flex-col gap-6">
-  <div class="flex items-center gap-4 glass-panel p-6">
+  <div class="flex items-center gap-4 surface-panel p-6">
     <a
       routerLink="/platform/tenants"
       class="text-slate-500 hover:text-slate-800 transition-colors"
@@ -7,10 +7,10 @@
       <i class="pi pi-arrow-left text-xl"></i>
     </a>
     <div>
-      <h1 class="text-3xl font-bold text-slate-800 tracking-tight">
+      <h1 class="page-title">
         Tenant Details
       </h1>
-      <p class="text-sm text-slate-500 mt-1">
+      <p class="page-subtitle">
         View and manage hospital settings
       </p>
     </div>
@@ -23,7 +23,7 @@
   } @else if (tenant()) {
   <div class="flex flex-col gap-6 lg:flex-row">
     <!-- Main Details -->
-    <div class="flex-1 glass-panel p-8">
+    <div class="flex-1 surface-panel p-8">
       <div class="mb-6 flex items-center justify-between">
         <h2 class="text-2xl font-bold text-slate-800">{{ tenant()?.hospitalName }}</h2>
         <p-tag
@@ -34,19 +34,19 @@
       </div>
 
       <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div class="bg-white/40 border border-white/50 p-4 rounded-xl">
+        <div class="bg-white border border-slate-200 p-4 rounded-xl">
           <dt class="text-sm font-medium text-slate-500">Tenant ID</dt>
           <dd class="mt-1 font-semibold text-slate-800">
             {{ tenant()?.hospitalId }}
           </dd>
         </div>
-        <div class="bg-white/40 border border-white/50 p-4 rounded-xl">
+        <div class="bg-white border border-slate-200 p-4 rounded-xl">
           <dt class="text-sm font-medium text-slate-500">Created At</dt>
           <dd class="mt-1 font-semibold text-slate-800">
             {{ tenant()?.createdAt | date: 'medium' }}
           </dd>
         </div>
-        <div class="bg-white/40 border border-white/50 p-4 rounded-xl">
+        <div class="bg-white border border-slate-200 p-4 rounded-xl">
           <dt class="text-sm font-medium text-slate-500">Last Updated</dt>
           <dd class="mt-1 font-semibold text-slate-800">
             {{ tenant()?.updatedAt | date: 'medium' }}
@@ -57,7 +57,7 @@
 
     <!-- Actions Sidebar -->
     <div class="w-full lg:w-80">
-      <div class="flex flex-col gap-6 glass-panel p-6">
+      <div class="flex flex-col gap-6 surface-panel p-6">
         <h3 class="font-bold text-lg text-slate-800">Actions</h3>
         @if (tenant()?.status === 'active') {
         <p-button
@@ -82,7 +82,7 @@
     </div>
   </div>
   } @else {
-  <div class="glass-panel p-8 text-center text-slate-500">
+  <div class="surface-panel p-8 text-center text-slate-500">
     Tenant not found.
   </div>
   }

@@ -1,8 +1,8 @@
 <div class="flex flex-col gap-6">
-  <div class="glass-panel p-6 flex flex-col gap-6">
+  <div class="surface-panel p-6 flex flex-col gap-6">
     <div>
-      <h1 class="text-3xl font-bold text-slate-800 tracking-tight">Invoices</h1>
-      <p class="text-sm text-slate-500 mt-1">Filter invoices by patient ID</p>
+      <h1 class="page-title">Invoices</h1>
+      <p class="page-subtitle">Filter invoices by patient ID</p>
     </div>
 
     <div class="flex items-end gap-3">
@@ -14,18 +14,18 @@
           (ngModelChange)="patientIdFilter.set($event)"
           (keyup.enter)="applyPatientFilter()"
           placeholder="Filter by patient ID"
-          class="w-64 bg-white/60 border-white/50 backdrop-blur-sm rounded-lg"
+          class="w-64 bg-white border-slate-200 rounded-lg"
         />
       </label>
       <p-button
         label="Filter"
         (onClick)="applyPatientFilter()"
-        styleClass="gradient-bg rounded-lg border-none shadow-md px-6"
+        styleClass="accent-bg rounded-lg border-none shadow-md px-6"
       />
     </div>
   </div>
 
-  <div class="glass-panel overflow-hidden">
+  <div class="surface-panel overflow-hidden">
     <p-table
       [value]="invoices()"
       [lazy]="true"
@@ -65,33 +65,33 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-invoice>
-        <tr class="hover:bg-white/40 transition-colors">
-          <td class="font-semibold text-slate-700 border-b border-white/30">
+        <tr class="hover:bg-slate-100 transition-colors">
+          <td class="font-semibold text-slate-700 border-b border-slate-200">
             {{ reference(invoice) }}
           </td>
-          <td class="text-slate-600 border-b border-white/30">
+          <td class="text-slate-600 border-b border-slate-200">
             {{ invoice.patientId }}
           </td>
-          <td class="font-medium text-slate-700 border-b border-white/30">
+          <td class="font-medium text-slate-700 border-b border-slate-200">
             {{ invoice.totalAmount | number: '1.2-2' }}
           </td>
-          <td class="text-slate-600 border-b border-white/30">
+          <td class="text-slate-600 border-b border-slate-200">
             {{ invoice.paidAmount | number: '1.2-2' }}
           </td>
-          <td class="border-b border-white/30">
+          <td class="border-b border-slate-200">
             <p-tag
               [value]="invoice.status"
               [severity]="statusSeverity(invoice.status)"
               styleClass="rounded-full px-3"
             />
           </td>
-          <td class="text-slate-600 border-b border-white/30">
+          <td class="text-slate-600 border-b border-slate-200">
             {{ invoice.updatedAt | date: 'short' }}
           </td>
-          <td class="border-b border-white/30">
+          <td class="border-b border-slate-200">
             <a
               [routerLink]="['/billing/invoices', invoice.id]"
-              class="text-sm font-semibold gradient-text hover:opacity-80"
+              class="text-sm font-semibold accent-text hover:opacity-80"
               >View</a
             >
           </td>

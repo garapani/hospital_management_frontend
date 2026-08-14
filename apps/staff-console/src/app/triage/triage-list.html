@@ -1,7 +1,7 @@
 <div class="h-full flex flex-col gap-6">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-3xl font-bold tracking-tight text-slate-900">Triage / ER Intake</h1>
+      <h1 class="page-title">Triage / ER Intake</h1>
       <p class="text-sm text-slate-500 mt-1">Active triage queue.</p>
     </div>
     @if (auth.hasPermission('triage.manage')) {
@@ -9,7 +9,7 @@
     }
   </div>
 
-  <div class="glass-panel flex-1 rounded-2xl overflow-hidden shadow-sm border border-white/40 bg-white/60 backdrop-blur-xl p-4">
+  <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white p-4">
     <p-table [value]="entries()" [loading]="loading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
       <ng-template pTemplate="header">
         <tr>
@@ -58,7 +58,7 @@
 </div>
 
 <!-- New Triage Entry Modal -->
-<p-dialog header="New Triage Entry" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '550px' }" styleClass="glass-modal">
+<p-dialog header="New Triage Entry" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">
   <div class="grid grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2">
       <label for="triageFirstName" class="text-sm font-medium text-slate-700">First Name</label>
