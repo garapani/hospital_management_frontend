@@ -3,6 +3,7 @@ import { Router, provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { AuthService } from '@org/auth';
+import { TENANT_ID } from '@org/api-client';
 import { of, throwError } from 'rxjs';
 import { Login } from './login.js';
 
@@ -18,6 +19,7 @@ describe('Login', () => {
       imports: [Login],
       providers: [
         { provide: AuthService, useValue: authService },
+        { provide: TENANT_ID, useValue: 'demo' },
         { provide: Router, useValue: router },
       ],
     });
@@ -68,6 +70,7 @@ describe('Login', () => {
       imports: [Login],
       providers: [
         { provide: AuthService, useValue: authService },
+        { provide: TENANT_ID, useValue: 'demo' },
         { provide: Router, useValue: { navigateByUrl: jest.fn() } },
       ],
     });
@@ -101,6 +104,7 @@ describe('Login redirect', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
+        { provide: TENANT_ID, useValue: 'demo' },
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authService },

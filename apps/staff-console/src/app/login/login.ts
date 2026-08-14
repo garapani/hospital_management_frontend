@@ -1,4 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { TENANT_ID } from '@org/api-client';
+import { PLATFORM_TENANT_ID } from '@org/auth';
 import {
   FormControl,
   FormGroup,
@@ -30,6 +32,19 @@ import { InputIconModule } from 'primeng/inputicon';
 export class Login {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly tenantId = inject(TENANT_ID);
+
+  /**
+   * Which console this host serves. The two audiences share one login screen, so without this a
+   * platform operator and a hospital user see an identical form and only discover they are at the
+   * wrong host by failing to authenticate.
+   */
+  readonly isPlatformConsole = this.tenantId === PLATFORM_TENANT_ID;
+  readonly consoleLabel = this.isPlatformConsole ? 'Platform console' : 'Staff console';
+  readonly consoleScope = computed(() =>
+    this.isPlatformConsole ? 'All hospitals' : this.tenantId,
+  );
+  readonly currentYear = new Date().getFullYear();
 
   readonly form = new FormGroup({
     username: new FormControl('', {
