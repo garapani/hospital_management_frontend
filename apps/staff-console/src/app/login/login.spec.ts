@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { AuthService } from '@org/auth';
 import { of, throwError } from 'rxjs';
 import { Login } from './login.js';
@@ -8,6 +10,7 @@ describe('Login', () => {
   function setup(loginResult: unknown) {
     const authService = {
       login: jest.fn().mockReturnValue(of(loginResult)),
+      isPlatformAdmin: () => false,
     } as unknown as AuthService;
     const router = { navigateByUrl: jest.fn() } as unknown as Router;
 
@@ -86,5 +89,46 @@ describe('Login', () => {
     fixture.componentInstance.submit();
 
     expect(authService.login).toHaveBeenCalledWith('jdoe', 'secret');
+  });
+});
+
+describe('Login redirect', () => {
+  function setup(isPlatformAdmin: boolean) {
+    const authService = {
+      login: () => of({ kind: 'success' as const }),
+      isPlatformAdmin: () => isPlatformAdmin,
+    } as unknown as AuthService;
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useValue: authService },
+      ],
+    });
+    const router = TestBed.inject(Router);
+    const navigate = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(Login);
+    return { component: fixture.componentInstance, navigate };
+  }
+
+  it('sends a platform admin to the platform dashboard', () => {
+    const { component, navigate } = setup(true);
+    component.usernameControl.setValue('superadmin');
+    component.passwordControl.setValue('SuperAdmin@123!');
+
+    component.submit();
+
+    expect(navigate).toHaveBeenCalledWith('/platform/dashboard');
+  });
+
+  it('sends a tenant user to the tenant landing page', () => {
+    const { component, navigate } = setup(false);
+    component.usernameControl.setValue('demoadmin');
+    component.passwordControl.setValue('DemoAdmin@123!');
+
+    component.submit();
+
+    expect(navigate).toHaveBeenCalledWith('/billing/invoices');
   });
 });

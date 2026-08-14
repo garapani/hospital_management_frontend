@@ -6,7 +6,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService, LoginOutcome } from '@org/auth';
+import { AuthService, LoginOutcome, PLATFORM_LANDING_URL, TENANT_LANDING_URL } from '@org/auth';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
@@ -76,7 +76,9 @@ export class Login {
   private handleOutcome(outcome: LoginOutcome): void {
     switch (outcome.kind) {
       case 'success':
-        void this.router.navigateByUrl('/billing/invoices');
+        void this.router.navigateByUrl(
+          this.authService.isPlatformAdmin() ? PLATFORM_LANDING_URL : TENANT_LANDING_URL,
+        );
         return;
       case 'invalidCredentials':
         this.errorMessage.set('Invalid username or password');

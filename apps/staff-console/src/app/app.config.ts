@@ -9,7 +9,7 @@ import { providePrimeNG } from 'primeng/config';
 import { definePreset } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
 import { API_BASE_URL, TENANT_ID } from '@org/api-client';
-import { authInterceptor, provideAuthBootstrap } from '@org/auth';
+import { authInterceptor, provideAuthBootstrap, PLATFORM_TENANT_ID } from '@org/auth';
 import { environment } from '../environments/environment';
 import { appRoutes } from './app.routes';
 
@@ -66,10 +66,10 @@ export function resolveTenantId(): string {
     return environment.tenantId;
   }
 
-  // Map the 'admin' subdomain to the 'demo' tenant for local development,
-  // since the Super Admin account is seeded inside the 'demo' tenant schema.
+  // The platform console is served from the 'admin' subdomain; its accounts live in the reserved
+  // platform tenant, not inside any hospital. Dev: http://admin.localhost:4200.
   if (subdomain === 'admin') {
-    return 'demo';
+    return PLATFORM_TENANT_ID;
   }
 
   // E.g., 'cityhospital.localhost' -> 'cityhospital'
