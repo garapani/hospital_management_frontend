@@ -55,8 +55,8 @@
           <div class="text-xs text-slate-500 mb-1">Date of Birth</div>
           <div class="font-medium text-slate-900">
             {{ p.dateOfBirth ? (p.dateOfBirth | date) : 'N/A' }}
-            @if (p.age) {
-            <span class="text-xs text-slate-400">({{ p.age }})</span>
+            @if (age(p.dateOfBirth); as a) {
+            <span class="text-xs text-slate-400">({{ a }}y)</span>
             }
           </div>
         </div>

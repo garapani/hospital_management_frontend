@@ -13,6 +13,7 @@ import { MessageService } from 'primeng/api';
 
 import { ApiError } from '@org/api-client';
 import { PatientsApiService, Patient, CreatePatientDto } from './patients-api.service.js';
+import { calculateAge } from './patient.model.js';
 
 @Component({
   selector: 'hms-patient-list',
@@ -41,6 +42,7 @@ export class PatientList implements OnInit {
   readonly loading = signal(false);
 
   readonly pageSize = signal(10);
+  readonly age = calculateAge;
   readonly firstRecord = signal(0);
   readonly searchQuery = signal('');
 

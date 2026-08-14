@@ -4,7 +4,7 @@ import { of, throwError } from 'rxjs';
 import { AuthService } from '@org/auth';
 import { PatientDetail } from './patient-detail.js';
 import { PatientsApiService, Patient } from './patients-api.service.js';
-import { VitalsApiService } from './vitals-api.service.js';
+import { VitalsApiService, Vital } from './vitals-api.service.js';
 import { EncountersApiService, ClinicalNote } from './encounters-api.service.js';
 
 describe('PatientDetail', () => {
@@ -19,13 +19,20 @@ describe('PatientDetail', () => {
     updatedAt: '2026-08-01T00:00:00Z',
   };
 
-  function setup(permissions: string[], patientsApiOverrides: Partial<PatientsApiService> = {}) {
+  function setup(
+    permissions: string[],
+    patientsApiOverrides: Partial<PatientsApiService> = {},
+    vitalsApiOverrides: Partial<VitalsApiService> = {},
+  ) {
     const patientsApi = {
       getById: jest.fn().mockReturnValue(of(patient)),
       update: jest.fn().mockReturnValue(of(patient)),
       ...patientsApiOverrides,
     } as unknown as PatientsApiService;
-    const vitalsApi = { listByPatient: jest.fn().mockReturnValue(of([])) } as unknown as VitalsApiService;
+    const vitalsApi = {
+      listByPatient: jest.fn().mockReturnValue(of([])),
+      ...vitalsApiOverrides,
+    } as unknown as VitalsApiService;
     const encountersApi = {
       getNotesByPatient: jest.fn().mockReturnValue(of([])),
       getDiagnosesByPatient: jest.fn().mockReturnValue(of([])),
@@ -174,5 +181,56 @@ describe('PatientDetail', () => {
 
     expect(fixture.componentInstance.pagedNotes()).toHaveLength(2);
     expect(fixture.componentInstance.pagedNotes()[0].id).toBe('note-10');
+  });
+
+  it('opens Record Vitals blank when no prior vitals exist', async () => {
+    const { fixture } = setup(['vitals.read', 'vitals.manage']);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openVitalModal();
+
+    expect(fixture.componentInstance.vitalForm()).toEqual({});
+  });
+
+  it('pre-fills Record Vitals from the most recent reading, excluding recordedAt/appointmentId', async () => {
+    const latestVital: Vital = {
+      id: 'vital-1',
+      patientId: 'patient-1',
+      appointmentId: 'appt-old',
+      height: 170,
+      weight: 65,
+      temperature: 37.1,
+      pulse: 72,
+      bpSystolic: 120,
+      bpDiastolic: 80,
+      respiratoryRate: 16,
+      spO2: 98,
+      painScale: 0,
+      triageNotes: 'Stable',
+      recordedAt: '2026-08-01T00:00:00Z',
+      createdAt: '2026-08-01T00:00:00Z',
+      updatedAt: '2026-08-01T00:00:00Z',
+    };
+    const { fixture } = setup(['vitals.read', 'vitals.manage'], {}, {
+      listByPatient: jest.fn().mockReturnValue(of([latestVital])),
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openVitalModal();
+
+    expect(fixture.componentInstance.vitalForm()).toEqual({
+      height: 170,
+      weight: 65,
+      temperature: 37.1,
+      pulse: 72,
+      bpSystolic: 120,
+      bpDiastolic: 80,
+      respiratoryRate: 16,
+      spO2: 98,
+      painScale: 0,
+      triageNotes: 'Stable',
+    });
   });
 });

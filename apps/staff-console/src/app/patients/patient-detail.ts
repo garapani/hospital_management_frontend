@@ -17,6 +17,7 @@ import { PaginatorModule } from 'primeng/paginator';
 import { AuthService } from '@org/auth';
 
 import { PatientsApiService, Patient, CreatePatientDto } from './patients-api.service.js';
+import { calculateAge } from './patient.model.js';
 import { VitalsApiService, Vital, CreateVitalDto } from './vitals-api.service.js';
 import {
   EncountersApiService,
@@ -67,6 +68,7 @@ export class PatientDetail implements OnInit {
   readonly patient = signal<Patient | null>(null);
   readonly loading = signal(true);
   readonly activeTab = signal('appointments');
+  readonly age = calculateAge;
 
   readonly showEditModal = signal(false);
   readonly editForm = signal<EditFormState>({});
@@ -211,7 +213,23 @@ export class PatientDetail implements OnInit {
   }
 
   openVitalModal() {
-    this.vitalForm.set({});
+    const latest = this.vitals()[0];
+    this.vitalForm.set(
+      latest
+        ? {
+            height: latest.height,
+            weight: latest.weight,
+            temperature: latest.temperature,
+            pulse: latest.pulse,
+            bpSystolic: latest.bpSystolic,
+            bpDiastolic: latest.bpDiastolic,
+            respiratoryRate: latest.respiratoryRate,
+            spO2: latest.spO2,
+            painScale: latest.painScale,
+            triageNotes: latest.triageNotes,
+          }
+        : {},
+    );
     this.showVitalModal.set(true);
   }
 

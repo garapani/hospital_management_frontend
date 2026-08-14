@@ -71,8 +71,8 @@
           <td class="text-slate-600">{{ patient.gender }}</td>
           <td class="text-slate-600">
             {{ patient.dateOfBirth ? (patient.dateOfBirth | date) : 'N/A' }}
-            @if (patient.age) {
-            <span class="text-xs text-slate-400">({{ patient.age }})</span>
+            @if (age(patient.dateOfBirth); as a) {
+            <span class="text-xs text-slate-400">({{ a }}y)</span>
             }
           </td>
           <td class="text-slate-600 font-mono text-sm">
