@@ -13,10 +13,21 @@ out-tsc/
 .nx/cache
 .nx/workspace-data
 
-# Environment
+# Environment / secrets
 .env
 .env.local
 .env.*
+*credential*
+*credentials*
+*secret*
+*.pem
+*.key
+
+# Package manager stores
+.pnpm-store/
+
+# Agent/session scratch
+.claude/
 
 # Editors
 .vscode/
