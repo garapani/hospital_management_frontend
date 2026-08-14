@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
@@ -40,6 +40,9 @@ export class AppointmentList {
 
   readonly appointments = signal<Appointment[]>([]);
   readonly loading = signal(false);
+  readonly totalRecords = signal(0);
+  readonly pageSize = signal(10);
+  readonly firstRecord = signal(0);
 
   readonly dateFilter = signal(today());
   readonly statusFilter = signal('');
@@ -62,7 +65,7 @@ export class AppointmentList {
   readonly statusSeverity = appointmentStatusSeverity;
 
   constructor() {
-    this.load();
+    this.load(0);
 
     this.route.queryParamMap.subscribe((params) => {
       const patientId = params.get('patientId');
@@ -81,26 +84,36 @@ export class AppointmentList {
     });
   }
 
-  load(): void {
+  load(first: number): void {
     this.loading.set(true);
+    const page = Math.floor(first / this.pageSize()) + 1;
     this.appointmentsApi
       .list({
         date: this.dateFilter() || undefined,
         status: this.statusFilter() || undefined,
         doctorId: this.doctorIdFilter() || undefined,
         departmentId: this.departmentIdFilter() || undefined,
+        page,
+        limit: this.pageSize(),
       })
       .subscribe({
-        next: (data) => {
-          this.appointments.set(data);
+        next: (res) => {
+          this.appointments.set(res.data);
+          this.totalRecords.set(res.meta.total);
           this.loading.set(false);
         },
         error: () => this.loading.set(false),
       });
   }
 
+  onLazyLoad(event: TableLazyLoadEvent): void {
+    this.firstRecord.set(event.first || 0);
+    this.load(event.first || 0);
+  }
+
   applyFilters(): void {
-    this.load();
+    this.firstRecord.set(0);
+    this.load(0);
   }
 
   openCreateModal(): void {
@@ -121,7 +134,8 @@ export class AppointmentList {
       next: () => {
         this.saving.set(false);
         this.showCreateModal.set(false);
-        this.load();
+        this.firstRecord.set(0);
+        this.load(0);
       },
       error: () => {
         this.saving.set(false);

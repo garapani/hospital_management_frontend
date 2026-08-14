@@ -8,7 +8,7 @@ import { AppointmentsApiService } from './appointments-api.service.js';
 describe('AppointmentList', () => {
   function setup(queryParams: Record<string, string> = {}) {
     const appointmentsApi = {
-      list: jest.fn().mockReturnValue(of([])),
+      list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
       create: jest.fn().mockReturnValue(of({})),
     } as unknown as AppointmentsApiService;
     const auth = { hasPermission: () => true } as unknown as AuthService;
@@ -30,7 +30,7 @@ describe('AppointmentList', () => {
     return { fixture, appointmentsApi };
   }
 
-  it("loads today's appointments on init", async () => {
+  it("loads today's appointments on init, page 1", async () => {
     const { fixture, appointmentsApi } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
@@ -38,7 +38,34 @@ describe('AppointmentList', () => {
     expect(appointmentsApi.list).toHaveBeenCalledTimes(1);
     const call = (appointmentsApi.list as jest.Mock).mock.calls[0][0];
     expect(call.date).toBe(fixture.componentInstance.dateFilter());
+    expect(call.page).toBe(1);
+    expect(call.limit).toBe(fixture.componentInstance.pageSize());
     expect(fixture.componentInstance.appointments()).toEqual([]);
+  });
+
+  it('requests the correct page when the table lazy-loads a later page', async () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.onLazyLoad({ first: 20 });
+
+    const call = (appointmentsApi.list as jest.Mock).mock.calls[1][0];
+    expect(call.page).toBe(3);
+    expect(fixture.componentInstance.firstRecord()).toBe(20);
+  });
+
+  it('resets to page 1 when filters are applied', async () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.onLazyLoad({ first: 20 });
+
+    fixture.componentInstance.applyFilters();
+
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    const call = (appointmentsApi.list as jest.Mock).mock.calls[2][0];
+    expect(call.page).toBe(1);
   });
 
   it('pre-fills and opens the create modal when navigated with a patientId query param', () => {

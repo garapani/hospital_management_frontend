@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -13,9 +13,10 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TextareaModule } from 'primeng/textarea';
 import { CheckboxModule } from 'primeng/checkbox';
+import { PaginatorModule } from 'primeng/paginator';
 import { AuthService } from '@org/auth';
 
-import { PatientsApiService, Patient } from './patients-api.service.js';
+import { PatientsApiService, Patient, CreatePatientDto } from './patients-api.service.js';
 import { VitalsApiService, Vital, CreateVitalDto } from './vitals-api.service.js';
 import {
   EncountersApiService,
@@ -27,6 +28,7 @@ import {
   CreatePrescriptionDto,
 } from './encounters-api.service.js';
 
+type EditFormState = Partial<CreatePatientDto>;
 type VitalFormState = Omit<CreateVitalDto, 'patientId'>;
 type NoteFormState = Omit<CreateNoteDto, 'patientId' | 'doctorId'>;
 type DiagnosisFormState = Omit<CreateDiagnosisDto, 'patientId' | 'doctorId'>;
@@ -48,6 +50,7 @@ type PrescriptionFormState = Omit<CreatePrescriptionDto, 'patientId' | 'doctorId
     InputNumberModule,
     TextareaModule,
     CheckboxModule,
+    PaginatorModule,
   ],
   providers: [MessageService],
   templateUrl: './patient-detail.html',
@@ -63,6 +66,11 @@ export class PatientDetail implements OnInit {
 
   readonly patient = signal<Patient | null>(null);
   readonly loading = signal(true);
+  readonly activeTab = signal('appointments');
+
+  readonly showEditModal = signal(false);
+  readonly editForm = signal<EditFormState>({});
+  readonly editSaving = signal(false);
 
   readonly vitals = signal<Vital[]>([]);
   readonly vitalsLoading = signal(false);
@@ -75,6 +83,9 @@ export class PatientDetail implements OnInit {
   readonly showNoteModal = signal(false);
   readonly noteForm = signal<NoteFormState>({});
   readonly noteSaving = signal(false);
+  readonly notesPageSize = 10;
+  readonly notesFirst = signal(0);
+  readonly pagedNotes = computed(() => this.notes().slice(this.notesFirst(), this.notesFirst() + this.notesPageSize));
 
   readonly diagnoses = signal<Diagnosis[]>([]);
   readonly diagnosesLoading = signal(false);
@@ -144,6 +155,49 @@ export class PatientDetail implements OnInit {
     });
   }
 
+  startEncounter() {
+    this.activeTab.set('notes');
+    this.openNoteModal();
+  }
+
+  // --- Edit Profile ---
+  openEditModal() {
+    const p = this.patient();
+    if (!p) return;
+    this.editForm.set({
+      firstName: p.firstName,
+      middleName: p.middleName,
+      lastName: p.lastName,
+      gender: p.gender,
+      dateOfBirth: p.dateOfBirth,
+      bloodGroup: p.bloodGroup,
+      phoneNumber: p.phoneNumber,
+      email: p.email,
+      governmentIdType: p.governmentIdType,
+      governmentIdNumber: p.governmentIdNumber,
+    });
+    this.showEditModal.set(true);
+  }
+
+  submitEdit() {
+    const patientId = this.patient()?.id;
+    if (!patientId) return;
+
+    this.editSaving.set(true);
+    this.api.update(patientId, this.editForm()).subscribe({
+      next: (updated) => {
+        this.patient.set(updated);
+        this.editSaving.set(false);
+        this.showEditModal.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Success', detail: 'Profile updated' });
+      },
+      error: () => {
+        this.editSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update profile' });
+      },
+    });
+  }
+
   // --- Vitals ---
   loadVitals(patientId: string) {
     this.vitalsLoading.set(true);
@@ -185,6 +239,7 @@ export class PatientDetail implements OnInit {
     this.encountersApi.getNotesByPatient(patientId).subscribe({
       next: (data) => {
         this.notes.set(data);
+        this.notesFirst.set(0);
         this.notesLoading.set(false);
       },
       error: () => this.notesLoading.set(false),

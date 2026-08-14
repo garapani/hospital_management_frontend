@@ -71,7 +71,15 @@ export class PatientsApiService {
   private apiClient = inject(ApiClientService);
 
   search(params: { page: number; limit: number; q?: string; phoneNumber?: string; patientNo?: string }) {
-    return this.apiClient.get<PaginatedResponse<Patient>>('/patients', { params });
+    return this.apiClient.get<PaginatedResponse<Patient>>('/patients', {
+      params: {
+        page: params.page,
+        limit: params.limit,
+        ...(params.q ? { q: params.q } : {}),
+        ...(params.phoneNumber ? { phoneNumber: params.phoneNumber } : {}),
+        ...(params.patientNo ? { patientNo: params.patientNo } : {}),
+      },
+    });
   }
 
   getById(id: string) {

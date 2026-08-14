@@ -1,8 +1,9 @@
 import { Component, inject, signal, computed, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '@org/auth';
 import { TooltipModule } from 'primeng/tooltip';
-import { NotificationsApiService, Notification } from './notifications/notifications-api.service.js';
+import { NotificationsApiService, Notification } from '../notifications/notifications-api.service.js';
 import { Subscription } from 'rxjs';
 
 /**
@@ -10,7 +11,7 @@ import { Subscription } from 'rxjs';
  * Nav links are projected in by the wrapping shell (AppShell / PlatformShell) via [shellNav].
  */
 @Component({
-  imports: [RouterModule, TooltipModule],
+  imports: [RouterModule, TooltipModule, DatePipe],
   selector: 'hms-shell-chrome',
   templateUrl: './shell-chrome.html',
 })
@@ -42,12 +43,6 @@ export class ShellChrome implements OnInit, OnDestroy {
   toggleUserMenu(): void {
     this.userMenuOpen.update((open) => !open);
     this.notificationsOpen.set(false);
-    this.quickActionsOpen.set(false);
-  }
-
-  toggleNotifications(): void {
-    this.notificationsOpen.update((open) => !open);
-    this.userMenuOpen.set(false);
     this.quickActionsOpen.set(false);
   }
 
@@ -110,7 +105,7 @@ export class ShellChrome implements OnInit, OnDestroy {
    * Global keyboard shortcut handler for Ctrl+K to focus search input.
    */
   @HostListener('window:keydown.control.k', ['$event'])
-  onSearchShortcut(event: KeyboardEvent): void {
+  onSearchShortcut(event: Event): void {
     event.preventDefault();
     const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
     if (searchInput) {

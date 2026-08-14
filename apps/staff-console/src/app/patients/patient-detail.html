@@ -27,8 +27,12 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <p-button label="Edit Profile" icon="pi pi-pencil" severity="secondary"></p-button>
-      <p-button label="Start Encounter" icon="pi pi-stethoscope"></p-button>
+      @if (auth.hasPermission('patients.update')) {
+      <p-button label="Edit Profile" icon="pi pi-pencil" severity="secondary" (onClick)="openEditModal()"></p-button>
+      }
+      @if (auth.hasPermission('encounter.manage')) {
+      <p-button label="Start Encounter" icon="pi pi-stethoscope" (onClick)="startEncounter()"></p-button>
+      }
     </div>
   </div>
 
@@ -77,7 +81,7 @@
 
     <!-- Clinical Workspace (Tabs) -->
     <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 overflow-hidden flex flex-col">
-      <p-tabs value="appointments" styleClass="w-full h-full flex flex-col">
+      <p-tabs [(value)]="activeTab" styleClass="w-full h-full flex flex-col">
         <p-tablist>
           <p-tab value="appointments"><i class="pi pi-calendar mr-2"></i> Appointments</p-tab>
           <p-tab value="admissions"><i class="pi pi-bed mr-2"></i> Admissions (ADT)</p-tab>
@@ -117,7 +121,7 @@
                 <p-button label="Record Vitals" icon="pi pi-plus" size="small" (onClick)="openVitalModal()"></p-button>
               </div>
               }
-              <p-table [value]="vitals()" [loading]="vitalsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <p-table [value]="vitals()" [loading]="vitalsLoading()" [rowHover]="true" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-gridlines">
                 <ng-template pTemplate="header">
                   <tr>
                     <th class="table-header-cell">Recorded</th>
@@ -167,7 +171,7 @@
               </div>
               } @else {
               <div class="flex flex-col gap-3">
-                @for (n of notes(); track n.id) {
+                @for (n of pagedNotes(); track n.id) {
                 <div class="p-4 rounded-xl border border-slate-200 bg-white">
                   <div class="flex items-center justify-between mb-2">
                     <p-tag [value]="n.status" severity="info" [rounded]="true"></p-tag>
@@ -188,6 +192,9 @@
                 </div>
                 }
               </div>
+              @if (notes().length > notesPageSize) {
+              <p-paginator [rows]="notesPageSize" [totalRecords]="notes().length" [first]="notesFirst()" (onPageChange)="notesFirst.set($event.first ?? 0)"></p-paginator>
+              }
               }
             </div>
           </p-tabpanel>
@@ -199,7 +206,7 @@
                 <p-button label="Add Diagnosis" icon="pi pi-plus" size="small" (onClick)="openDiagnosisModal()"></p-button>
               </div>
               }
-              <p-table [value]="diagnoses()" [loading]="diagnosesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <p-table [value]="diagnoses()" [loading]="diagnosesLoading()" [rowHover]="true" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-gridlines">
                 <ng-template pTemplate="header">
                   <tr>
                     <th class="table-header-cell">ICD-10</th>
@@ -244,7 +251,7 @@
                 <p-button label="Add Prescription" icon="pi pi-plus" size="small" (onClick)="openPrescriptionModal()"></p-button>
               </div>
               }
-              <p-table [value]="prescriptions()" [loading]="prescriptionsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <p-table [value]="prescriptions()" [loading]="prescriptionsLoading()" [rowHover]="true" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-gridlines">
                 <ng-template pTemplate="header">
                   <tr>
                     <th class="table-header-cell">Medication</th>
@@ -288,6 +295,51 @@
   </div>
   }
 </div>
+
+<!-- Edit Profile Modal -->
+<p-dialog header="Edit Profile" [(visible)]="showEditModal" [modal]="true" [style]="{ width: '600px' }" styleClass="surface-modal">
+  <div class="grid grid-cols-2 gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="editFirstName" class="text-sm font-medium text-slate-700">First Name</label>
+      <input id="editFirstName" pInputText [ngModel]="editForm().firstName" (ngModelChange)="editForm.set({ ...editForm(), firstName: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editLastName" class="text-sm font-medium text-slate-700">Last Name</label>
+      <input id="editLastName" pInputText [ngModel]="editForm().lastName" (ngModelChange)="editForm.set({ ...editForm(), lastName: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editDob" class="text-sm font-medium text-slate-700">Date of Birth</label>
+      <input id="editDob" pInputText type="date" [ngModel]="editForm().dateOfBirth" (ngModelChange)="editForm.set({ ...editForm(), dateOfBirth: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editPhone" class="text-sm font-medium text-slate-700">Phone Number</label>
+      <input id="editPhone" pInputText [ngModel]="editForm().phoneNumber" (ngModelChange)="editForm.set({ ...editForm(), phoneNumber: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="editEmail" class="text-sm font-medium text-slate-700">Email Address</label>
+      <input id="editEmail" pInputText [ngModel]="editForm().email" (ngModelChange)="editForm.set({ ...editForm(), email: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editGovIdType" class="text-sm font-medium text-slate-700">Government ID Type</label>
+      <input id="editGovIdType" pInputText [ngModel]="editForm().governmentIdType" (ngModelChange)="editForm.set({ ...editForm(), governmentIdType: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editGovIdNumber" class="text-sm font-medium text-slate-700">Government ID Number</label>
+      <input id="editGovIdNumber" pInputText [ngModel]="editForm().governmentIdNumber" (ngModelChange)="editForm.set({ ...editForm(), governmentIdNumber: $event })" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showEditModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="editSaving()"
+        (onClick)="submitEdit()"
+        [disabled]="!editForm().firstName || !editForm().lastName"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
 
 <!-- Record Vitals Modal -->
 <p-dialog header="Record Vitals" [(visible)]="showVitalModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">

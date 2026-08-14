@@ -28,14 +28,19 @@ describe('TriageApiService', () => {
     httpMock.verify();
   });
 
-  it('lists active triage entries', () => {
+  it('lists active triage entries with page and limit', () => {
     let result: unknown;
-    service.listActive().subscribe((res) => (result = res));
+    service.listActive({ page: 1, limit: 10 }).subscribe((res) => (result = res));
 
-    const req = httpMock.expectOne('https://gateway.example/api/triage/entries');
+    const req = httpMock.expectOne(
+      (r) => r.url === 'https://gateway.example/api/triage/entries',
+    );
     expect(req.request.method).toBe('GET');
-    req.flush([]);
-    expect(result).toEqual([]);
+    expect(req.request.params.get('page')).toBe('1');
+    expect(req.request.params.get('limit')).toBe('10');
+    const body = { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } };
+    req.flush(body);
+    expect(result).toEqual(body);
   });
 
   it('links a patient to a triage entry', () => {

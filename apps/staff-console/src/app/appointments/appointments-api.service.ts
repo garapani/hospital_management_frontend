@@ -51,6 +51,18 @@ export interface AppointmentFilters {
   doctorId?: string;
   departmentId?: string;
   status?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -62,12 +74,14 @@ export class AppointmentsApiService {
   }
 
   list(filters: AppointmentFilters) {
-    return this.apiClient.get<Appointment[]>('/appointments', {
+    return this.apiClient.get<PaginatedResponse<Appointment>>('/appointments', {
       params: {
         ...(filters.date ? { date: filters.date } : {}),
         ...(filters.doctorId ? { doctorId: filters.doctorId } : {}),
         ...(filters.departmentId ? { departmentId: filters.departmentId } : {}),
         ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.page !== undefined ? { page: filters.page } : {}),
+        ...(filters.limit !== undefined ? { limit: filters.limit } : {}),
       },
     });
   }

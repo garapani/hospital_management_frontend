@@ -34,6 +34,16 @@ export interface CreateTriageEntryDto {
   chiefComplaint?: string;
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export interface UpdateTriageEntryDto {
   firstName?: string;
   lastName?: string;
@@ -59,8 +69,8 @@ export class TriageApiService {
     return this.apiClient.post<TriageEntry>('/triage/entries', data);
   }
 
-  listActive() {
-    return this.apiClient.get<TriageEntry[]>('/triage/entries');
+  listActive(params: { page: number; limit: number }) {
+    return this.apiClient.get<PaginatedResponse<TriageEntry>>('/triage/entries', { params });
   }
 
   findOne(id: string) {

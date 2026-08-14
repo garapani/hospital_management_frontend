@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
@@ -37,6 +37,9 @@ export class TriageList {
 
   readonly entries = signal<TriageEntry[]>([]);
   readonly loading = signal(false);
+  readonly totalRecords = signal(0);
+  readonly pageSize = signal(10);
+  readonly firstRecord = signal(0);
 
   readonly showCreateModal = signal(false);
   readonly createForm = signal<CreateTriageEntryDto>({});
@@ -47,18 +50,25 @@ export class TriageList {
   readonly colorSeverity = colorCodeSeverity;
 
   constructor() {
-    this.load();
+    this.load(0);
   }
 
-  load(): void {
+  load(first: number): void {
     this.loading.set(true);
-    this.triageApi.listActive().subscribe({
-      next: (data) => {
-        this.entries.set(data);
+    const page = Math.floor(first / this.pageSize()) + 1;
+    this.triageApi.listActive({ page, limit: this.pageSize() }).subscribe({
+      next: (res) => {
+        this.entries.set(res.data);
+        this.totalRecords.set(res.meta.total);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  onLazyLoad(event: TableLazyLoadEvent): void {
+    this.firstRecord.set(event.first || 0);
+    this.load(event.first || 0);
   }
 
   openCreateModal(): void {
@@ -72,7 +82,8 @@ export class TriageList {
       next: () => {
         this.saving.set(false);
         this.showCreateModal.set(false);
-        this.load();
+        this.firstRecord.set(0);
+        this.load(0);
       },
       error: () => {
         this.saving.set(false);

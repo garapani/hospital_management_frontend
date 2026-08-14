@@ -26,7 +26,7 @@ export const Permissions = {
   TRIAGE_READ: 'triage.read' as const,
 
   // Appointments
-  APPOINTMENTS_READ: 'appointments.read' as const,
+  APPOINTMENTS_READ: 'appointment.read' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];

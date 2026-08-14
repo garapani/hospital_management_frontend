@@ -12,6 +12,8 @@ describe('Login', () => {
     const authService = {
       login: jest.fn().mockReturnValue(of(loginResult)),
       isPlatformAdmin: () => false,
+      hasPermission: (permission: string) => permission === 'billing.manage',
+      currentUser: () => ({ roles: [] }),
     } as unknown as AuthService;
     const router = { navigateByUrl: jest.fn() } as unknown as Router;
 
@@ -65,6 +67,8 @@ describe('Login', () => {
   it('clears the submitting flag and shows an error when login() itself errors', () => {
     const authService = {
       login: jest.fn().mockReturnValue(throwError(() => new Error('boom'))),
+      isPlatformAdmin: () => false,
+      hasPermission: () => false,
     } as unknown as AuthService;
     TestBed.configureTestingModule({
       imports: [Login],
@@ -96,10 +100,13 @@ describe('Login', () => {
 });
 
 describe('Login redirect', () => {
-  function setup(isPlatformAdmin: boolean) {
+  function setup(options: { isPlatformAdmin?: boolean; roles?: string[]; permissions?: string[] } = {}) {
+    const { isPlatformAdmin = false, roles = [], permissions = [] } = options;
     const authService = {
       login: () => of({ kind: 'success' as const }),
       isPlatformAdmin: () => isPlatformAdmin,
+      hasPermission: (permission: string) => permissions.includes(permission),
+      currentUser: () => ({ roles }),
     } as unknown as AuthService;
     TestBed.configureTestingModule({
       providers: [
@@ -117,7 +124,7 @@ describe('Login redirect', () => {
   }
 
   it('sends a platform admin to the platform dashboard', () => {
-    const { component, navigate } = setup(true);
+    const { component, navigate } = setup({ isPlatformAdmin: true });
     component.usernameControl.setValue('superadmin');
     component.passwordControl.setValue('SuperAdmin@123!');
 
@@ -126,13 +133,41 @@ describe('Login redirect', () => {
     expect(navigate).toHaveBeenCalledWith('/platform/dashboard');
   });
 
-  it('sends a tenant user to the tenant landing page', () => {
-    const { component, navigate } = setup(false);
-    component.usernameControl.setValue('demoadmin');
-    component.passwordControl.setValue('DemoAdmin@123!');
+  it.each([
+    ['Hospital Admin', '/admin/users'],
+    ['Receptionist / Front Desk', '/clinical/appointments'],
+    ['Doctor', '/clinical/patients'],
+    ['Nurse', '/clinical/triage'],
+    ['Billing/Accounts Staff', '/billing/invoices'],
+    ['Auditor/Compliance', '/admin/audit'],
+  ])('sends a %s to their role-specific landing page', (role, expectedRoute) => {
+    const { component, navigate } = setup({ roles: [role] });
+    component.usernameControl.setValue('someuser');
+    component.passwordControl.setValue('secret');
+
+    component.submit();
+
+    expect(navigate).toHaveBeenCalledWith(expectedRoute);
+  });
+
+  it('falls back to permission-priority routing for a role with no explicit landing page', () => {
+    const { component, navigate } = setup({ roles: ['Some Future Role'], permissions: ['billing.manage'] });
+    component.usernameControl.setValue('someuser');
+    component.passwordControl.setValue('secret');
 
     component.submit();
 
     expect(navigate).toHaveBeenCalledWith('/billing/invoices');
+  });
+
+  it('keeps a tenant user with no matching role or permission on the login page with an explanatory message', () => {
+    const { component, navigate } = setup({ roles: ['Lab Technician'], permissions: ['lab.read'] });
+    component.usernameControl.setValue('demo.labtech');
+    component.passwordControl.setValue('Demo@12345!');
+
+    component.submit();
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(component.errorMessage()).toBe('Your account has no accessible screens yet. Contact your administrator.');
   });
 });

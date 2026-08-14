@@ -8,7 +8,9 @@ import { TriageApiService, TriageEntry } from './triage-api.service.js';
 describe('TriageList', () => {
   function setup(entries: TriageEntry[] = []) {
     const triageApi = {
-      listActive: jest.fn().mockReturnValue(of(entries)),
+      listActive: jest.fn().mockReturnValue(
+        of({ data: entries, meta: { total: entries.length, page: 1, limit: 10, totalPages: 1 } }),
+      ),
       create: jest.fn().mockReturnValue(of({})),
     } as unknown as TriageApiService;
     const auth = { hasPermission: () => true } as unknown as AuthService;
@@ -46,5 +48,16 @@ describe('TriageList', () => {
     expect(triageApi.create).toHaveBeenCalledWith({ firstName: 'Jane', chiefComplaint: 'Chest pain' });
     expect(triageApi.listActive).toHaveBeenCalledTimes(2);
     expect(fixture.componentInstance.showCreateModal()).toBe(false);
+  });
+
+  it('requests the correct page when the table lazy-loads a later page', async () => {
+    const { fixture, triageApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.onLazyLoad({ first: 20 });
+
+    expect(triageApi.listActive).toHaveBeenLastCalledWith({ page: 3, limit: 10 });
+    expect(fixture.componentInstance.firstRecord()).toBe(20);
   });
 });

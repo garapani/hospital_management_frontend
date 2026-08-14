@@ -38,8 +38,9 @@ describe('AppointmentsApiService', () => {
     expect(req.request.params.get('date')).toBe('2026-08-12');
     expect(req.request.params.has('doctorId')).toBe(false);
     expect(req.request.params.has('status')).toBe(false);
-    req.flush([]);
-    expect(result).toEqual([]);
+    const body = { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } };
+    req.flush(body);
+    expect(result).toEqual(body);
   });
 
   it('updates an appointment via PUT (matching the backend route)', () => {

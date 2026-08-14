@@ -10,7 +10,19 @@
   </div>
 
   <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white p-4">
-    <p-table [value]="entries()" [loading]="loading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+    <p-table
+      [value]="entries()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      (onLazyLoad)="onLazyLoad($event)"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [totalRecords]="totalRecords()"
+      [first]="firstRecord()"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
       <ng-template pTemplate="header">
         <tr>
           <th class="table-header-cell">Name</th>

@@ -8,13 +8,52 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService, LoginOutcome, PLATFORM_LANDING_URL, TENANT_LANDING_URL } from '@org/auth';
+import { AuthService, LoginOutcome, PLATFORM_LANDING_URL } from '@org/auth';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { MessageModule } from 'primeng/message';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+
+/**
+ * Exact match to seed-rbac-catalog.ts role names — each role's daily-entry-point screen, not just
+ * the first permission-gated route it happens to pass. Only roles with a built frontend screen are
+ * listed here; anything else (a role rename, or a role like Lab Technician with no screen yet)
+ * falls through to the permission-priority fallback below, then to the "no screens" message.
+ */
+const ROLE_LANDING_ROUTES: Record<string, string> = {
+  'Hospital Admin': '/admin/users',
+  'Receptionist / Front Desk': '/clinical/appointments',
+  Doctor: '/clinical/patients',
+  Nurse: '/clinical/triage',
+  'Billing/Accounts Staff': '/billing/invoices',
+  'Auditor/Compliance': '/admin/audit',
+};
+
+/**
+ * Ordered to match the nav links in app-shell.html. Safety net for a role not in
+ * ROLE_LANDING_ROUTES: still lands on the first screen its permissions allow rather than bouncing
+ * straight back to /login via permissionGuard's reject-to-login behavior.
+ */
+const TENANT_LANDING_CANDIDATES: Array<{ permission: string; route: string }> = [
+  { permission: 'billing.manage', route: '/billing/invoices' },
+  { permission: 'patients.read', route: '/clinical/patients' },
+  { permission: 'appointment.read', route: '/clinical/appointments' },
+  { permission: 'triage.read', route: '/clinical/triage' },
+  { permission: 'identity.accounts.manage', route: '/admin/users' },
+  { permission: 'master-data.manage', route: '/admin/master-data' },
+  { permission: 'reporting.read', route: '/admin/audit' },
+];
+
+export function resolveTenantLandingUrl(authService: AuthService): string | null {
+  const roleMatch = authService.currentUser()?.roles.find((role) => role in ROLE_LANDING_ROUTES);
+  if (roleMatch) {
+    return ROLE_LANDING_ROUTES[roleMatch];
+  }
+  const permissionMatch = TENANT_LANDING_CANDIDATES.find((candidate) => authService.hasPermission(candidate.permission));
+  return permissionMatch?.route ?? null;
+}
 
 @Component({
   imports: [
@@ -90,11 +129,19 @@ export class Login {
 
   private handleOutcome(outcome: LoginOutcome): void {
     switch (outcome.kind) {
-      case 'success':
-        void this.router.navigateByUrl(
-          this.authService.isPlatformAdmin() ? PLATFORM_LANDING_URL : TENANT_LANDING_URL,
-        );
+      case 'success': {
+        if (this.authService.isPlatformAdmin()) {
+          void this.router.navigateByUrl(PLATFORM_LANDING_URL);
+          return;
+        }
+        const landingUrl = resolveTenantLandingUrl(this.authService);
+        if (!landingUrl) {
+          this.errorMessage.set('Your account has no accessible screens yet. Contact your administrator.');
+          return;
+        }
+        void this.router.navigateByUrl(landingUrl);
         return;
+      }
       case 'invalidCredentials':
         this.errorMessage.set('Invalid username or password');
         return;
