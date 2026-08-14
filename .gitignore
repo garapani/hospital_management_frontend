@@ -1,32 +1,51 @@
-```
-# Nx cache and workspace data
-.nx/cache/
-.nx/workspace-data/
+# Dependencies
+node_modules/
 
-# Build outputs
-out-tsc/
+# Build artifacts
 dist/
 build/
 target/
+out-tsc/
+*.tsbuildinfo
 
-# Dependencies
-node_modules/
-**/node_modules/
+# Angular / Nx caches
+.angular/
+.nx/cache
+.nx/workspace-data
 
-# Logs and temp files
-*.log
-*.tmp
-
-# Environment variables
+# Environment / secrets
 .env
 .env.local
-*.env.*
+.env.*
+*credential*
+*credentials*
+*secret*
+*.pem
+*.key
 
-# IDE files
+# Package manager stores
+.pnpm-store/
+
+# Agent/session scratch
+.claude/
+
+# Editors
 .vscode/
 .idea/
+
+# Logs
+*.log
+
+# Python specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Temp files
+*.tmp
 *.swp
-*.swo
+*~
 
 # OS generated files
 .DS_Store
@@ -35,35 +54,11 @@ Thumbs.db
 # Coverage reports
 coverage/
 htmlcov/
-*.coverage
+.coverage
 
-# Python specific
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
-*.egg-info/
-.eggs/
-
-# TypeScript/JavaScript specific
-*.tsbuildinfo
-*.js.map
-*.jsx.map
-*.ts.map
-
-# MyPy cache
+# Testing
 .mypy_cache/
-
-# Pytest cache
 .pytest_cache/
-
-# Gradle
-.gradle/
-
-# Maven
-target/
 
 # Compressed files
 *.zip
@@ -88,4 +83,3 @@ target/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-```
