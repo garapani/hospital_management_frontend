@@ -60,10 +60,4 @@ export class ShellChrome {
   currentUser() {
     return this.auth.currentUser();
   }
-
-  closeMenus(): void {
-    this.userMenuOpen.set(false);
-    this.notificationsOpen.set(false);
-    this.quickActionsOpen.set(false);
-  }
 }
