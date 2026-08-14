@@ -103,6 +103,9 @@ export class Login {
           `Account locked. Try again in ${outcome.retryAfterSeconds} seconds.`,
         );
         return;
+      case 'serverError':
+        this.errorMessage.set(outcome.message);
+        return;
     }
   }
 }

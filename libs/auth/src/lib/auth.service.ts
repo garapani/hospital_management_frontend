@@ -33,24 +33,42 @@ export class AuthService {
     () => this.claims()?.hospitalId === PLATFORM_TENANT_ID,
   );
 
+  /**
+   * Authenticates user with username/password and returns login outcome.
+   * Handles various error scenarios: invalid credentials (401), account lockout (423),
+   * server errors (5xx), network errors, and timeouts.
+   * @param username - User's username/email
+   * @param password - User's password
+   * @returns Observable of LoginOutcome indicating success or specific failure reason
+   */
   login(username: string, password: string): Observable<LoginOutcome> {
     return this.apiClient.post<LoginResponse>('/auth/login', { username, password }).pipe(
       map((response) => {
-        this.setSession(response.accessToken, response.refreshToken);
+        const typedResponse = response as LoginResponse;
+        this.setSession(typedResponse.accessToken, typedResponse.refreshToken);
         return { kind: 'success' } as const;
       }),
-      catchError((error: ApiError) => {
-        if (error.status === 423) {
-          const body = error.body as { retryAfterSeconds?: number } | undefined;
+      catchError((error: unknown) => {
+        // Handle account lockout (423)
+        if ((error as ApiError).status === 423) {
+          const apiError = error as ApiError;
+          const body = apiError.body as { retryAfterSeconds?: number } | undefined;
           return of({
             kind: 'locked' as const,
             retryAfterSeconds: body?.retryAfterSeconds ?? 0,
           });
         }
-        if (error.status === 401) {
+        // Handle invalid credentials (401)
+        if ((error as ApiError).status === 401) {
           return of({ kind: 'invalidCredentials' as const });
         }
-        throw error;
+        // Handle server errors (5xx), network errors, and timeouts
+        // These are treated as temporary failures that should be shown to the user
+        const apiError = error as ApiError;
+        return of({
+          kind: 'serverError' as const,
+          message: apiError?.message || 'Login temporarily unavailable. Please try again.',
+        });
       }),
     );
   }
@@ -74,10 +92,11 @@ export class AuthService {
       .post<LoginResponse>('/auth/refresh', { refreshToken })
       .pipe(
         map((response) => {
-          this.setSession(response.accessToken, response.refreshToken);
-          return response.accessToken;
+          const typedResponse = response as LoginResponse;
+          this.setSession(typedResponse.accessToken, typedResponse.refreshToken);
+          return typedResponse.accessToken;
         }),
-        catchError((error: ApiError) => {
+        catchError((error: unknown) => {
           this.clearSession();
           return throwError(() => error);
         }),

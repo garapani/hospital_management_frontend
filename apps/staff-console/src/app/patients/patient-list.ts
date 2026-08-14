@@ -161,8 +161,13 @@ export class PatientList implements OnInit {
           this.isSaving.set(false);
           return;
         }
-      } catch {
-        // Proceed if duplicate check fails
+      } catch (error) {
+        // Show warning when duplicate check fails instead of silently proceeding
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Warning',
+          detail: 'Could not verify duplicates. Proceeding with registration.',
+        });
       }
     }
 
