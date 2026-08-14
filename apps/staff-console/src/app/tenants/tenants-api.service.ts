@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClientService } from '@org/api-client';
 import { Observable } from 'rxjs';
-import { ProvisionTenantDto, Tenant } from './tenant.model.js';
+import { ProvisionTenantDto, Tenant, TenantRoleOption } from './tenant.model.js';
 
 @Injectable({ providedIn: 'root' })
 export class TenantsApiService {
@@ -27,5 +27,17 @@ export class TenantsApiService {
 
   reactivate(id: string): Observable<Tenant> {
     return this.api.patch<Tenant>(`/tenants/${id}/reactivate`, {});
+  }
+
+  listRoles(id: string): Observable<TenantRoleOption[]> {
+    return this.api.get<TenantRoleOption[]>(`/tenants/${id}/roles`);
+  }
+
+  /**
+   * Replaces the tenant's enabled role set. Rejects with a 409 whose body carries `blocked` when a
+   * role being switched off is still held by accounts — see BlockedRole.
+   */
+  setRoles(id: string, roleIds: string[]): Observable<TenantRoleOption[]> {
+    return this.api.patch<TenantRoleOption[]>(`/tenants/${id}/roles`, { roleIds });
   }
 }
