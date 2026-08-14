@@ -2,15 +2,28 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service.js';
 
+/**
+ * Auth guard that checks if user is authenticated.
+ * Note: During app bootstrap, silent refresh may not have completed yet.
+ * The provideAuthBootstrap() handles silent refresh on app startup.
+ * If this guard runs before bootstrap completes, it may return false temporarily.
+ * Users should be redirected to login, and bootstrap will restore their session.
+ */
 export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   if (authService.isAuthenticated()) {
     return true;
   }
+  // Not authenticated yet - could be unauthenticated or bootstrap in progress
+  // Redirect to login; if bootstrap succeeds, user will be redirected back
   return inject(Router).createUrlTree(['/login']);
 };
 
-/** hasPermission() is false when unauthenticated too, so this alone covers both cases. */
+/** 
+ * Permission guard that checks if user has the required permission.
+ * hasPermission() is false when unauthenticated too, so this alone covers both cases.
+ * @param permission - The permission string to check against user's claims
+ */
 export function permissionGuard(permission: string): CanActivateFn {
   return () => {
     const authService = inject(AuthService);

@@ -53,6 +53,13 @@ const IndigoSlatePreset = definePreset(Aura, {
   },
 });
 
+/**
+ * Resolves the tenant ID from the subdomain with fallback mechanism for invalid tenant IDs.
+ * - Extracts subdomain from hostname (e.g., 'cityhospital.localhost' -> 'cityhospital')
+ * - Returns PLATFORM_TENANT_ID for 'admin' subdomain
+ * - Falls back to environment default for localhost, IP addresses, or www
+ * - Invalid/non-existent tenant IDs will be handled by backend authentication
+ */
 export function resolveTenantId(): string {
   if (typeof window === 'undefined') return environment.tenantId;
 
@@ -78,6 +85,7 @@ export function resolveTenantId(): string {
   }
 
   // E.g., 'cityhospital.localhost' -> 'cityhospital'
+  // Note: Invalid tenant IDs will be rejected by backend during authentication
   return subdomain;
 }
 

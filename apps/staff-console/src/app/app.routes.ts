@@ -118,12 +118,12 @@ export const appRoutes: Route[] = [
       {
         path: 'clinical/appointments',
         loadComponent: () => import('./appointments/appointment-list.js').then((m) => m.AppointmentList),
-        canActivate: [permissionGuard('appointment.read')],
+        canActivate: [permissionGuard(Permissions.APPOINTMENTS_READ)],
       },
       {
         path: 'clinical/appointments/:id',
         loadComponent: () => import('./appointments/appointment-detail.js').then((m) => m.AppointmentDetail),
-        canActivate: [permissionGuard('appointment.read')],
+        canActivate: [permissionGuard(Permissions.APPOINTMENTS_READ)],
       },
     ],
   },

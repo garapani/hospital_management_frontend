@@ -1,4 +1,5 @@
 export type LoginOutcome =
   | { kind: 'success' }
   | { kind: 'locked'; retryAfterSeconds: number }
-  | { kind: 'invalidCredentials' };
+  | { kind: 'invalidCredentials' }
+  | { kind: 'serverError'; message: string };

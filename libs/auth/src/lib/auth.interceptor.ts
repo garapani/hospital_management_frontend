@@ -2,6 +2,7 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/comm
 import { inject } from '@angular/core';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service.js';
+import { TokenStorage } from './token-storage.js';
 
 const AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh'];
 
@@ -14,15 +15,32 @@ function withBearerToken(req: HttpRequest<unknown>, token: string): HttpRequest<
   return req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
 }
 
+/**
+ * HTTP Interceptor that attaches the JWT access token to outgoing requests.
+ * Handles 401 responses by attempting a silent refresh and retrying the request once.
+ * Also attaches CSRF token if available for additional security.
+ */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
+  const tokenStorage = inject(TokenStorage);
 
   if (isAuthEndpoint(req.url)) {
+    // Include CSRF token on auth endpoints for login/refresh operations
+    const csrfToken = tokenStorage.getCsrfToken();
+    if (csrfToken) {
+      req = req.clone({ setHeaders: { 'X-CSRF-Token': csrfToken } });
+    }
     return next(req);
   }
 
   const accessToken = authService.getAccessToken();
-  const authedReq = accessToken ? withBearerToken(req, accessToken) : req;
+  let authedReq = accessToken ? withBearerToken(req, accessToken) : req;
+
+  // Attach CSRF token to all authenticated requests
+  const csrfToken = tokenStorage.getCsrfToken();
+  if (csrfToken) {
+    authedReq = authedReq.clone({ setHeaders: { 'X-CSRF-Token': csrfToken } });
+  }
 
   return next(authedReq).pipe(
     catchError((error: unknown) => {

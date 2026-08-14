@@ -81,6 +81,42 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
   });
 
+  it('reports serverError on a 500 response with error message', () => {
+    let outcome: unknown;
+
+    service.login('jdoe', 'secret').subscribe((result) => (outcome = result));
+
+    const req = httpMock.expectOne('https://gateway.example/api/auth/login');
+    req.flush(
+      { message: 'Internal server error' },
+      { status: 500, statusText: 'Internal Server Error' },
+    );
+
+    expect(outcome).toEqual({
+      kind: 'serverError',
+      message: 'Internal server error',
+    });
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  it('reports serverError on a 503 response', () => {
+    let outcome: unknown;
+
+    service.login('jdoe', 'secret').subscribe((result) => (outcome = result));
+
+    const req = httpMock.expectOne('https://gateway.example/api/auth/login');
+    req.flush(
+      { message: 'Service unavailable' },
+      { status: 503, statusText: 'Service Unavailable' },
+    );
+
+    expect(outcome).toEqual({
+      kind: 'serverError',
+      message: 'Service unavailable',
+    });
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
   it('reports invalidCredentials on a 401 response', () => {
     let outcome: unknown;
 
