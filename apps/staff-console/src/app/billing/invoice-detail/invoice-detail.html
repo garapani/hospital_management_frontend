@@ -13,7 +13,9 @@
       <div class="flex items-start justify-between">
         <div>
           <div class="text-sm font-medium text-slate-500">Invoice</div>
-          <h1 class="page-title">
+          <!-- Not .page-title: this heading's content is an invoice reference, not a title, so it takes the mono
+               (data) type role instead of the display role .page-title would apply. -->
+          <h1 class="font-mono text-2xl font-bold text-slate-900 tracking-tight">
             {{ reference(inv) }}
           </h1>
         </div>
@@ -30,7 +32,7 @@
           <div class="text-xs font-bold uppercase tracking-wide text-slate-500">
             Total
           </div>
-          <div class="text-2xl font-bold text-slate-800 mt-1">
+          <div class="font-mono text-2xl font-bold text-slate-800 mt-1">
             {{ inv.totalAmount | number: '1.2-2' }}
           </div>
         </div>
@@ -38,7 +40,7 @@
           <div class="text-xs font-bold uppercase tracking-wide text-slate-500">
             Paid
           </div>
-          <div class="text-2xl font-bold text-slate-800 mt-1">
+          <div class="font-mono text-2xl font-bold text-slate-800 mt-1">
             {{ inv.paidAmount | number: '1.2-2' }}
           </div>
         </div>
@@ -46,7 +48,7 @@
           <div class="text-xs font-bold uppercase tracking-wide text-slate-500">
             Patient ID
           </div>
-          <div class="text-2xl font-bold text-slate-800 mt-1">
+          <div class="font-mono text-2xl font-bold text-slate-800 mt-1">
             {{ inv.patientId }}
           </div>
         </div>

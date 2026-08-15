@@ -8,7 +8,7 @@ import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { UsersApiService } from './users-api.service.js';
-import { UserWithRoles } from './user.model.js';
+import { UserWithRoles, userStatusLabel, userStatusSeverity } from './user.model.js';
 
 @Component({
   imports: [
@@ -31,6 +31,8 @@ export class UserDetail {
 
   readonly accountData = signal<UserWithRoles | null>(null);
   readonly loading = signal(true);
+  readonly userStatusLabel = userStatusLabel;
+  readonly userStatusSeverity = userStatusSeverity;
 
   // Assign Role Modal
   readonly showAssignModal = signal(false);

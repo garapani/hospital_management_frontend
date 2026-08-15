@@ -104,6 +104,9 @@ export const appConfig: ApplicationConfig = {
       theme: {
         preset: VaidyaTealPreset,
         options: {
+          // Off for now — a future dark theme needs this switched to a selector (e.g. '.dark')
+          // and a colorScheme.dark block added to VaidyaTealPreset above; see styles.css's
+          // status-rail-tokens comment for the other half (Tailwind's own color variables).
           darkModeSelector: false,
           cssLayer: {
             name: 'primeng',

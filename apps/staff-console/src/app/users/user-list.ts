@@ -9,7 +9,7 @@ import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { UsersApiService } from './users-api.service.js';
-import { User, RoleDto } from './user.model.js';
+import { User, RoleDto, userStatusLabel, userStatusSeverity } from './user.model.js';
 
 @Component({
   imports: [
@@ -32,6 +32,8 @@ export class UserList {
   readonly users = signal<User[]>([]);
   readonly loading = signal(false);
   readonly roles = signal<RoleDto[]>([]);
+  readonly userStatusLabel = userStatusLabel;
+  readonly userStatusSeverity = userStatusSeverity;
 
   // Create User Modal
   readonly showCreateModal = signal(false);

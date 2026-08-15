@@ -5,6 +5,61 @@
 @import 'primeicons/primeicons.css';
 @plugin "tailwindcss-primeui";
 
+/* Self-hosted type system (no external font request — matters for hospitals on thin links). */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
+
+/*
+ * Global type tokens — the app's three type roles, each a single override point.
+ *  - --font-sans (body, default everywhere): Inter. Optimised for legibility at the small sizes
+ *    dense tables run at.
+ *  - --font-display (headings, page titles, brand mark, stat numbers — `.font-display`): Space
+ *    Grotesk. A geometric grotesk with distinct flat-cut terminals — enough character to read as
+ *    this product's own voice rather than a generic UI font, without the personality overreach a
+ *    serif or slab would bring to a fast-moving clinical tool.
+ *  - --font-mono (clinical/financial data — IDs, phone numbers, invoice amounts): JetBrains Mono.
+ *    Tabular figures and unambiguous glyphs (0/O, 1/l/I are never confused) — a misread digit in
+ *    a patient ID or an invoice amount is a real failure mode this app can't shrug off.
+ * These override Tailwind's own --font-sans/--font-mono keys rather than inventing new token
+ * names, so every existing font-sans/font-mono utility across the app already uses them.
+ */
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+}
+
+/*
+ * Status-rail tokens. Mirror PrimeNG Aura's own severity palette (see the `p-tag` severities
+ * used throughout the app) so a rail and its row's status pill always agree — one source of
+ * truth for "what does 'danger' look like here", not two.
+ *
+ * Dark-mode note: every surface/text color in this app is a Tailwind palette utility
+ * (`bg-white`, `text-slate-*`, `border-slate-*`) or a PrimeNG semantic token
+ * (`primary-*` from the VaidyaTealPreset in app.config.ts) — never a hardcoded hex in a
+ * template. That indirection is what makes a future theme swap cheap: a dark palette is a
+ * `@media (prefers-color-scheme: dark) { :root { --color-white: ...; --color-slate-50: ...; } }`
+ * block redefining those same Tailwind color variables (Tailwind v4 keeps them as real custom
+ * properties), plus a matching `colorScheme.dark` block in the PrimeNG preset and flipping
+ * `darkModeSelector` — no template rewrite required. These --status-* tokens follow the same
+ * rule: redefine them once here, every `.status-rail-*` and future consumer picks it up.
+ */
+:root {
+  --status-success: #22c55e;
+  --status-warn: #f59e0b;
+  --status-danger: #ef4444;
+  --status-info: #0ea5e9;
+  --status-secondary: #94a3b8;
+}
+
 @layer tailwind-base {
   body {
     @apply bg-primary-50 text-slate-900 m-0 p-0 font-sans antialiased;
@@ -100,10 +155,47 @@
   }
 
   .page-title {
-    @apply text-2xl font-bold text-slate-900 tracking-tight;
+    @apply font-display text-2xl font-bold text-slate-900 tracking-tight;
   }
 
   .page-subtitle {
     @apply text-sm text-slate-500 mt-1;
+  }
+
+  /* Brand wordmark — was duplicated verbatim in the sidebar and both login-panel variants. */
+  .brand-mark {
+    @apply font-display text-lg font-bold tracking-tight;
+  }
+
+  /*
+   * Status rail. A 3px left border on a list row, coloured by record state — reuses the
+   * --status-* tokens above rather than a fresh Tailwind color, so it always tracks the same
+   * palette as that row's p-tag. Border only, no fill: it marks state at a glance during a fast
+   * scan down a table (a queue of triage acuities, an invoice list's paid/overdue mix) without
+   * adding another block of colour to the page. Reserved for list rows, where scanning many
+   * records at once is the actual job — a single detail page already states its own status next
+   * to the heading, so a rail there would just repeat the same fact with no scanning benefit.
+   * Severity names match PrimeNG's own ('success' | 'warn' | 'danger' | 'info' | 'secondary') so
+   * a row's rail class can be built directly from the same *StatusSeverity() function that drives
+   * its p-tag: `'status-rail-' + statusSeverity(row.status)`.
+   */
+  .status-rail-success {
+    border-left: 3px solid var(--status-success);
+  }
+
+  .status-rail-warn {
+    border-left: 3px solid var(--status-warn);
+  }
+
+  .status-rail-danger {
+    border-left: 3px solid var(--status-danger);
+  }
+
+  .status-rail-info {
+    border-left: 3px solid var(--status-info);
+  }
+
+  .status-rail-secondary {
+    border-left: 3px solid var(--status-secondary);
   }
 }

@@ -44,3 +44,17 @@ export interface RoleDto {
   name: string;
   description: string;
 }
+
+export function userStatusLabel(user: Pick<User, 'isActive' | 'lockedUntil'>): string {
+  if (user.lockedUntil) return 'Locked';
+  if (!user.isActive) return 'Inactive';
+  return 'Active';
+}
+
+export function userStatusSeverity(
+  user: Pick<User, 'isActive' | 'lockedUntil'>,
+): 'success' | 'warn' | 'danger' {
+  if (user.lockedUntil) return 'danger';
+  if (!user.isActive) return 'warn';
+  return 'success';
+}

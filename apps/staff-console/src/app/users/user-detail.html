@@ -16,13 +16,12 @@
         <h1
           class="page-title flex items-center gap-3"
         >
-          {{ data.account.displayName }} @if (data.account.lockedUntil) {
-          <p-tag value="Locked" severity="danger" [rounded]="true"></p-tag>
-          } @else if (!data.account.isActive) {
-          <p-tag value="Inactive" severity="warn" [rounded]="true"></p-tag>
-          } @else {
-          <p-tag value="Active" severity="success" [rounded]="true"></p-tag>
-          }
+          {{ data.account.displayName }}
+          <p-tag
+            [value]="userStatusLabel(data.account)"
+            [severity]="userStatusSeverity(data.account)"
+            [rounded]="true"
+          ></p-tag>
         </h1>
         <p class="text-sm text-slate-500 mt-1">
           {{ data.account.username }} &bull; {{ data.account.email }}

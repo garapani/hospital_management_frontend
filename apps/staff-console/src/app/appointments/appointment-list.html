@@ -62,7 +62,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-appt>
-        <tr>
+        <tr [class]="'status-rail-' + statusSeverity(appt.status)">
           <td class="font-medium">{{ displayName(appt) }}</td>
           <td>{{ appt.appointmentDate | date }}</td>
           <td>{{ appt.appointmentTime }}</td>

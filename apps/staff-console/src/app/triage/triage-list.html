@@ -34,7 +34,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-entry>
-        <tr>
+        <tr [class]="entry.colorCode ? 'status-rail-' + colorSeverity(entry.colorCode) : ''">
           <td class="font-medium">
             {{ displayName(entry) }}
             @if (entry.patientId) {

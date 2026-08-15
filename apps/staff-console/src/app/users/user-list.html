@@ -36,18 +36,19 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-user>
-        <tr class="hover:bg-sky-50/50 transition-colors">
+        <tr
+          class="hover:bg-sky-50/50 transition-colors"
+          [class]="'status-rail-' + userStatusSeverity(user)"
+        >
           <td class="font-medium text-slate-800">{{ user.username }}</td>
           <td>{{ user.displayName }}</td>
           <td class="text-slate-500">{{ user.email }}</td>
           <td>
-            @if (user.lockedUntil) {
-            <p-tag value="Locked" severity="danger" [rounded]="true"></p-tag>
-            } @else if (!user.isActive) {
-            <p-tag value="Inactive" severity="warn" [rounded]="true"></p-tag>
-            } @else {
-            <p-tag value="Active" severity="success" [rounded]="true"></p-tag>
-            }
+            <p-tag
+              [value]="userStatusLabel(user)"
+              [severity]="userStatusSeverity(user)"
+              [rounded]="true"
+            ></p-tag>
           </td>
           <td class="text-slate-500 text-sm">
             {{ user.createdAt | date: 'mediumDate' }}
