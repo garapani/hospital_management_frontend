@@ -125,6 +125,86 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./appointments/appointment-detail.js').then((m) => m.AppointmentDetail),
         canActivate: [permissionGuard(Permissions.APPOINTMENTS_READ)],
       },
+      {
+        path: 'clinical/orders',
+        loadComponent: () => import('./orders/order-list.js').then((m) => m.OrderList),
+        canActivate: [permissionGuard(Permissions.ORDER_READ)],
+      },
+      {
+        path: 'clinical/orders/:id',
+        loadComponent: () => import('./orders/order-detail.js').then((m) => m.OrderDetail),
+        canActivate: [permissionGuard(Permissions.ORDER_READ)],
+      },
+      {
+        path: 'clinical/lab',
+        loadComponent: () => import('./lab/lab-requisitions-list/lab-requisitions-list.js').then((m) => m.LabRequisitionsList),
+        canActivate: [permissionGuard(Permissions.LAB_READ)],
+      },
+      {
+        path: 'clinical/lab/:id',
+        loadComponent: () => import('./lab/lab-requisition-detail/lab-requisition-detail.js').then((m) => m.LabRequisitionDetail),
+        canActivate: [permissionGuard(Permissions.LAB_READ)],
+      },
+      {
+        path: 'clinical/radiology',
+        loadComponent: () => import('./radiology/radiology-requisitions-list.js').then((m) => m.RadiologyRequisitionsList),
+        canActivate: [permissionGuard(Permissions.RADIOLOGY_READ)],
+      },
+      {
+        path: 'clinical/radiology/:id',
+        loadComponent: () => import('./radiology/radiology-requisition-detail.js').then((m) => m.RadiologyRequisitionDetail),
+        canActivate: [permissionGuard(Permissions.RADIOLOGY_READ)],
+      },
+      {
+        path: 'clinical/pharmacy',
+        loadComponent: () => import('./pharmacy/pharmacy-dispensing-list.js').then((m) => m.PharmacyDispensingList),
+        canActivate: [permissionGuard(Permissions.PHARMACY_READ)],
+      },
+      {
+        path: 'clinical/pharmacy/:id',
+        loadComponent: () => import('./pharmacy/pharmacy-dispensing-detail.js').then((m) => m.PharmacyDispensingDetail),
+        canActivate: [permissionGuard(Permissions.PHARMACY_READ)],
+      },
+      {
+        path: 'admissions',
+        loadComponent: () => import('./admissions/admission-list.js').then((m) => m.AdmissionList),
+        canActivate: [permissionGuard(Permissions.ADMISSION_READ)],
+      },
+      {
+        path: 'admissions/:id',
+        loadComponent: () => import('./admissions/admission-detail.js').then((m) => m.AdmissionDetail),
+        canActivate: [permissionGuard(Permissions.ADMISSION_READ)],
+      },
+      {
+        path: 'inventory',
+        loadComponent: () => import('./inventory/inventory-item-list/inventory-item-list.js').then((m) => m.InventoryItemList),
+        canActivate: [permissionGuard(Permissions.INVENTORY_READ)],
+      },
+      {
+        path: 'inventory/purchase-orders',
+        loadComponent: () => import('./inventory/purchase-order-list/purchase-order-list.js').then((m) => m.PurchaseOrderList),
+        canActivate: [permissionGuard(Permissions.INVENTORY_READ)],
+      },
+      {
+        path: 'inventory/purchase-orders/:id',
+        loadComponent: () => import('./inventory/purchase-order-detail/purchase-order-detail.js').then((m) => m.PurchaseOrderDetail),
+        canActivate: [permissionGuard(Permissions.INVENTORY_READ)],
+      },
+      {
+        path: 'inventory/requisitions',
+        loadComponent: () => import('./inventory/stock-requisition-list/stock-requisition-list.js').then((m) => m.StockRequisitionList),
+        canActivate: [permissionGuard(Permissions.INVENTORY_READ)],
+      },
+      {
+        path: 'inventory/requisitions/:id',
+        loadComponent: () => import('./inventory/stock-requisition-detail/stock-requisition-detail.js').then((m) => m.StockRequisitionDetail),
+        canActivate: [permissionGuard(Permissions.INVENTORY_READ)],
+      },
+      {
+        path: 'reporting',
+        loadComponent: () => import('./reporting/reporting-dashboard/reporting-dashboard.js').then((m) => m.ReportingDashboard),
+        canActivate: [permissionGuard(Permissions.REPORTING_READ)],
+      },
     ],
   },
   { path: '**', redirectTo: '' },

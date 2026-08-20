@@ -1,0 +1,85 @@
+<div class="h-full flex flex-col gap-6">
+  <div>
+    <h1 class="page-title">Inventory Items</h1>
+    <p class="text-sm text-slate-500 mt-1">Browse the item catalog by category and sub-category.</p>
+  </div>
+
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-wrap items-end gap-3">
+    <div class="flex flex-col gap-2">
+      <label for="filterCategory" class="text-xs font-semibold text-slate-600">Category</label>
+      <p-select
+        inputId="filterCategory"
+        [options]="categories()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="selectedCategoryId()"
+        (ngModelChange)="onCategoryChange($event)"
+        placeholder="Select a category"
+        [showClear]="true"
+        [loading]="categoriesLoading()"
+        styleClass="w-64"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="filterSubCategory" class="text-xs font-semibold text-slate-600">Sub-category</label>
+      <p-select
+        inputId="filterSubCategory"
+        [options]="subCategories()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="selectedSubCategoryId()"
+        (ngModelChange)="onSubCategoryChange($event)"
+        placeholder="Select a sub-category"
+        [showClear]="true"
+        [loading]="subCategoriesLoading()"
+        [disabled]="!selectedCategoryId()"
+        styleClass="w-64"
+      ></p-select>
+    </div>
+  </div>
+
+  <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white p-4">
+    <p-table
+      [value]="items()"
+      [loading]="itemsLoading()"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Name</th>
+          <th class="table-header-cell">Code</th>
+          <th class="table-header-cell">Unit of Measure</th>
+          <th class="table-header-cell">Sale Price</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-item>
+        <tr>
+          <td class="font-medium">{{ item.name }}</td>
+          <td class="font-mono text-xs">{{ item.code }}</td>
+          <td>{{ item.unitOfMeasure }}</td>
+          <td>
+            @if (item.salePrice != null) {
+            <span class="font-mono">{{ item.salePrice | number: '1.2-2' }}</span>
+            } @else {
+            <span class="text-slate-400">Not priced</span>
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="text-center p-6 text-slate-500">
+            @if (!selectedCategoryId()) {
+            Select a category to view items.
+            } @else if (!selectedSubCategoryId()) {
+            Select a sub-category to view items.
+            } @else {
+            No items found in this sub-category.
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

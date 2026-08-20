@@ -1,0 +1,134 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="page-title">Admissions</h1>
+      <p class="text-sm text-slate-500 mt-1">Admit, transfer and discharge inpatients.</p>
+    </div>
+    @if (auth.hasPermission('admission.manage')) {
+    <p-button label="New Admission" icon="pi pi-plus" (onClick)="openCreateModal()"></p-button>
+    }
+  </div>
+
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-wrap items-end gap-3">
+    <div class="flex flex-col gap-2">
+      <label for="viewToggle" class="text-xs font-semibold text-slate-600">View</label>
+      <p-selectbutton
+        inputId="viewToggle"
+        [options]="viewOptions"
+        [ngModel]="view()"
+        (ngModelChange)="onViewChange($event)"
+      ></p-selectbutton>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="filterWard" class="text-xs font-semibold text-slate-600">Ward ID</label>
+      <input id="filterWard" pInputText [ngModel]="wardIdFilter()" (ngModelChange)="wardIdFilter.set($event)" placeholder="Optional" />
+    </div>
+    @if (view() === 'All') {
+    <div class="flex flex-col gap-2">
+      <label for="filterStatus" class="text-xs font-semibold text-slate-600">Status</label>
+      <p-select
+        inputId="filterStatus"
+        [options]="statuses"
+        [ngModel]="statusFilter()"
+        (ngModelChange)="statusFilter.set($event)"
+        placeholder="All"
+        [showClear]="true"
+        styleClass="w-40"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="filterPatient" class="text-xs font-semibold text-slate-600">Patient ID</label>
+      <input id="filterPatient" pInputText [ngModel]="patientIdFilter()" (ngModelChange)="patientIdFilter.set($event)" placeholder="Optional" />
+    </div>
+    }
+    <p-button label="Apply" size="small" severity="secondary" (onClick)="applyFilters()"></p-button>
+  </div>
+
+  <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white p-4">
+    <p-table
+      [value]="admissions()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      (onLazyLoad)="onLazyLoad($event)"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [totalRecords]="totalRecords()"
+      [first]="firstRecord()"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Patient ID</th>
+          <th class="table-header-cell">Source</th>
+          <th class="table-header-cell">Admitting Doctor</th>
+          <th class="table-header-cell">Ward</th>
+          <th class="table-header-cell">Bed</th>
+          <th class="table-header-cell">Admitted On</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell w-24">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-admission>
+        <tr [class]="'status-rail-' + statusSeverity(admission.status)">
+          <td class="font-mono text-xs">{{ admission.patientId }}</td>
+          <td><p-tag [value]="admission.admissionSource" [severity]="sourceSeverity(admission.admissionSource)" [rounded]="true"></p-tag></td>
+          <td class="font-mono text-xs">{{ admission.admittingDoctorId }}</td>
+          <td class="font-mono text-xs">{{ admission.wardId }}</td>
+          <td class="font-mono text-xs">{{ admission.bedId }}</td>
+          <td>{{ admission.admissionDate | date: 'short' }}</td>
+          <td><p-tag [value]="admission.status" [severity]="statusSeverity(admission.status)" [rounded]="true"></p-tag></td>
+          <td>
+            <a [routerLink]="['/admissions', admission.id]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View</a>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="text-center p-6 text-slate-500">No admissions found for the selected filters.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- New Admission Modal -->
+<p-dialog header="New Admission" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">
+  <div class="grid grid-cols-2 gap-4 py-4">
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="admPatientId" class="text-sm font-medium text-slate-700">Patient ID</label>
+      <input id="admPatientId" pInputText [ngModel]="createForm().patientId" (ngModelChange)="createForm.set({ ...createForm(), patientId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="admSource" class="text-sm font-medium text-slate-700">Admission Source</label>
+      <p-select
+        inputId="admSource"
+        [options]="sources"
+        [ngModel]="createForm().admissionSource"
+        (ngModelChange)="createForm.set({ ...createForm(), admissionSource: $event })"
+        placeholder="Select source"
+        styleClass="w-full"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="admDoctor" class="text-sm font-medium text-slate-700">Admitting Doctor ID</label>
+      <input id="admDoctor" pInputText [ngModel]="createForm().admittingDoctorId" (ngModelChange)="createForm.set({ ...createForm(), admittingDoctorId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label for="admBed" class="text-sm font-medium text-slate-700">Bed ID</label>
+      <input id="admBed" pInputText [ngModel]="createForm().bedId" (ngModelChange)="createForm.set({ ...createForm(), bedId: $event })" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCreateModal.set(false)"></p-button>
+      <p-button
+        label="Admit Patient"
+        [loading]="saving()"
+        (onClick)="submitCreate()"
+        [disabled]="!createForm().patientId || !createForm().admissionSource || !createForm().admittingDoctorId || !createForm().bedId"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

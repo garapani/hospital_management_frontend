@@ -1,0 +1,70 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex items-center gap-4">
+    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (onClick)="goBack()"></p-button>
+    <div>
+      <h1 class="page-title flex items-center gap-3">
+        @if (dispensing(); as d) {
+        {{ d.dispensingNumber }}
+        <p-tag [value]="d.status" [severity]="statusSeverity(d.status)" [rounded]="true"></p-tag>
+        } @else {
+        Loading Dispensing...
+        }
+      </h1>
+      @if (dispensing(); as d) {
+      <p class="text-sm text-slate-500 mt-1">Created {{ d.createdAt | date }}</p>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+  <div class="flex-1 flex items-center justify-center">
+    <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
+  </div>
+  } @else if (dispensing(); as d) {
+  <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
+    <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Details</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Item</div>
+        <div class="font-medium text-slate-900">{{ d.orderItem?.itemDescription ?? 'N/A' }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Quantity</div>
+        <div class="font-medium text-slate-900">{{ d.quantity }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Order Item ID</div>
+        <div class="font-medium text-slate-900 font-mono text-xs">{{ d.orderItemId }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Inventory Item ID</div>
+        <div class="font-medium text-slate-900 font-mono text-xs">{{ d.inventoryItemId }}</div>
+      </div>
+      @if (d.dispensedBy) {
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Dispensed By</div>
+        <div class="font-medium text-slate-900 font-mono text-xs">{{ d.dispensedBy }}</div>
+      </div>
+      }
+      @if (d.dispensedAt) {
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Dispensed At</div>
+        <div class="font-medium text-slate-900">{{ d.dispensedAt | date }}</div>
+      </div>
+      }
+      @if (d.cancelReason) {
+      <div class="md:col-span-2">
+        <div class="text-xs text-slate-500 mb-1">Cancel Reason</div>
+        <div class="font-medium text-slate-900">{{ d.cancelReason }}</div>
+      </div>
+      }
+    </div>
+
+    @if (auth.hasPermission('pharmacy.dispensing.dispense') && d.status === 'Pending') {
+    <div class="flex justify-end border-t border-slate-200 pt-4">
+      <p-button label="Dispense" icon="pi pi-check" [loading]="dispensingInProgress()" (onClick)="dispenseDrug()"></p-button>
+    </div>
+    }
+  </div>
+  }
+</div>

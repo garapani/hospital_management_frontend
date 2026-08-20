@@ -1,0 +1,151 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex items-center gap-4">
+    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (onClick)="goBack()"></p-button>
+    <div>
+      <h1 class="page-title flex items-center gap-3">
+        @if (requisition(); as r) {
+        {{ r.requisitionNumber }}
+        <p-tag [value]="r.status" [severity]="statusSeverity(r.status)" [rounded]="true"></p-tag>
+        } @else {
+        Loading Requisition...
+        }
+      </h1>
+      @if (requisition(); as r) {
+      <p class="text-sm text-slate-500 mt-1">Created {{ r.createdAt | date: 'medium' }}</p>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+  <div class="flex-1 flex items-center justify-center">
+    <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
+  </div>
+  } @else if (requisition(); as r) {
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
+      <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Requisition Details</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Order Item</div>
+          <div class="font-medium text-slate-900">{{ r.orderItem?.itemDescription ?? r.orderItemId }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Priority</div>
+          <div class="font-medium text-slate-900">{{ r.orderItem?.priority ?? 'N/A' }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Order Item ID</div>
+          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.orderItemId }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Imaging Item ID</div>
+          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.imagingItemId }}</div>
+        </div>
+        @if (r.scannedAt) {
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Scanned</div>
+          <div class="font-medium text-slate-900">{{ r.scannedAt | date: 'medium' }}</div>
+        </div>
+        }
+        @if (r.reportEnteredAt) {
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Report Entered</div>
+          <div class="font-medium text-slate-900">{{ r.reportEnteredAt | date: 'medium' }}</div>
+        </div>
+        }
+        @if (r.verifiedAt) {
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Verified</div>
+          <div class="font-medium text-slate-900">{{ r.verifiedAt | date: 'medium' }}</div>
+        </div>
+        }
+      </div>
+
+      @if (r.status === 'Pending' && auth.hasPermission('radiology.report.enter')) {
+      <p-button label="Mark Scanned" icon="pi pi-camera" [loading]="actionLoading()" (onClick)="markScanned()"></p-button>
+      }
+      @if (r.status === 'Scanned' && auth.hasPermission('radiology.report.enter')) {
+      <p-button label="Enter Report" icon="pi pi-pencil" [loading]="actionLoading()" (onClick)="openReportModal()"></p-button>
+      }
+      @if (r.status === 'ReportEntered' && auth.hasPermission('radiology.report.verify')) {
+      <p-button label="Verify Report" icon="pi pi-check" severity="success" [loading]="actionLoading()" (onClick)="verify()"></p-button>
+      }
+      @if (canCancelStatuses.includes(r.status) && auth.hasPermission('radiology.requisition.create')) {
+      <p-button label="Cancel Requisition" icon="pi pi-ban" severity="danger" [text]="true" [loading]="actionLoading()" (onClick)="openCancelModal()"></p-button>
+      }
+    </div>
+
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 flex flex-col gap-4">
+      <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Report</h3>
+
+      @if (r.reportText) {
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Report Text</div>
+        <div class="font-medium text-slate-900 whitespace-pre-wrap">{{ r.reportText }}</div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Indication</div>
+          <div class="font-medium text-slate-900">{{ r.indication || 'N/A' }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Entered By</div>
+          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.reportEnteredBy || 'N/A' }}</div>
+        </div>
+        @if (r.verifiedBy) {
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Verified By</div>
+          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.verifiedBy }}</div>
+        </div>
+        }
+      </div>
+      } @else {
+      <p class="text-slate-500">No report entered yet.</p>
+      }
+
+      @if (r.cancelReason) {
+      <div class="border-t border-slate-200 pt-4">
+        <div class="text-xs text-slate-500 mb-1">Cancellation Reason</div>
+        <div class="font-medium text-slate-900">{{ r.cancelReason }}</div>
+      </div>
+      }
+    </div>
+  </div>
+  }
+</div>
+
+<!-- Enter Report Modal -->
+<p-dialog header="Enter Radiology Report" [(visible)]="showReportModal" [modal]="true" [style]="{ width: '560px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="reportText" class="text-sm font-medium text-slate-700">Report Text</label>
+      <textarea id="reportText" pTextarea [ngModel]="reportText()" (ngModelChange)="reportText.set($event)" rows="6" class="w-full"></textarea>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="reportIndication" class="text-sm font-medium text-slate-700">Indication</label>
+      <input id="reportIndication" pInputText [ngModel]="indication()" (ngModelChange)="indication.set($event)" placeholder="Optional" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Back" severity="secondary" [text]="true" (onClick)="showReportModal.set(false)"></p-button>
+      <p-button label="Save Report" icon="pi pi-check" [loading]="actionLoading()" [disabled]="!reportText().trim()" (onClick)="submitReport()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Cancel Requisition Modal -->
+<p-dialog header="Cancel Requisition" [(visible)]="showCancelModal" [modal]="true" [style]="{ width: '450px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="cancelReason" class="text-sm font-medium text-slate-700">Cancellation Reason</label>
+      <textarea id="cancelReason" pTextarea [ngModel]="cancelReason()" (ngModelChange)="cancelReason.set($event)" rows="3" class="w-full"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Back" severity="secondary" [text]="true" (onClick)="showCancelModal.set(false)"></p-button>
+      <p-button label="Confirm Cancel" severity="danger" [loading]="actionLoading()" (onClick)="confirmCancel()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

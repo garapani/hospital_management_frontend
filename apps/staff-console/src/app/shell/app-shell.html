@@ -12,7 +12,9 @@
     </a>
     }
     @if (auth.hasPermission('patients.read') || auth.hasPermission('appointment.read') ||
-    auth.hasPermission('triage.read')) {
+    auth.hasPermission('triage.read') || auth.hasPermission('order.read') ||
+    auth.hasPermission('lab.read') || auth.hasPermission('radiology.read') ||
+    auth.hasPermission('pharmacy.read')) {
     <div class="nav-section-label">
       Clinical
     </div>
@@ -46,6 +48,72 @@
       <i class="pi pi-heart text-base"></i>
       Triage / ER
     </a>
+    } @if (auth.hasPermission('order.read')) {
+    <a
+      routerLink="/clinical/orders"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-clipboard text-base"></i>
+      Orders
+    </a>
+    } @if (auth.hasPermission('lab.read')) {
+    <a
+      routerLink="/clinical/lab"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-microscope text-base"></i>
+      Lab / LIS
+    </a>
+    } @if (auth.hasPermission('radiology.read')) {
+    <a
+      routerLink="/clinical/radiology"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-image text-base"></i>
+      Radiology
+    </a>
+    } @if (auth.hasPermission('pharmacy.read')) {
+    <a
+      routerLink="/clinical/pharmacy"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-shield text-base"></i>
+      Pharmacy
+    </a>
+    }
+    }
+    @if (auth.hasPermission('admission.read') || auth.hasPermission('inventory.read')) {
+    <div class="nav-section-label">
+      Operations
+    </div>
+    @if (auth.hasPermission('admission.read')) {
+    <a
+      routerLink="/admissions"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-bed text-base"></i>
+      Admissions / ADT
+    </a>
+    } @if (auth.hasPermission('inventory.read')) {
+    <a
+      routerLink="/inventory"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-box text-base"></i>
+      Inventory
+    </a>
     }
     }
     @if (auth.hasPermission('identity.accounts.manage') ||
@@ -53,7 +121,17 @@
     <div class="nav-section-label">
       Administration
     </div>
-    @if (auth.hasPermission('identity.accounts.manage')) {
+    @if (auth.hasPermission('reporting.read')) {
+    <a
+      routerLink="/reporting"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-chart-bar text-base"></i>
+      Reporting
+    </a>
+    } @if (auth.hasPermission('identity.accounts.manage')) {
     <a
       routerLink="/admin/users"
       routerLinkActive="nav-item-active"

@@ -1,0 +1,104 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="page-title">Pharmacy Dispensings</h1>
+      <p class="text-sm text-slate-500 mt-1">Create and track pharmacy dispensing records.</p>
+    </div>
+    @if (auth.hasPermission('pharmacy.dispensing.create')) {
+    <p-button label="New Dispensing" icon="pi pi-plus" (onClick)="openCreateModal()"></p-button>
+    }
+  </div>
+
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-wrap items-end gap-3">
+    <div class="flex flex-col gap-2">
+      <label for="filterOrderItem" class="text-xs font-semibold text-slate-600">Order Item ID</label>
+      <input id="filterOrderItem" pInputText [ngModel]="orderItemIdFilter()" (ngModelChange)="orderItemIdFilter.set($event)" placeholder="Optional" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="filterStatus" class="text-xs font-semibold text-slate-600">Status</label>
+      <p-select
+        inputId="filterStatus"
+        [options]="statuses"
+        [ngModel]="statusFilter()"
+        (ngModelChange)="statusFilter.set($event)"
+        placeholder="All"
+        [showClear]="true"
+        styleClass="w-40"
+      ></p-select>
+    </div>
+    <p-button label="Apply" size="small" severity="secondary" (onClick)="applyFilters()"></p-button>
+  </div>
+
+  <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white p-4">
+    <p-table
+      [value]="dispensings()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      (onLazyLoad)="onLazyLoad($event)"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [totalRecords]="totalRecords()"
+      [first]="firstRecord()"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Dispensing #</th>
+          <th class="table-header-cell">Item</th>
+          <th class="table-header-cell">Quantity</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell">Created</th>
+          <th class="table-header-cell w-24">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-d>
+        <tr [class]="'status-rail-' + statusSeverity(d.status)">
+          <td class="font-medium font-mono text-xs">{{ d.dispensingNumber }}</td>
+          <td>{{ d.orderItem?.itemDescription ?? d.orderItemId }}</td>
+          <td>{{ d.quantity }}</td>
+          <td><p-tag [value]="d.status" [severity]="statusSeverity(d.status)" [rounded]="true"></p-tag></td>
+          <td>{{ d.createdAt | date }}</td>
+          <td>
+            <a [routerLink]="['/clinical/pharmacy', d.id]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View</a>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-6 text-slate-500">No dispensing records found for the selected filters.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- New Dispensing Modal -->
+<p-dialog header="New Dispensing" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '520px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="dispOrderItemId" class="text-sm font-medium text-slate-700">Order Item ID</label>
+      <input id="dispOrderItemId" pInputText [ngModel]="createForm().orderItemId" (ngModelChange)="createForm.set({ ...createForm(), orderItemId: $event })" class="w-full" placeholder="Pharmacy order item UUID" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="dispInventoryItemId" class="text-sm font-medium text-slate-700">Inventory Item ID</label>
+      <input id="dispInventoryItemId" pInputText [ngModel]="createForm().inventoryItemId" (ngModelChange)="createForm.set({ ...createForm(), inventoryItemId: $event })" class="w-full" placeholder="Inventory catalog item UUID" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="dispQuantity" class="text-sm font-medium text-slate-700">Quantity</label>
+      <input id="dispQuantity" pInputText type="number" min="1" [ngModel]="createForm().quantity" (ngModelChange)="setQuantity($event)" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCreateModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="saving()"
+        (onClick)="submitCreate()"
+        [disabled]="!createForm().orderItemId || !createForm().inventoryItemId || !createForm().quantity || createForm().quantity <= 0"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

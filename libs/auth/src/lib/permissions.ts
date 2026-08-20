@@ -27,6 +27,34 @@ export const Permissions = {
 
   // Appointments
   APPOINTMENTS_READ: 'appointment.read' as const,
+
+  // Lab / LIS
+  LAB_READ: 'lab.read' as const,
+  LAB_CATALOG_MANAGE: 'lab.catalog.manage' as const,
+
+  // Radiology
+  RADIOLOGY_READ: 'radiology.read' as const,
+  RADIOLOGY_CATALOG_MANAGE: 'radiology.catalog.manage' as const,
+
+  // Pharmacy
+  PHARMACY_READ: 'pharmacy.read' as const,
+  PHARMACY_DISPENSING_CREATE: 'pharmacy.dispensing.create' as const,
+  PHARMACY_DISPENSING_DISPENSE: 'pharmacy.dispensing.dispense' as const,
+
+  // Inventory
+  INVENTORY_READ: 'inventory.read' as const,
+  INVENTORY_CATALOG_MANAGE: 'inventory.catalog.manage' as const,
+  INVENTORY_PURCHASE_ORDER_CREATE: 'inventory.purchase-order.create' as const,
+  INVENTORY_REQUISITION_CREATE: 'inventory.requisition.create' as const,
+  INVENTORY_DISPATCH_FULFILL: 'inventory.dispatch.fulfill' as const,
+
+  // Admissions / ADT
+  ADMISSION_READ: 'admission.read' as const,
+  ADMISSION_MANAGE: 'admission.manage' as const,
+
+  // Orders
+  ORDER_READ: 'order.read' as const,
+  ORDER_MANAGE: 'order.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];

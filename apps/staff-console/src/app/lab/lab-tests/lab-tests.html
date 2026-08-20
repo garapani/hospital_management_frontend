@@ -1,0 +1,58 @@
+<div class="h-full flex flex-col gap-6">
+  <div>
+    <h1 class="page-title">Lab Test Catalog</h1>
+    <p class="text-sm text-slate-500 mt-1">Browse lab test categories and their tests.</p>
+  </div>
+
+  <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white p-4">
+    @if (loadingCategories()) {
+    <div class="flex items-center justify-center py-12">
+      <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
+    </div>
+    } @else if (categories().length === 0) {
+    <p class="text-center p-8 text-slate-500">No lab test categories found.</p>
+    } @else {
+    <p-tabs [value]="selectedCategoryId()" (valueChange)="selectCategory($event)" styleClass="w-full">
+      <p-tablist>
+        @for (category of categories(); track category.id) {
+        <p-tab [value]="category.id">{{ category.name }}</p-tab>
+        }
+      </p-tablist>
+      <p-tabpanels>
+        @for (category of categories(); track category.id) {
+        <p-tabpanel [value]="category.id">
+          <p-table
+            [value]="tests()"
+            [loading]="loadingTests()"
+            [rowHover]="true"
+            styleClass="p-datatable-sm p-datatable-gridlines"
+          >
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="table-header-cell">Test Name</th>
+                <th class="table-header-cell">Code</th>
+                <th class="table-header-cell">Specimen</th>
+                <th class="table-header-cell">Price</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-test>
+              <tr>
+                <td class="font-medium">{{ test.name }}</td>
+                <td class="font-mono text-xs">{{ test.code }}</td>
+                <td>{{ test.specimenType }}</td>
+                <td>{{ price(test) }}</td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="4" class="text-center p-6 text-slate-500">No tests in this category.</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-tabpanel>
+        }
+      </p-tabpanels>
+    </p-tabs>
+    }
+  </div>
+</div>

@@ -1,0 +1,139 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex items-center gap-4">
+    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (onClick)="goBack()"></p-button>
+    <div>
+      <h1 class="page-title flex items-center gap-3">
+        @if (requisition(); as r) {
+        {{ r.requisitionNumber }}
+        <p-tag [value]="r.status" [severity]="statusSeverity(r.status)" [rounded]="true"></p-tag>
+        } @else {
+        Loading Requisition...
+        }
+      </h1>
+      @if (requisition(); as r) {
+      <p class="text-sm text-slate-500 mt-1">Created {{ r.createdAt | date }}</p>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+  <div class="flex-1 flex items-center justify-center">
+    <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
+  </div>
+  } @else if (requisition(); as r) {
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
+      <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Requisition Details</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <div class="text-xs text-slate-500 mb-1">Department</div>
+          <div class="font-medium text-slate-900">{{ departmentName(r.departmentId) }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Requested By</div>
+          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.requestedBy }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Status</div>
+          <p-tag [value]="r.status" [severity]="statusSeverity(r.status)" [rounded]="true"></p-tag>
+        </div>
+        @if (r.notes) {
+        <div class="col-span-2">
+          <div class="text-xs text-slate-500 mb-1">Notes</div>
+          <div class="font-medium text-slate-900">{{ r.notes }}</div>
+        </div>
+        }
+        @if (r.cancelReason) {
+        <div class="col-span-2">
+          <div class="text-xs text-slate-500 mb-1">Cancellation Reason</div>
+          <div class="font-medium text-slate-900">{{ r.cancelReason }}</div>
+        </div>
+        }
+      </div>
+    </div>
+
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 flex flex-col gap-4">
+      <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Line Items</h3>
+      <p-table [value]="r.items" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="table-header-cell">Item ID</th>
+            <th class="table-header-cell">Requested</th>
+            <th class="table-header-cell">Fulfilled</th>
+            <th class="table-header-cell">Remaining</th>
+            <th class="table-header-cell w-32">Actions</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-line>
+          <tr>
+            <td class="font-mono text-xs">{{ line.itemId }}</td>
+            <td>{{ line.requestedQuantity }}</td>
+            <td>{{ line.fulfilledQuantity }}</td>
+            <td>{{ remaining(line) }}</td>
+            <td>
+              @if (auth.hasPermission('inventory.dispatch.fulfill') && r.status === 'Pending' && remaining(line) > 0) {
+              <p-button label="Fulfill" size="small" icon="pi pi-box" (onClick)="openFulfillDialog(line)"></p-button>
+              }
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5" class="text-center p-6 text-slate-500">No line items on this requisition.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+      @if (r.status === 'Pending') {
+      <p class="text-sm text-slate-500">Dispatch stock to fulfill the pending lines.</p>
+      } @else if (r.status === 'PartiallyFulfilled') {
+      <p class="text-sm text-slate-500">Some lines are fully fulfilled; dispatch the remainder.</p>
+      } @else if (r.status === 'Fulfilled') {
+      <p class="text-sm text-slate-500">All lines fulfilled.</p>
+      } @else if (r.status === 'Cancelled') {
+      <p class="text-sm text-slate-500">This requisition was cancelled.</p>
+      }
+    </div>
+  </div>
+  }
+</div>
+
+<!-- Fulfill Line Dialog -->
+<p-dialog
+  header="Fulfill Line"
+  [(visible)]="showFulfillDialog"
+  [modal]="true"
+  [style]="{ width: '420px' }"
+  styleClass="surface-modal"
+>
+  @if (fulfillLine(); as line) {
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="fulfillItem" class="text-sm font-medium text-slate-700">Item</label>
+      <input id="fulfillItem" pInputText [ngModel]="line.itemId" disabled class="w-full font-mono text-xs" />
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium text-slate-700">Requested</label>
+        <div class="font-medium text-slate-900">{{ line.requestedQuantity }}</div>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium text-slate-700">Remaining</label>
+        <div class="font-medium text-slate-900">{{ remaining(line) }}</div>
+      </div>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="fulfillQuantity" class="text-sm font-medium text-slate-700">Quantity to Fulfill</label>
+      <input id="fulfillQuantity" pInputText type="number" min="1" [ngModel]="fulfillQuantity()" (ngModelChange)="setFulfillQuantity($event)" class="w-full" />
+    </div>
+    @if (fulfillError()) {
+    <p class="text-sm text-red-600">{{ fulfillError() }}</p>
+    }
+  </div>
+  }
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showFulfillDialog.set(false)"></p-button>
+      <p-button label="Confirm Fulfill" icon="pi pi-check" [loading]="fulfilling()" [disabled]="!canFulfill()" (onClick)="confirmFulfill()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

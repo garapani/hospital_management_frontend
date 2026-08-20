@@ -1,0 +1,143 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex items-center gap-4">
+    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (onClick)="goBack()"></p-button>
+    <div>
+      <h1 class="page-title flex items-center gap-3">
+        @if (requisition(); as r) {
+        {{ r.requisitionNumber }}
+        <p-tag [value]="r.status" [severity]="statusSeverity(r.status)" [rounded]="true"></p-tag>
+        } @else {
+        Loading Requisition...
+        }
+      </h1>
+      @if (requisition(); as r) {
+      <p class="text-sm text-slate-500 mt-1">Lab requisition for order item {{ r.orderItemId }}</p>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+  <div class="flex-1 flex items-center justify-center">
+    <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
+  </div>
+  } @else if (requisition(); as r) {
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
+      <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Requisition Details</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <div class="text-xs text-slate-500 mb-1">Requisition Number</div>
+          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.requisitionNumber }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Order Item ID</div>
+          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.orderItemId }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Test ID</div>
+          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.testId }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Specimen Type</div>
+          <div class="font-medium text-slate-900">{{ r.specimenType }}</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 mb-1">Status</div>
+          <p-tag [value]="r.status" [severity]="statusSeverity(r.status)" [rounded]="true"></p-tag>
+        </div>
+        @if (r.sampleCollectedBy) {
+        <div class="col-span-2">
+          <div class="text-xs text-slate-500 mb-1">Sample Collected</div>
+          <div class="font-medium text-slate-900">{{ r.sampleCollectedAt | date: 'medium' }} by {{ r.sampleCollectedBy }}</div>
+        </div>
+        }
+        @if (r.verifiedBy) {
+        <div class="col-span-2">
+          <div class="text-xs text-slate-500 mb-1">Verified</div>
+          <div class="font-medium text-slate-900">{{ r.verifiedAt | date: 'medium' }} by {{ r.verifiedBy }}</div>
+        </div>
+        }
+        @if (r.cancelReason) {
+        <div class="col-span-2">
+          <div class="text-xs text-slate-500 mb-1">Cancellation Reason</div>
+          <div class="font-medium text-slate-900">{{ r.cancelReason }}</div>
+        </div>
+        }
+      </div>
+    </div>
+
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 flex flex-col gap-4">
+      <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Workflow</h3>
+
+      <div class="flex flex-wrap gap-3">
+        @if (auth.hasPermission('lab.result.enter') && r.status === 'Pending') {
+        <p-button label="Collect Sample" icon="pi pi-box" [loading]="collecting()" (onClick)="collectSample()"></p-button>
+        }
+        @if (auth.hasPermission('lab.result.enter') && (r.status === 'SampleCollected' || r.status === 'ResultsEntered')) {
+        <p-button label="Enter Results" icon="pi pi-pencil" severity="secondary" (onClick)="openResultsDialog()"></p-button>
+        }
+        @if (auth.hasPermission('lab.result.verify') && r.status === 'ResultsEntered') {
+        <p-button label="Verify Results" icon="pi pi-check-circle" severity="success" [loading]="verifying()" (onClick)="verify()"></p-button>
+        }
+      </div>
+
+      @if (r.status === 'Pending') {
+      <p class="text-sm text-slate-500">Awaiting sample collection.</p>
+      } @else if (r.status === 'SampleCollected') {
+      <p class="text-sm text-slate-500">Sample collected — enter results for each test component.</p>
+      } @else if (r.status === 'ResultsEntered') {
+      <p class="text-sm text-slate-500">Results entered — ready for verification.</p>
+      } @else if (r.status === 'Verified') {
+      <p class="text-sm text-slate-500">Results verified and signed off.</p>
+      } @else if (r.status === 'Cancelled') {
+      <p class="text-sm text-slate-500">This requisition was cancelled.</p>
+      }
+    </div>
+  </div>
+  }
+</div>
+
+<!-- Enter Results Dialog -->
+<p-dialog header="Enter Results" [(visible)]="showResultsDialog" [modal]="true" [style]="{ width: '600px' }" styleClass="surface-modal">
+  @if (componentsLoading()) {
+  <div class="flex items-center justify-center py-8">
+    <i class="pi pi-spin pi-spinner text-3xl text-sky-600"></i>
+  </div>
+  } @else if (components(); as comps) {
+  <div class="flex flex-col gap-4 py-4">
+    @for (component of comps; track component.id) {
+    <div class="grid grid-cols-3 gap-3 items-center">
+      <div class="flex flex-col col-span-2">
+        <span class="text-sm font-medium text-slate-700">{{ component.name }}</span>
+        <span class="text-xs text-slate-500">
+          @if (component.unit) { Unit: {{ component.unit }} }
+          @if (referenceRange(component)) { · Reference: {{ referenceRange(component) }} }
+        </span>
+      </div>
+      <input
+        pInputText
+        [ngModel]="resultValues()[component.id]"
+        (ngModelChange)="setResultValue(component.id, $event)"
+        placeholder="Value"
+        class="w-full"
+      />
+    </div>
+    }
+    @if (resultsError()) {
+    <p class="text-sm text-red-600">{{ resultsError() }}</p>
+    }
+  </div>
+  }
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showResultsDialog.set(false)"></p-button>
+      <p-button
+        label="Save Results"
+        icon="pi pi-check"
+        [loading]="enteringResults()"
+        [disabled]="componentsLoading() || components().length === 0"
+        (onClick)="submitResults()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
