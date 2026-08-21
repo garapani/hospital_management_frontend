@@ -1,0 +1,215 @@
+<div class="flex flex-col gap-6">
+  <div class="flex items-center justify-between surface-panel p-6">
+    <div>
+      <h1 class="page-title">Employees</h1>
+      <p class="page-subtitle">
+        HR employee master — used as the payroll base
+      </p>
+    </div>
+    @if (canManage) {
+    <p-button
+      label="Add Employee"
+      icon="pi pi-plus"
+      styleClass="accent-bg rounded-lg border-none px-5"
+      (onClick)="openCreateModal()"
+    />
+    }
+  </div>
+
+  <div class="surface-panel p-4 flex items-center gap-2">
+    <input
+      pInputText
+      class="w-full"
+      placeholder="Search by name or designation"
+      [ngModel]="q()"
+      (ngModelChange)="q.set($event)"
+      (keyup.enter)="search()"
+      autocomplete="off"
+    />
+    <p-button
+      label="Search"
+      icon="pi pi-search"
+      severity="secondary"
+      (onClick)="search()"
+    />
+  </div>
+
+  <div class="surface-panel overflow-hidden">
+    <p-table
+      [value]="employees()"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [totalRecords]="totalRecords()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      [loading]="loading()"
+      dataKey="id"
+      styleClass="p-datatable-sm"
+      (onLazyLoad)="onLazyLoad($event)"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Employee Code</th>
+          <th class="table-header-cell">Name</th>
+          <th class="table-header-cell">Designation</th>
+          <th class="table-header-cell">Type</th>
+          <th class="table-header-cell">Monthly Basic (₹)</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell"></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-emp>
+        <tr>
+          <td class="font-mono text-slate-600 border-b border-slate-200">{{ emp.employeeCode }}</td>
+          <td class="font-semibold text-slate-700 border-b border-slate-200">
+            {{ emp.firstName }} {{ emp.lastName }}
+          </td>
+          <td class="text-slate-600 border-b border-slate-200">{{ emp.designation ?? '—' }}</td>
+          <td class="text-slate-600 border-b border-slate-200">{{ emp.employmentType }}</td>
+          <td class="text-slate-700 border-b border-slate-200 tabular-nums">
+            {{ emp.monthlyBasicSalary.toLocaleString('en-IN') }}
+          </td>
+          <td class="border-b border-slate-200">
+            <p-tag
+              [value]="emp.isActive ? 'Active' : 'Inactive'"
+              [severity]="emp.isActive ? 'success' : 'secondary'"
+              styleClass="rounded-full px-3"
+            />
+          </td>
+          <td class="border-b border-slate-200 text-right whitespace-nowrap">
+            @if (canManage) {
+            <p-button
+              label="Edit"
+              severity="secondary"
+              [text]="true"
+              size="small"
+              (onClick)="openEditModal(emp)"
+            />
+            <p-button
+              [label]="emp.isActive ? 'Deactivate' : 'Reactivate'"
+              [severity]="emp.isActive ? 'danger' : 'success'"
+              [text]="true"
+              size="small"
+              (onClick)="toggleActive(emp)"
+            />
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="py-8 text-center text-sm text-slate-500">
+            No employees found.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog
+  [header]="editingId() ? 'Edit Employee' : 'Add Employee'"
+  [(visible)]="showEditModal"
+  [modal]="true"
+  [style]="{ width: '520px' }"
+>
+  <div class="grid grid-cols-2 gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">First Name</label>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="editForm().firstName"
+        (ngModelChange)="editForm.update(v => ({...v, firstName: $event}))"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Last Name</label>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="editForm().lastName"
+        (ngModelChange)="editForm.update(v => ({...v, lastName: $event}))"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Designation</label>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="editForm().designation"
+        (ngModelChange)="editForm.update(v => ({...v, designation: $event}))"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Department</label>
+      <p-select
+        [options]="departmentOptions()"
+        [ngModel]="editForm().departmentId"
+        (ngModelChange)="editForm.update(v => ({...v, departmentId: $event}))"
+        placeholder="Select department"
+        styleClass="w-full"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Employment Type</label>
+      <p-select
+        [options]="employmentTypeOptions"
+        [ngModel]="editForm().employmentType"
+        (ngModelChange)="editForm.update(v => ({...v, employmentType: $event}))"
+        styleClass="w-full"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Join Date</label>
+      <p-datepicker
+        [ngModel]="editForm().joinDate"
+        (ngModelChange)="editForm.update(v => ({...v, joinDate: $event}))"
+        dateFormat="yy-mm-dd"
+        styleClass="w-full"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Phone</label>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="editForm().phone"
+        (ngModelChange)="editForm.update(v => ({...v, phone: $event}))"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Email</label>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="editForm().email"
+        (ngModelChange)="editForm.update(v => ({...v, email: $event}))"
+      />
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label class="text-sm font-medium">Monthly Basic Salary (₹)</label>
+      <p-inputNumber
+        [ngModel]="editForm().monthlyBasicSalary"
+        (ngModelChange)="editForm.update(v => ({...v, monthlyBasicSalary: $event}))"
+        [min]="0"
+        mode="currency"
+        currency="INR"
+        locale="en-IN"
+      />
+    </div>
+    @if (saveError(); as message) {
+    <p class="col-span-2 text-sm text-red-600">{{ message }}</p>
+    }
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" (onClick)="showEditModal.set(false)" />
+    <p-button
+      label="Save"
+      icon="pi pi-check"
+      [loading]="saving()"
+      [disabled]="!editForm().firstName || !editForm().lastName"
+      (onClick)="submitSave()"
+    />
+  </ng-template>
+</p-dialog>

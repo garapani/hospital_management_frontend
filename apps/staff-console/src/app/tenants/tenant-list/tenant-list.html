@@ -32,6 +32,9 @@
             Tenant ID
           </th>
           <th class="table-header-cell">
+            Package
+          </th>
+          <th class="table-header-cell">
             Status
           </th>
           <th class="table-header-cell">
@@ -55,6 +58,13 @@
           </td>
           <td class="border-b border-slate-200">
             <p-tag
+              [value]="packageDisplayName(tenant.packageCode)"
+              [severity]="packageSeverity(tenant.packageCode)"
+              styleClass="rounded-full px-3"
+            />
+          </td>
+          <td class="border-b border-slate-200">
+            <p-tag
               [value]="tenant.status"
               [severity]="tenantStatusSeverity(tenant.status)"
               styleClass="rounded-full px-3"
@@ -74,7 +84,7 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="5" class="py-8 text-center text-sm text-slate-500">
+          <td colspan="6" class="py-8 text-center text-sm text-slate-500">
             No tenants found.
           </td>
         </tr>
@@ -109,6 +119,21 @@
         (ngModelChange)="provisionForm.update(v => ({...v, hospitalId: $event}))"
         autocomplete="off"
       />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="package" class="text-sm font-medium">Package</label>
+      <p-select
+        inputId="package"
+        [options]="packageOptions()"
+        [ngModel]="provisionForm().packageCode"
+        (ngModelChange)="provisionForm.update(v => ({...v, packageCode: $event}))"
+        placeholder="Select package"
+        styleClass="w-full"
+      ></p-select>
+      <p class="text-xs text-slate-400">
+        Only the selected edition's features are available to this hospital.
+      </p>
     </div>
     
     <div class="flex flex-col gap-2">

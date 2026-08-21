@@ -7,8 +7,9 @@ import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
 import { TenantsApiService } from '../tenants-api.service.js';
-import { Tenant, tenantStatusSeverity } from '../tenant.model.js';
+import { packageDisplayName, packageSeverity, Tenant, tenantStatusSeverity } from '../tenant.model.js';
 import { MasterDataApiService } from '../../master-data/master-data-api.service.js';
 import { MultiSelectModule } from 'primeng/multiselect';
 
@@ -27,6 +28,7 @@ interface SelectOption {
     DialogModule,
     FormsModule,
     InputTextModule,
+    SelectModule,
     MultiSelectModule,
   ],
   selector: 'hms-tenant-list',
@@ -40,12 +42,15 @@ export class TenantList {
   readonly loading = signal(false);
 
   readonly tenantStatusSeverity = tenantStatusSeverity;
+  readonly packageDisplayName = packageDisplayName;
+  readonly packageSeverity = packageSeverity;
 
   // Provision modal state
   readonly showProvisionModal = signal(false);
-  readonly provisionForm = signal<{hospitalId: string; hospitalName: string; roleIds: string[]; departmentCatalogIds: string[]}>({
+  readonly provisionForm = signal<{hospitalId: string; hospitalName: string; packageCode: string; roleIds: string[]; departmentCatalogIds: string[]}>({
     hospitalId: '',
     hospitalName: '',
+    packageCode: 'basic',
     roleIds: [],
     departmentCatalogIds: []
   });
@@ -54,6 +59,7 @@ export class TenantList {
   // Catalogs for provision modal
   readonly roleOptions = signal<SelectOption[]>([]);
   readonly deptOptions = signal<SelectOption[]>([]);
+  readonly packageOptions = signal<SelectOption[]>([]);
 
   // GET /tenants returns the full, unpaginated tenant list (platform-scale hospital counts
   // are small) — the table below paginates client-side rather than issuing paged requests.
@@ -69,7 +75,7 @@ export class TenantList {
   }
 
   openProvisionModal(): void {
-    this.provisionForm.set({ hospitalId: '', hospitalName: '', roleIds: [], departmentCatalogIds: [] });
+    this.provisionForm.set({ hospitalId: '', hospitalName: '', packageCode: 'basic', roleIds: [], departmentCatalogIds: [] });
     this.showProvisionModal.set(true);
 
     if (this.roleOptions().length === 0) {
@@ -80,6 +86,11 @@ export class TenantList {
     if (this.deptOptions().length === 0) {
       this.mdApi.listDepartmentCatalogs().subscribe((res) => {
         this.deptOptions.set(res.map((d) => ({ label: d.departmentName, value: d.id })));
+      });
+    }
+    if (this.packageOptions().length === 0) {
+      this.tenantsApi.listPackages().subscribe((res) => {
+        this.packageOptions.set(res.map((p) => ({ label: p.name, value: p.code })));
       });
     }
   }

@@ -1,0 +1,219 @@
+<div class="flex flex-col gap-6">
+  <div class="flex items-center justify-between surface-panel p-6">
+    <div>
+      <h1 class="page-title">Vitals</h1>
+      <p class="page-subtitle">
+        Record and review patient vitals (BP, pulse, temperature, SpO₂, and more)
+      </p>
+    </div>
+  </div>
+
+  <!-- Patient search -->
+  <div class="surface-panel p-6 flex flex-col gap-4">
+    <div class="flex flex-col gap-2">
+      <label for="patientSearch" class="text-sm font-medium">Find patient</label>
+      <div class="flex gap-2">
+        <input
+          pInputText
+          id="patientSearch"
+          class="w-full"
+          placeholder="Search by name, phone or patient number"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          (keyup.enter)="searchPatients()"
+          autocomplete="off"
+        />
+        <p-button
+          label="Search"
+          icon="pi pi-search"
+          styleClass="rounded-lg border-none px-5"
+          [loading]="searching()"
+          (onClick)="searchPatients()"
+        />
+      </div>
+    </div>
+
+    @if (patientResults().length > 0) {
+    <p-table [value]="patientResults()" dataKey="id" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Patient No</th>
+          <th class="table-header-cell">Name</th>
+          <th class="table-header-cell">Phone</th>
+          <th class="table-header-cell"></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-patient>
+        <tr>
+          <td class="font-mono text-slate-600 border-b border-slate-200">{{ patient.patientNo }}</td>
+          <td class="font-semibold text-slate-700 border-b border-slate-200">
+            {{ patient.firstName }} {{ patient.lastName }}
+          </td>
+          <td class="text-slate-600 border-b border-slate-200">{{ patient.phoneNumber }}</td>
+          <td class="border-b border-slate-200 text-right">
+            <p-button
+              label="Select"
+              severity="secondary"
+              size="small"
+              (onClick)="selectPatient(patient)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+    } @else if (searchQuery().trim() && !searching()) {
+    <p class="text-sm text-slate-500">No patients matched "{{ searchQuery() }}".</p>
+    }
+  </div>
+
+  @if (selectedPatient(); as patient) {
+  <div class="surface-panel p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">
+          {{ patient.firstName }} {{ patient.lastName }}
+        </h2>
+        <p class="text-sm text-slate-500">
+          {{ patient.patientNo }} · {{ patient.phoneNumber }}
+        </p>
+      </div>
+      @if (canManage) {
+      <p-button
+        label="Add Vitals"
+        icon="pi pi-plus"
+        styleClass="accent-bg rounded-lg border-none px-5"
+        (onClick)="openCreateModal()"
+      />
+      }
+    </div>
+
+    <p-table [value]="vitals()" [loading]="loading()" dataKey="id" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Recorded At</th>
+          <th class="table-header-cell">Temp (°C)</th>
+          <th class="table-header-cell">Pulse</th>
+          <th class="table-header-cell">BP</th>
+          <th class="table-header-cell">RR</th>
+          <th class="table-header-cell">SpO₂</th>
+          <th class="table-header-cell">Height / Weight</th>
+          <th class="table-header-cell">Pain</th>
+          <th class="table-header-cell"></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-vital>
+        <tr>
+          <td class="text-slate-600 border-b border-slate-200">{{ vital.recordedAt | date: 'short' }}</td>
+          <td class="text-slate-700 border-b border-slate-200">{{ vital.temperature ?? '—' }}</td>
+          <td class="text-slate-700 border-b border-slate-200">{{ vital.pulse ?? '—' }}</td>
+          <td class="text-slate-700 border-b border-slate-200">
+            @if (vital.bpSystolic || vital.bpDiastolic) {
+            {{ vital.bpSystolic }}/{{ vital.bpDiastolic }}
+            } @else { — }
+          </td>
+          <td class="text-slate-700 border-b border-slate-200">{{ vital.respiratoryRate ?? '—' }}</td>
+          <td class="text-slate-700 border-b border-slate-200">{{ vital.spO2 ?? '—' }}</td>
+          <td class="text-slate-700 border-b border-slate-200">
+            @if (vital.height || vital.weight) {
+            {{ vital.height ?? '—' }} cm / {{ vital.weight ?? '—' }} kg
+            } @else { — }
+          </td>
+          <td class="text-slate-700 border-b border-slate-200">{{ vital.painScale ?? '—' }}</td>
+          <td class="border-b border-slate-200 text-right">
+            @if (canManage) {
+            <p-button
+              label="Void"
+              severity="danger"
+              [text]="true"
+              size="small"
+              (onClick)="voidVital(vital)"
+            />
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="py-8 text-center text-sm text-slate-500">
+            No vitals recorded for this patient.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
+</div>
+
+<p-dialog
+  header="Record Vitals"
+  [(visible)]="showCreateModal"
+  [modal]="true"
+  [style]="{ width: '480px' }"
+>
+  <div class="grid grid-cols-2 gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Temperature (°C)</label>
+      <p-inputNumber
+        [ngModel]="createForm().temperature"
+        (ngModelChange)="createForm.update(v => ({...v, temperature: $event}))"
+        [min]="0"
+        [max]="50"
+        [step]="0.1"
+        mode="decimal"
+        [minFractionDigits]="1"
+        [maxFractionDigits]="1"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Pulse (bpm)</label>
+      <p-inputNumber [ngModel]="createForm().pulse" (ngModelChange)="createForm.update(v => ({...v, pulse: $event}))" [min]="0" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">BP Systolic</label>
+      <p-inputNumber [ngModel]="createForm().bpSystolic" (ngModelChange)="createForm.update(v => ({...v, bpSystolic: $event}))" [min]="0" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">BP Diastolic</label>
+      <p-inputNumber [ngModel]="createForm().bpDiastolic" (ngModelChange)="createForm.update(v => ({...v, bpDiastolic: $event}))" [min]="0" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Respiratory Rate</label>
+      <p-inputNumber [ngModel]="createForm().respiratoryRate" (ngModelChange)="createForm.update(v => ({...v, respiratoryRate: $event}))" [min]="0" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">SpO₂ (%)</label>
+      <p-inputNumber [ngModel]="createForm().spO2" (ngModelChange)="createForm.update(v => ({...v, spO2: $event}))" [min]="0" [max]="100" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Height (cm)</label>
+      <p-inputNumber [ngModel]="createForm().height" (ngModelChange)="createForm.update(v => ({...v, height: $event}))" [min]="0" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Weight (kg)</label>
+      <p-inputNumber [ngModel]="createForm().weight" (ngModelChange)="createForm.update(v => ({...v, weight: $event}))" [min]="0" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Pain Scale (0–10)</label>
+      <p-inputNumber [ngModel]="createForm().painScale" (ngModelChange)="createForm.update(v => ({...v, painScale: $event}))" [min]="0" [max]="10" />
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label class="text-sm font-medium">Notes</label>
+      <textarea
+        pTextarea
+        rows="3"
+        class="w-full"
+        [ngModel]="createForm().triageNotes"
+        (ngModelChange)="createForm.update(v => ({...v, triageNotes: $event}))"
+      ></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" (onClick)="showCreateModal.set(false)" />
+    <p-button
+      label="Save"
+      icon="pi pi-check"
+      [loading]="saving()"
+      (onClick)="submitCreate()"
+    />
+  </ng-template>
+</p-dialog>

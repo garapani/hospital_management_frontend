@@ -116,6 +116,20 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.TRIAGE_READ)],
       },
       {
+        path: 'clinical/vitals',
+        loadComponent: () => import('./vitals/vital-list.js').then((m) => m.VitalList),
+        canActivate: [permissionGuard(Permissions.VITALS_READ)],
+      },
+      {
+        path: 'clinical/encounters',
+        loadComponent: () => import('./encounters/encounter-list.js').then((m) => m.EncounterList),
+        canActivate: [permissionGuard(Permissions.ENCOUNTER_READ)],
+      },
+      {
+        path: 'notifications',
+        loadComponent: () => import('./notifications/notification-list.js').then((m) => m.NotificationList),
+      },
+      {
         path: 'clinical/appointments',
         loadComponent: () => import('./appointments/appointment-list.js').then((m) => m.AppointmentList),
         canActivate: [permissionGuard(Permissions.APPOINTMENTS_READ)],
@@ -199,6 +213,16 @@ export const appRoutes: Route[] = [
         path: 'inventory/requisitions/:id',
         loadComponent: () => import('./inventory/stock-requisition-detail/stock-requisition-detail.js').then((m) => m.StockRequisitionDetail),
         canActivate: [permissionGuard(Permissions.INVENTORY_READ)],
+      },
+      {
+        path: 'employees',
+        loadComponent: () => import('./employees/employee-list.js').then((m) => m.EmployeeList),
+        canActivate: [permissionGuard(Permissions.EMPLOYEE_READ)],
+      },
+      {
+        path: 'payroll',
+        loadComponent: () => import('./payroll/payroll-list.js').then((m) => m.PayrollList),
+        canActivate: [permissionGuard(Permissions.PAYROLL_READ)],
       },
       {
         path: 'reporting',

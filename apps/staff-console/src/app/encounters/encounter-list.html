@@ -1,0 +1,425 @@
+<div class="flex flex-col gap-6">
+  <div class="flex items-center justify-between surface-panel p-6">
+    <div>
+      <h1 class="page-title">Encounters</h1>
+      <p class="page-subtitle">
+        Clinical notes, diagnoses, and prescriptions per patient
+      </p>
+    </div>
+  </div>
+
+  <!-- Patient search -->
+  <div class="surface-panel p-6 flex flex-col gap-4">
+    <div class="flex flex-col gap-2">
+      <label for="patientSearch" class="text-sm font-medium">Find patient</label>
+      <div class="flex gap-2">
+        <input
+          pInputText
+          id="patientSearch"
+          class="w-full"
+          placeholder="Search by name, phone or patient number"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+          (keyup.enter)="searchPatients()"
+          autocomplete="off"
+        />
+        <p-button
+          label="Search"
+          icon="pi pi-search"
+          styleClass="rounded-lg border-none px-5"
+          [loading]="searching()"
+          (onClick)="searchPatients()"
+        />
+      </div>
+    </div>
+
+    @if (patientResults().length > 0) {
+    <p-table [value]="patientResults()" dataKey="id" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Patient No</th>
+          <th class="table-header-cell">Name</th>
+          <th class="table-header-cell">Phone</th>
+          <th class="table-header-cell"></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-patient>
+        <tr>
+          <td class="font-mono text-slate-600 border-b border-slate-200">{{ patient.patientNo }}</td>
+          <td class="font-semibold text-slate-700 border-b border-slate-200">
+            {{ patient.firstName }} {{ patient.lastName }}
+          </td>
+          <td class="text-slate-600 border-b border-slate-200">{{ patient.phoneNumber }}</td>
+          <td class="border-b border-slate-200 text-right">
+            <p-button
+              label="Open Encounter"
+              severity="secondary"
+              size="small"
+              (onClick)="selectPatient(patient)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+    } @else if (searchQuery().trim() && !searching()) {
+    <p class="text-sm text-slate-500">No patients matched "{{ searchQuery() }}".</p>
+    }
+  </div>
+
+  @if (selectedPatient(); as patient) {
+  <div class="surface-panel p-6 flex flex-col gap-4">
+    <div>
+      <h2 class="text-lg font-bold text-slate-800">
+        {{ patient.firstName }} {{ patient.lastName }}
+      </h2>
+      <p class="text-sm text-slate-500">
+        {{ patient.patientNo }} · {{ patient.phoneNumber }}
+      </p>
+    </div>
+
+    <p-tabs [(value)]="activeTab" styleClass="w-full">
+      <p-tablist>
+        <p-tab value="notes">Clinical Notes</p-tab>
+        <p-tab value="diagnoses">Diagnoses</p-tab>
+        <p-tab value="prescriptions">Prescriptions</p-tab>
+      </p-tablist>
+      <p-tabpanels>
+      <p-tabpanel value="notes">
+        <div class="flex flex-col gap-4 pt-2">
+          @if (canManage) {
+          <div class="flex justify-end">
+            <p-button
+              label="Add Note"
+              icon="pi pi-plus"
+              styleClass="accent-bg rounded-lg border-none px-4"
+              (onClick)="openNoteModal()"
+            />
+          </div>
+          }
+          <div class="flex flex-col gap-3">
+            @for (note of notes(); track note.id) {
+            <div class="rounded-lg border border-slate-200 p-4">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-slate-500">{{ note.createdAt | date: 'short' }}</span>
+                @if (canManage) {
+                <p-button
+                  label="Edit"
+                  severity="secondary"
+                  [text]="true"
+                  size="small"
+                  (onClick)="openNoteModal(note)"
+                />
+                }
+              </div>
+              @if (note.chiefComplaint) {
+              <p class="mt-2 text-sm text-slate-800"><strong>Chief complaint:</strong> {{ note.chiefComplaint }}</p>
+              }
+              @if (note.historyOfPresentingIllness) {
+              <p class="mt-1 text-sm text-slate-700"><strong>History:</strong> {{ note.historyOfPresentingIllness }}</p>
+              }
+              @if (note.physicalExamination) {
+              <p class="mt-1 text-sm text-slate-700"><strong>Exam:</strong> {{ note.physicalExamination }}</p>
+              }
+              @if (note.plan) {
+              <p class="mt-1 text-sm text-slate-700"><strong>Plan:</strong> {{ note.plan }}</p>
+              }
+            </div>
+            } @empty {
+            <p class="text-sm text-slate-500 py-4">No clinical notes for this patient.</p>
+            }
+          </div>
+        </div>
+      </p-tabpanel>
+
+      <p-tabpanel value="diagnoses">
+        <div class="flex flex-col gap-4 pt-2">
+          @if (canManage) {
+          <div class="flex justify-end">
+            <p-button
+              label="Add Diagnosis"
+              icon="pi pi-plus"
+              styleClass="accent-bg rounded-lg border-none px-4"
+              (onClick)="openDiagnosisModal()"
+            />
+          </div>
+          }
+          <p-table [value]="diagnoses()" dataKey="id" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="table-header-cell">Description</th>
+                <th class="table-header-cell">ICD-10</th>
+                <th class="table-header-cell">Primary</th>
+                <th class="table-header-cell">Date</th>
+                <th class="table-header-cell"></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-diagnosis>
+              <tr>
+                <td class="font-semibold text-slate-700 border-b border-slate-200">{{ diagnosis.description }}</td>
+                <td class="font-mono text-slate-600 border-b border-slate-200">{{ diagnosis.icd10Code ?? '—' }}</td>
+                <td class="border-b border-slate-200">
+                  @if (diagnosis.isPrimary) {
+                  <i class="pi pi-check text-green-600"></i>
+                  }
+                </td>
+                <td class="text-slate-600 border-b border-slate-200">{{ diagnosis.createdAt | date: 'short' }}</td>
+                <td class="border-b border-slate-200 text-right">
+                  @if (canManage) {
+                  <p-button
+                    label="Delete"
+                    severity="danger"
+                    [text]="true"
+                    size="small"
+                    (onClick)="deleteDiagnosis(diagnosis)"
+                  />
+                  }
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="5" class="py-6 text-center text-sm text-slate-500">No diagnoses recorded.</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </p-tabpanel>
+
+      <p-tabpanel value="prescriptions">
+        <div class="flex flex-col gap-4 pt-2">
+          @if (canManage) {
+          <div class="flex justify-end">
+            <p-button
+              label="Add Prescription"
+              icon="pi pi-plus"
+              styleClass="accent-bg rounded-lg border-none px-4"
+              (onClick)="openPrescriptionModal()"
+            />
+          </div>
+          }
+          <p-table [value]="prescriptions()" dataKey="id" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="table-header-cell">Medication</th>
+                <th class="table-header-cell">Dosage</th>
+                <th class="table-header-cell">Frequency</th>
+                <th class="table-header-cell">Route</th>
+                <th class="table-header-cell">Duration</th>
+                <th class="table-header-cell"></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-prescription>
+              <tr>
+                <td class="font-semibold text-slate-700 border-b border-slate-200">{{ prescription.medicationName }}</td>
+                <td class="text-slate-600 border-b border-slate-200">{{ prescription.dosage }}</td>
+                <td class="text-slate-600 border-b border-slate-200">{{ prescription.frequency }}</td>
+                <td class="text-slate-600 border-b border-slate-200">{{ prescription.route }}</td>
+                <td class="text-slate-600 border-b border-slate-200">{{ prescription.durationDays }} days</td>
+                <td class="border-b border-slate-200 text-right">
+                  @if (canManage) {
+                  <p-button
+                    label="Delete"
+                    severity="danger"
+                    [text]="true"
+                    size="small"
+                    (onClick)="deletePrescription(prescription)"
+                  />
+                  }
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="6" class="py-6 text-center text-sm text-slate-500">No prescriptions recorded.</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </div>
+  }
+</div>
+
+<!-- Note dialog -->
+<p-dialog
+  header="Clinical Note"
+  [(visible)]="showNoteModal"
+  [modal]="true"
+  [style]="{ width: '520px' }"
+>
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Chief Complaint</label>
+      <textarea
+        pTextarea
+        rows="2"
+        class="w-full"
+        [ngModel]="noteForm().chiefComplaint"
+        (ngModelChange)="noteForm.update(v => ({...v, chiefComplaint: $event}))"
+      ></textarea>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">History of Presenting Illness</label>
+      <textarea
+        pTextarea
+        rows="2"
+        class="w-full"
+        [ngModel]="noteForm().historyOfPresentingIllness"
+        (ngModelChange)="noteForm.update(v => ({...v, historyOfPresentingIllness: $event}))"
+      ></textarea>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Physical Examination</label>
+      <textarea
+        pTextarea
+        rows="2"
+        class="w-full"
+        [ngModel]="noteForm().physicalExamination"
+        (ngModelChange)="noteForm.update(v => ({...v, physicalExamination: $event}))"
+      ></textarea>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Plan</label>
+      <textarea
+        pTextarea
+        rows="2"
+        class="w-full"
+        [ngModel]="noteForm().plan"
+        (ngModelChange)="noteForm.update(v => ({...v, plan: $event}))"
+      ></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" (onClick)="showNoteModal.set(false)" />
+    <p-button label="Save Note" icon="pi pi-check" [loading]="savingNote()" (onClick)="submitNote()" />
+  </ng-template>
+</p-dialog>
+
+<!-- Diagnosis dialog -->
+<p-dialog
+  header="Add Diagnosis"
+  [(visible)]="showDiagnosisModal"
+  [modal]="true"
+  [style]="{ width: '460px' }"
+>
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Description</label>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="diagnosisForm().description"
+        (ngModelChange)="diagnosisForm.update(v => ({...v, description: $event}))"
+        autocomplete="off"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">ICD-10 Code</label>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="diagnosisForm().icd10Code"
+        (ngModelChange)="diagnosisForm.update(v => ({...v, icd10Code: $event}))"
+        autocomplete="off"
+      />
+    </div>
+    <label class="flex items-center gap-2 text-sm">
+      <p-checkbox
+        [binary]="true"
+        [ngModel]="diagnosisForm().isPrimary"
+        (ngModelChange)="diagnosisForm.update(v => ({...v, isPrimary: $event}))"
+      />
+      Primary diagnosis
+    </label>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" (onClick)="showDiagnosisModal.set(false)" />
+    <p-button
+      label="Save Diagnosis"
+      icon="pi pi-check"
+      [loading]="savingDiagnosis()"
+      [disabled]="!diagnosisForm().description"
+      (onClick)="submitDiagnosis()"
+    />
+  </ng-template>
+</p-dialog>
+
+<!-- Prescription dialog -->
+<p-dialog
+  header="Add Prescription"
+  [(visible)]="showPrescriptionModal"
+  [modal]="true"
+  [style]="{ width: '460px' }"
+>
+  <div class="grid grid-cols-2 gap-4 py-4">
+    <div class="flex flex-col gap-2 col-span-2">
+      <label class="text-sm font-medium">Medication</label>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="prescriptionForm().medicationName"
+        (ngModelChange)="prescriptionForm.update(v => ({...v, medicationName: $event}))"
+        autocomplete="off"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Dosage</label>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="prescriptionForm().dosage"
+        (ngModelChange)="prescriptionForm.update(v => ({...v, dosage: $event}))"
+        placeholder="e.g. 500 mg"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Frequency</label>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="prescriptionForm().frequency"
+        (ngModelChange)="prescriptionForm.update(v => ({...v, frequency: $event}))"
+        placeholder="e.g. 1-0-1"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Route</label>
+      <input
+        pInputText
+        class="w-full"
+        [ngModel]="prescriptionForm().route"
+        (ngModelChange)="prescriptionForm.update(v => ({...v, route: $event}))"
+      />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium">Duration (days)</label>
+      <p-inputNumber
+        [ngModel]="prescriptionForm().durationDays"
+        (ngModelChange)="prescriptionForm.update(v => ({...v, durationDays: $event}))"
+        [min]="1"
+      />
+    </div>
+    <div class="flex flex-col gap-2 col-span-2">
+      <label class="text-sm font-medium">Notes</label>
+      <textarea
+        pTextarea
+        rows="2"
+        class="w-full"
+        [ngModel]="prescriptionForm().notes"
+        (ngModelChange)="prescriptionForm.update(v => ({...v, notes: $event}))"
+      ></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" (onClick)="showPrescriptionModal.set(false)" />
+    <p-button
+      label="Save Prescription"
+      icon="pi pi-check"
+      [loading]="savingPrescription()"
+      [disabled]="!prescriptionForm().medicationName"
+      (onClick)="submitPrescription()"
+    />
+  </ng-template>
+</p-dialog>

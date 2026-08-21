@@ -12,7 +12,8 @@
     </a>
     }
     @if (auth.hasPermission('patients.read') || auth.hasPermission('appointment.read') ||
-    auth.hasPermission('triage.read') || auth.hasPermission('order.read') ||
+    auth.hasPermission('triage.read') || auth.hasPermission('vitals.read') ||
+    auth.hasPermission('encounter.read') || auth.hasPermission('order.read') ||
     auth.hasPermission('lab.read') || auth.hasPermission('radiology.read') ||
     auth.hasPermission('pharmacy.read')) {
     <div class="nav-section-label">
@@ -47,6 +48,26 @@
     >
       <i class="pi pi-heart text-base"></i>
       Triage / ER
+    </a>
+    } @if (auth.hasPermission('vitals.read')) {
+    <a
+      routerLink="/clinical/vitals"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-heartbeat text-base"></i>
+      Vitals
+    </a>
+    } @if (auth.hasPermission('encounter.read')) {
+    <a
+      routerLink="/clinical/encounters"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-file-edit text-base"></i>
+      Encounters
     </a>
     } @if (auth.hasPermission('order.read')) {
     <a
@@ -113,6 +134,32 @@
     >
       <i class="pi pi-box text-base"></i>
       Inventory
+    </a>
+    }
+    }
+    @if (auth.hasPermission('employee.read') || auth.hasPermission('payroll.read')) {
+    <div class="nav-section-label">
+      HR &amp; Payroll
+    </div>
+    @if (auth.hasPermission('employee.read')) {
+    <a
+      routerLink="/employees"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-id-card text-base"></i>
+      Employees
+    </a>
+    } @if (auth.hasPermission('payroll.read')) {
+    <a
+      routerLink="/payroll"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-wallet text-base"></i>
+      Payroll
     </a>
     }
     }

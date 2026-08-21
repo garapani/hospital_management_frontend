@@ -1,0 +1,86 @@
+<div class="flex flex-col gap-6">
+  <div class="flex items-center justify-between surface-panel p-6">
+    <div>
+      <h1 class="page-title">Notifications</h1>
+      <p class="page-subtitle">
+        In-app alerts — admissions, appointments, and more
+      </p>
+    </div>
+    <p-button
+      label="Mark All Read"
+      icon="pi pi-check-double"
+      severity="secondary"
+      (onClick)="markAllRead()"
+    />
+  </div>
+
+  <div class="surface-panel overflow-hidden">
+    <p-table
+      [value]="notifications()"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [totalRecords]="totalRecords()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      [loading]="loading()"
+      dataKey="id"
+      styleClass="p-datatable-sm"
+      (onLazyLoad)="onLazyLoad($event)"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Type</th>
+          <th class="table-header-cell">Title</th>
+          <th class="table-header-cell">Message</th>
+          <th class="table-header-cell">Created</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell"></th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-notification>
+        <tr [class]="notification.isRead ? '' : 'bg-sky-50/40'">
+          <td class="border-b border-slate-200">
+            <p-tag
+              [value]="notification.type"
+              [severity]="notificationSeverity(notification.type)"
+              styleClass="rounded-full px-3"
+            />
+          </td>
+          <td class="font-semibold text-slate-700 border-b border-slate-200">
+            {{ notification.title }}
+          </td>
+          <td class="text-slate-600 border-b border-slate-200">
+            {{ notification.message }}
+          </td>
+          <td class="text-slate-600 border-b border-slate-200">
+            {{ notification.createdAt | date: 'short' }}
+          </td>
+          <td class="border-b border-slate-200">
+            @if (!notification.isRead) {
+            <p-tag value="Unread" severity="info" styleClass="rounded-full px-3" />
+            } @else {
+            <p-tag value="Read" severity="secondary" styleClass="rounded-full px-3" />
+            }
+          </td>
+          <td class="border-b border-slate-200 text-right">
+            @if (!notification.isRead) {
+            <p-button
+              label="Mark Read"
+              severity="secondary"
+              size="small"
+              (onClick)="markRead(notification)"
+            />
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="py-8 text-center text-sm text-slate-500">
+            No notifications.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

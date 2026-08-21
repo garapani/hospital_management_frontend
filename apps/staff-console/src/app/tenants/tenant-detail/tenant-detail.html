@@ -41,6 +41,16 @@
           </dd>
         </div>
         <div class="bg-white border border-slate-200 p-4 rounded-xl">
+          <dt class="text-sm font-medium text-slate-500">Package</dt>
+          <dd class="mt-1">
+            <p-tag
+              [value]="packageDisplayName(tenant()!.packageCode)"
+              [severity]="packageSeverity(tenant()!.packageCode)"
+              styleClass="rounded-full px-3"
+            />
+          </dd>
+        </div>
+        <div class="bg-white border border-slate-200 p-4 rounded-xl">
           <dt class="text-sm font-medium text-slate-500">Created At</dt>
           <dd class="mt-1 font-semibold text-slate-800">
             {{ tenant()?.createdAt | date: 'medium' }}
@@ -79,6 +89,42 @@
         />
         }
       </div>
+    </div>
+  </div>
+
+  <!-- Package -->
+  <div class="surface-panel p-6 flex flex-col gap-4">
+    <div>
+      <h3 class="font-bold text-lg text-slate-800">Package</h3>
+      <p class="text-sm text-slate-500 mt-1">
+        Which edition this hospital is on. Changing the package takes effect at the next
+        login/refresh of its users — the hospital's data is never touched.
+      </p>
+    </div>
+
+    @if (packageError(); as message) {
+    <p-message severity="error" styleClass="w-full">{{ message }}</p-message>
+    }
+
+    <div class="flex flex-wrap items-end gap-3">
+      <div class="flex flex-col gap-2 min-w-56">
+        <label for="package" class="text-sm font-medium">Package</label>
+        <p-select
+          inputId="package"
+          [options]="packageOptions()"
+          [ngModel]="packageDraft()"
+          (ngModelChange)="packageDraft.set($event)"
+          styleClass="w-full"
+        ></p-select>
+      </div>
+      <p-button
+        label="Save package"
+        icon="pi pi-check"
+        styleClass="rounded-lg border-none px-5"
+        [loading]="packageSaving()"
+        [disabled]="!packageDirty()"
+        (onClick)="savePackage()"
+      />
     </div>
   </div>
 

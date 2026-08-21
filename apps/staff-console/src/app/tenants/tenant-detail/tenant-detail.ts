@@ -4,16 +4,24 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { MessageModule } from 'primeng/message';
 import { ApiError } from '@org/api-client';
 import { TenantsApiService } from '../tenants-api.service.js';
 import {
   BlockedRole,
+  packageDisplayName,
+  packageSeverity,
   Tenant,
   TenantRoleOption,
   tenantStatusSeverity,
 } from '../tenant.model.js';
+
+interface SelectOption {
+  label: string;
+  value: string;
+}
 
 @Component({
   imports: [
@@ -22,6 +30,7 @@ import {
     ButtonModule,
     TagModule,
     ToggleSwitchModule,
+    SelectModule,
     FormsModule,
     MessageModule,
   ],
@@ -35,6 +44,17 @@ export class TenantDetail implements OnInit {
   readonly tenant = signal<Tenant | null>(null);
   readonly loading = signal(true);
   readonly actionLoading = signal(false);
+
+  readonly packageOptions = signal<SelectOption[]>([]);
+  readonly packageDraft = signal('');
+  readonly packageSaving = signal(false);
+  readonly packageError = signal<string | null>(null);
+  readonly packageDirty = computed(
+    () => this.packageDraft() !== '' && this.packageDraft() !== this.tenant()?.packageCode,
+  );
+
+  readonly packageDisplayName = packageDisplayName;
+  readonly packageSeverity = packageSeverity;
 
   readonly roles = signal<TenantRoleOption[]>([]);
   readonly rolesLoading = signal(true);
@@ -61,6 +81,42 @@ export class TenantDetail implements OnInit {
         this.loadTenant(id);
         this.loadRoles(id);
       }
+    });
+    this.loadPackages();
+  }
+
+  private loadPackages(): void {
+    if (this.packageOptions().length > 0) {
+      return;
+    }
+    this.tenantsApi.listPackages().subscribe({
+      next: (packages) => {
+        this.packageOptions.set(packages.map((p) => ({ label: p.name, value: p.code })));
+        this.packageDraft.set(this.tenant()?.packageCode ?? packages[0]?.code ?? '');
+      },
+      error: () => {
+        this.packageError.set('Could not load packages.');
+      },
+    });
+  }
+
+  savePackage(): void {
+    const current = this.tenant();
+    if (!current || !this.packageDirty()) {
+      return;
+    }
+    this.packageSaving.set(true);
+    this.packageError.set(null);
+    this.tenantsApi.setPackage(current.hospitalId, this.packageDraft()).subscribe({
+      next: (updated) => {
+        this.packageSaving.set(false);
+        this.tenant.set(updated);
+        this.packageDraft.set(updated.packageCode);
+      },
+      error: () => {
+        this.packageSaving.set(false);
+        this.packageError.set('Could not change package. Please try again.');
+      },
     });
   }
 

@@ -55,6 +55,22 @@ export const Permissions = {
   // Orders
   ORDER_READ: 'order.read' as const,
   ORDER_MANAGE: 'order.manage' as const,
+
+  // Clinical — Vitals
+  VITALS_READ: 'vitals.read' as const,
+  VITALS_MANAGE: 'vitals.manage' as const,
+
+  // Clinical — Encounters
+  ENCOUNTER_READ: 'encounter.read' as const,
+  ENCOUNTER_MANAGE: 'encounter.manage' as const,
+
+  // HR — Employees
+  EMPLOYEE_READ: 'employee.read' as const,
+  EMPLOYEE_MANAGE: 'employee.manage' as const,
+
+  // HR — Payroll
+  PAYROLL_READ: 'payroll.read' as const,
+  PAYROLL_MANAGE: 'payroll.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];
