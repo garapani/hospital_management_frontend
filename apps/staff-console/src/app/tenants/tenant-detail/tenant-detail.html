@@ -198,10 +198,14 @@
       </div>
       @if (!rolesLoading()) {
       <span class="shrink-0 text-sm text-slate-500 tabular-nums">
-        {{ enabledCount() }} of {{ roles().length }} enabled
+        {{ enabledCount() }} of {{ assignableRoles().length }} enabled
       </span>
       }
     </div>
+
+    <p class="text-xs text-slate-400 -mt-2">
+      Super Admin is a platform-only role and is not available to hospital tenants.
+    </p>
 
     @if (rolesError(); as message) {
     <p-message severity="error" styleClass="w-full">{{ message }}</p-message>
@@ -227,7 +231,7 @@
     <p class="text-sm text-slate-500 py-4">Loading roles…</p>
     } @else {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-      @for (role of roles(); track role.id) {
+      @for (role of assignableRoles(); track role.id) {
       <label
         class="flex items-start gap-3 rounded-lg border border-slate-200 p-3 hover:bg-slate-50 transition-colors cursor-pointer"
       >

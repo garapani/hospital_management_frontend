@@ -78,6 +78,10 @@ export class TenantDetail implements OnInit {
   readonly blocked = signal<BlockedRole[]>([]);
   readonly rolesError = signal<string | null>(null);
 
+  /** Roles a hospital tenant may actually hold — cross-tenant roles (Super Admin) are hidden:
+   *  they are platform-only and the backend rejects enabling them anyway. */
+  readonly assignableRoles = computed(() => this.roles().filter((role) => !role.isCrossTenant));
+
   readonly dirty = computed(() => {
     const draft = this.draft();
     return this.roles().some((role) => draft[role.id] !== role.enabled);
@@ -204,7 +208,7 @@ export class TenantDetail implements OnInit {
         this.messageService.add({
           severity: 'success',
           summary: 'Roles updated',
-          detail: `${this.enabledCount()} of ${this.roles().length} roles are now enabled for ${current.hospitalName}.`,
+          detail: `${this.enabledCount()} of ${this.assignableRoles().length} roles are now enabled for ${current.hospitalName}.`,
         });
       },
       error: (error: ApiError) => {

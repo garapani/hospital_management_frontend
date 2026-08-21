@@ -88,4 +88,19 @@ describe('TenantDetail package change', () => {
     fixture.componentInstance.packageDraft.set('basic');
     expect(fixture.componentInstance.packageDirection()).toBe('downgrade');
   });
+
+  it('hides cross-tenant roles (Super Admin) from the tenant role toggles', async () => {
+    const roles = [
+      { id: 'r-super', name: 'Super Admin', description: '', priority: 100, isCrossTenant: true, enabled: false },
+      { id: 'r-admin', name: 'Hospital Admin', description: '', priority: 90, isCrossTenant: false, enabled: true },
+    ];
+    const { fixture, tenantsApi } = setup();
+    (tenantsApi.listRoles as jest.Mock).mockReturnValue(of(roles));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.assignableRoles().map((r) => r.name)).toEqual([
+      'Hospital Admin',
+    ]);
+  });
 });
