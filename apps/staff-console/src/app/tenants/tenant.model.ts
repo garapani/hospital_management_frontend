@@ -6,7 +6,15 @@ export interface Package {
   name: string;
   description: string | null;
   modules: string[];
+  /** Catalog roles the package enables automatically at provisioning (for role annotations). */
+  defaultRoleNames: string[];
   createdAt: string;
+}
+
+/** Bootstrap Hospital Admin credentials returned once by POST /tenants. */
+export interface AdminCredentials {
+  username: string;
+  password: string;
 }
 
 export function packageSeverity(code: string): 'success' | 'info' | 'warn' | 'secondary' {
@@ -48,6 +56,10 @@ export interface ProvisionTenantDto {
   hospitalId: string;
   hospitalName: string;
   packageCode?: string;
+  /** Optional bootstrap Hospital Admin account; when omitted the backend generates credentials. */
+  adminUsername?: string;
+  adminEmail?: string;
+  adminPassword?: string;
   createdBy?: string;
   roleIds?: string[];
   departmentCatalogIds?: string[];

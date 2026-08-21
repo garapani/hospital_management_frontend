@@ -52,11 +52,15 @@ describe('TenantList', () => {
       { label: 'Basic', value: 'basic' },
       { label: 'Standard', value: 'standard' },
     ]);
-    // The provision payload carries only package selection — roles are the package's business.
+    // The provision payload carries only package selection (roles are the package's business)
+    // plus optional bootstrap-admin fields.
     expect(fixture.componentInstance.provisionForm()).toEqual({
       hospitalId: '',
       hospitalName: '',
       packageCode: 'basic',
+      adminUsername: '',
+      adminEmail: '',
+      adminPassword: '',
     });
   });
 
@@ -69,6 +73,9 @@ describe('TenantList', () => {
       hospitalId: 'new_hospital',
       hospitalName: 'New Hospital',
       packageCode: 'standard',
+      adminUsername: '',
+      adminEmail: '',
+      adminPassword: '',
     });
     fixture.componentInstance.submitProvision();
     await fixture.whenStable();
@@ -77,6 +84,9 @@ describe('TenantList', () => {
       hospitalId: 'new_hospital',
       hospitalName: 'New Hospital',
       packageCode: 'standard',
+      adminUsername: undefined,
+      adminEmail: undefined,
+      adminPassword: undefined,
     });
     expect(fixture.componentInstance.showProvisionModal()).toBe(false);
     expect(tenantsApi.list).toHaveBeenCalledTimes(2);
@@ -95,6 +105,9 @@ describe('TenantList', () => {
       hospitalId: 'dup_hospital',
       hospitalName: 'Dup Hospital',
       packageCode: 'basic',
+      adminUsername: '',
+      adminEmail: '',
+      adminPassword: '',
     });
     fixture.componentInstance.submitProvision();
     await fixture.whenStable();
@@ -103,5 +116,42 @@ describe('TenantList', () => {
     expect(messageService.add).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error', summary: 'Provision failed', detail: 'boom' }),
     );
+  });
+
+  it('keeps the modal open and shows generated admin credentials on success', async () => {
+    const { fixture, tenantsApi, messageService } = setup('ok');
+    (tenantsApi.provision as jest.Mock).mockReturnValue(
+      of({
+        hospitalId: 'h1',
+        hospitalName: 'New Hospital',
+        packageCode: 'basic',
+        adminCredentials: { username: 'admin.h1', password: 'Secret123' },
+      }),
+    );
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openProvisionModal();
+    fixture.componentInstance.provisionForm.set({
+      hospitalId: 'h1',
+      hospitalName: 'New Hospital',
+      packageCode: 'basic',
+      adminUsername: '',
+      adminEmail: '',
+      adminPassword: '',
+    });
+    fixture.componentInstance.submitProvision();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.showProvisionModal()).toBe(true);
+    expect(fixture.componentInstance.provisionResult()?.adminCredentials).toEqual({
+      username: 'admin.h1',
+      password: 'Secret123',
+    });
+    // No success toast needed while the credentials panel is on screen.
+    expect(messageService.add).not.toHaveBeenCalled();
+
+    fixture.componentInstance.closeProvision();
+    expect(fixture.componentInstance.showProvisionModal()).toBe(false);
   });
 });

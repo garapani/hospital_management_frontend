@@ -10,13 +10,31 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
-import { TenantsApiService } from '../tenants-api.service.js';
+import { TenantsApiService, ProvisionResult } from '../tenants-api.service.js';
 import { packageDisplayName, packageSeverity, Tenant, tenantStatusSeverity } from '../tenant.model.js';
 
 interface SelectOption {
   label: string;
   value: string;
 }
+
+interface ProvisionForm {
+  hospitalId: string;
+  hospitalName: string;
+  packageCode: string;
+  adminUsername: string;
+  adminEmail: string;
+  adminPassword: string;
+}
+
+const EMPTY_FORM: ProvisionForm = {
+  hospitalId: '',
+  hospitalName: '',
+  packageCode: 'basic',
+  adminUsername: '',
+  adminEmail: '',
+  adminPassword: '',
+};
 
 @Component({
   imports: [
@@ -45,15 +63,13 @@ export class TenantList {
   readonly packageSeverity = packageSeverity;
 
   // Provision modal state. Roles are NOT picked here anymore — the package decides which roles
-  // are enabled (backend auto-enables the package's default roles); departments are not seeded
-  // at provision time.
+  // are enabled (backend auto-enables the package's default roles); only the initial Hospital
+  // Admin account is bootstrapped here (optional fields — the backend generates one otherwise).
   readonly showProvisionModal = signal(false);
-  readonly provisionForm = signal<{ hospitalId: string; hospitalName: string; packageCode: string }>({
-    hospitalId: '',
-    hospitalName: '',
-    packageCode: 'basic',
-  });
+  readonly provisionForm = signal<ProvisionForm>({ ...EMPTY_FORM });
   readonly provisionLoading = signal(false);
+  /** Set when provision succeeds and the backend generated/handed back admin credentials. */
+  readonly provisionResult = signal<ProvisionResult | null>(null);
 
   readonly packageOptions = signal<SelectOption[]>([]);
 
@@ -78,7 +94,8 @@ export class TenantList {
   }
 
   openProvisionModal(): void {
-    this.provisionForm.set({ hospitalId: '', hospitalName: '', packageCode: 'basic' });
+    this.provisionForm.set({ ...EMPTY_FORM });
+    this.provisionResult.set(null);
     this.showProvisionModal.set(true);
 
     if (this.packageOptions().length === 0) {
@@ -99,27 +116,51 @@ export class TenantList {
 
   submitProvision(): void {
     this.provisionLoading.set(true);
-    this.tenantsApi.provision(this.provisionForm()).subscribe({
-      next: (tenant) => {
-        this.provisionLoading.set(false);
-        this.showProvisionModal.set(false);
-        this.load();
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Tenant provisioned',
-          detail: `${tenant.hospitalName} is live on ${packageDisplayName(tenant.packageCode)}. Roles were enabled automatically.`,
-        });
-      },
-      error: (error: ApiError) => {
-        this.provisionLoading.set(false);
-        // Toast, not silence — a failed provision must be visible (was a silent no-op before).
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Provision failed',
-          detail: error.message || 'Could not provision the tenant. Please try again.',
-        });
-      },
-    });
+    const form = this.provisionForm();
+    this.tenantsApi
+      .provision({
+        hospitalId: form.hospitalId,
+        hospitalName: form.hospitalName,
+        packageCode: form.packageCode,
+        adminUsername: form.adminUsername || undefined,
+        adminEmail: form.adminEmail || undefined,
+        adminPassword: form.adminPassword || undefined,
+      })
+      .subscribe({
+        next: (result) => {
+          this.provisionLoading.set(false);
+          if (result.adminCredentials) {
+            // Show the bootstrap credentials — they are the tenant's first login, so keep them
+            // on screen until the platform admin copies them.
+            this.provisionResult.set(result);
+            return;
+          }
+          this.showProvisionModal.set(false);
+          this.load();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Tenant provisioned',
+            detail: `${result.hospitalName} is live on ${packageDisplayName(result.packageCode)}.`,
+          });
+        },
+        error: (error: ApiError) => {
+          this.provisionLoading.set(false);
+          // Toast, not silence — a failed provision must be visible (was a silent no-op before).
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Provision failed',
+            detail: error.message || 'Could not provision the tenant. Please try again.',
+          });
+        },
+      });
+  }
+
+  closeProvision(): void {
+    this.showProvisionModal.set(false);
+    if (this.provisionResult()) {
+      this.provisionResult.set(null);
+      this.load();
+    }
   }
 
   constructor() {

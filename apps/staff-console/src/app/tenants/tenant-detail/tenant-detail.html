@@ -193,7 +193,8 @@
         <h3 class="font-bold text-lg text-slate-800">Available roles</h3>
         <p class="text-sm text-slate-500 mt-1">
           Controls which roles this hospital can assign to its staff. Disabled roles disappear
-          from its account screens.
+          from its account screens. Roles marked <strong>Included in {{ packageDisplayName(tenant()?.packageCode ?? 'basic') }}</strong>
+          come with the package; <strong>Manual</strong> ones were switched on by hand.
         </p>
       </div>
       @if (!rolesLoading()) {
@@ -232,6 +233,7 @@
     } @else {
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
       @for (role of assignableRoles(); track role.id) {
+      @let annotation = roleAnnotation(role.name);
       <label
         class="flex items-start gap-3 rounded-lg border border-slate-200 p-3 hover:bg-slate-50 transition-colors cursor-pointer"
       >
@@ -241,7 +243,15 @@
           [disabled]="rolesSaving()"
         />
         <span class="flex flex-col gap-0.5 min-w-0">
-          <span class="text-sm font-medium text-slate-800">{{ role.name }}</span>
+          <span class="flex items-center gap-2">
+            <span class="text-sm font-medium text-slate-800">{{ role.name }}</span>
+            <p-tag
+              [value]="annotation.label"
+              [severity]="annotation.severity"
+              [rounded]="true"
+              size="small"
+            />
+          </span>
           <span class="text-xs text-slate-500">{{ role.description }}</span>
         </span>
       </label>

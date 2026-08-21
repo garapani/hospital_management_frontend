@@ -21,9 +21,9 @@ describe('TenantDetail package change', () => {
       listRoles: jest.fn().mockReturnValue(of([])),
       listPackages: jest.fn().mockReturnValue(
         of([
-          { code: 'basic', name: 'Basic', description: null, modules: [], createdAt: '' },
-          { code: 'standard', name: 'Standard', description: null, modules: [], createdAt: '' },
-          { code: 'enterprise', name: 'Enterprise', description: null, modules: [], createdAt: '' },
+          { code: 'basic', name: 'Basic', description: null, modules: [], defaultRoleNames: ['Hospital Admin', 'Doctor'], createdAt: '' },
+          { code: 'standard', name: 'Standard', description: null, modules: [], defaultRoleNames: ['Hospital Admin', 'Doctor', 'Helpdesk Agent'], createdAt: '' },
+          { code: 'enterprise', name: 'Enterprise', description: null, modules: [], defaultRoleNames: [], createdAt: '' },
         ]),
       ),
       setPackage: jest.fn().mockReturnValue(of({ ...tenant, packageCode: 'standard' })),
@@ -87,6 +87,21 @@ describe('TenantDetail package change', () => {
     fixture.componentInstance.tenant.update((t) => (t ? { ...t, packageCode: 'enterprise' } : t));
     fixture.componentInstance.packageDraft.set('basic');
     expect(fixture.componentInstance.packageDirection()).toBe('downgrade');
+  });
+
+  it('annotates roles with their package membership', async () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    // Tenant is on Basic; load the packages so the annotation map is populated.
+    fixture.componentInstance.ngOnInit();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.roleAnnotation('Hospital Admin').label).toBe('Included in Basic');
+    expect(fixture.componentInstance.roleAnnotation('Hospital Admin').severity).toBe('info');
+    expect(fixture.componentInstance.roleAnnotation('Some Manual Role').label).toBe('Manual');
+    expect(fixture.componentInstance.roleAnnotation('Some Manual Role').severity).toBe('secondary');
   });
 
   it('hides cross-tenant roles (Super Admin) from the tenant role toggles', async () => {

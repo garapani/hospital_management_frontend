@@ -1,14 +1,25 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClientService } from '@org/api-client';
 import { Observable } from 'rxjs';
-import { Package, ProvisionTenantDto, Tenant, TenantRoleOption } from './tenant.model.js';
+import {
+  AdminCredentials,
+  Package,
+  ProvisionTenantDto,
+  Tenant,
+  TenantRoleOption,
+} from './tenant.model.js';
+
+/** POST /tenants returns the tenant plus the bootstrap Hospital Admin credentials. */
+export interface ProvisionResult extends Tenant {
+  adminCredentials: AdminCredentials;
+}
 
 @Injectable({ providedIn: 'root' })
 export class TenantsApiService {
   private readonly api = inject(ApiClientService);
 
-  provision(dto: ProvisionTenantDto): Observable<Tenant> {
-    return this.api.post<Tenant>('/tenants', dto);
+  provision(dto: ProvisionTenantDto): Observable<ProvisionResult> {
+    return this.api.post<ProvisionResult>('/tenants', dto);
   }
 
   /** The sellable editions, for the provision form and the package-change control. */

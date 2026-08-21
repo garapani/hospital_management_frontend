@@ -13,6 +13,7 @@ import { ApiError } from '@org/api-client';
 import { TenantsApiService } from '../tenants-api.service.js';
 import {
   BlockedRole,
+  Package,
   packageDisplayName,
   packageSeverity,
   Tenant,
@@ -50,6 +51,8 @@ export class TenantDetail implements OnInit {
   readonly actionLoading = signal(false);
 
   readonly packageOptions = signal<SelectOption[]>([]);
+  /** Full package catalog (incl. defaultRoleNames) for the role annotations. */
+  readonly packages = signal<Package[]>([]);
   readonly packageDraft = signal('');
   readonly packageSaving = signal(false);
   readonly packageError = signal<string | null>(null);
@@ -109,6 +112,7 @@ export class TenantDetail implements OnInit {
     }
     this.tenantsApi.listPackages().subscribe({
       next: (packages) => {
+        this.packages.set(packages);
         this.packageOptions.set(packages.map((p) => ({ label: p.name, value: p.code })));
         this.packageDraft.set(this.tenant()?.packageCode ?? packages[0]?.code ?? '');
       },
@@ -117,6 +121,20 @@ export class TenantDetail implements OnInit {
       },
     });
   }
+
+  /**
+   * Annotates a role with whether the tenant's current package enables it by default, so the
+   * console shows what the package provides vs. what was enabled manually.
+   */
+  readonly roleAnnotation = (
+    roleName: string,
+  ): { label: string; severity: 'info' | 'secondary' } => {
+    const pkg = this.packages().find((p) => p.code === this.tenant()?.packageCode);
+    const included = pkg?.defaultRoleNames.includes(roleName) ?? false;
+    return included
+      ? { label: `Included in ${pkg?.name ?? ''}`, severity: 'info' }
+      : { label: 'Manual', severity: 'secondary' };
+  };
 
   /** Opens the confirmation step — a package change affects every user's permissions. */
   savePackage(): void {
