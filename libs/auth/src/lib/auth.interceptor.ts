@@ -4,7 +4,11 @@ import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service.js';
 import { TokenStorage } from './token-storage.js';
 
-const AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh'];
+// Auth-flow endpoints are called before any session exists (or with a deliberately limited one):
+// login and the must-change-password onboarding authenticate with credentials, refresh with the
+// refresh token. None of them may attach a Bearer token or trigger refresh-on-401 — a 401 there
+// is a credential error, not a session expiry.
+const AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh', '/auth/change-password'];
 
 function isAuthEndpoint(url: string): boolean {
   const path = url.split('?')[0];

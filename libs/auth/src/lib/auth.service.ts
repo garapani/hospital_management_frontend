@@ -58,6 +58,16 @@ export class AuthService {
             retryAfterSeconds: body?.retryAfterSeconds ?? 0,
           });
         }
+        // Handle the must-change-password gate (403 with the flag in the body): the backend
+        // issues no tokens for such accounts, so the client routes to the change-password flow.
+        if ((error as ApiError).status === 403) {
+          const body = (error as ApiError).body as
+            | { mustChangePassword?: boolean }
+            | undefined;
+          if (body?.mustChangePassword === true) {
+            return of({ kind: 'mustChangePassword' as const });
+          }
+        }
         // Handle invalid credentials (401)
         if ((error as ApiError).status === 401) {
           return of({ kind: 'invalidCredentials' as const });
@@ -71,6 +81,24 @@ export class AuthService {
         });
       }),
     );
+  }
+
+  /**
+   * Onboarding password change for accounts the backend flagged must-change (login returned 403
+   * mustChangePassword). Called while unauthenticated — the backend authenticates the call with
+   * username + current password, because it issues no tokens for such accounts. Errors surface
+   * as ApiError (401 = wrong current password, 400 = message in .message).
+   */
+  changeInitialPassword(
+    username: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Observable<{ success: boolean }> {
+    return this.apiClient.post<{ success: boolean }>('/auth/change-password', {
+      username,
+      currentPassword,
+      newPassword,
+    });
   }
 
   /**

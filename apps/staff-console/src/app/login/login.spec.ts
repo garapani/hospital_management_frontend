@@ -15,7 +15,10 @@ describe('Login', () => {
       hasPermission: (permission: string) => permission === 'billing.manage',
       currentUser: () => ({ roles: [] }),
     } as unknown as AuthService;
-    const router = { navigateByUrl: jest.fn() } as unknown as Router;
+    const router = {
+      navigateByUrl: jest.fn(),
+      navigate: jest.fn(),
+    } as unknown as Router;
 
     TestBed.configureTestingModule({
       imports: [Login],
@@ -61,6 +64,19 @@ describe('Login', () => {
     expect(fixture.componentInstance.errorMessage()).toBe(
       'Account locked. Try again in 300 seconds.',
     );
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('routes to /change-password with the username on a mustChangePassword outcome', () => {
+    const { fixture, router } = setup({ kind: 'mustChangePassword' });
+    fixture.componentInstance.usernameControl.setValue('new.hire');
+    fixture.componentInstance.passwordControl.setValue('initial-pass');
+
+    fixture.componentInstance.submit();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/change-password'], {
+      state: { username: 'new.hire' },
+    });
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 

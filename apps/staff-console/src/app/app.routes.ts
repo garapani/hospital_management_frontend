@@ -3,6 +3,7 @@ import { permissionGuard, platformGuard, tenantGuard, Permissions } from '@org/a
 import { AppShell } from './shell/app-shell.js';
 import { PlatformShell } from './shell/platform-shell.js';
 import { Login } from './login/login.js';
+import { ChangePassword } from './change-password/change-password.js';
 import { rootRedirectGuard } from './root-redirect.guard.js';
 
 export const appRoutes: Route[] = [
@@ -10,6 +11,9 @@ export const appRoutes: Route[] = [
   // a fixed target would bounce every user of the other audience off a guard.
   { path: '', pathMatch: 'full', canActivate: [rootRedirectGuard], children: [] },
   { path: 'login', component: Login },
+  // Deliberately outside both shells and unguarded: login issues no tokens for accounts flagged
+  // must-change-password, so the user has no session while on this screen (see AuthService).
+  { path: 'change-password', component: ChangePassword },
   {
     path: '',
     component: PlatformShell,

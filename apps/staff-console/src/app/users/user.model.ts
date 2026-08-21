@@ -29,10 +29,14 @@ export interface CreateUserDto {
   username: string;
   email: string;
   displayName: string;
-  password?: string; // We'll autogenerate one on the frontend if needed, but the spec says Admin sets it.
+  /** Optional initial password — when omitted the backend generates one and returns it once. */
+  password?: string;
   roleName: string;
-  needsPasswordUpdate?: boolean;
 }
+
+/** POST /accounts response: the created account plus the one-time generated initial password
+ *  (present only when the backend generated it because the admin supplied none). */
+export type CreateUserResult = User & { initialPassword?: string };
 
 export interface AssignRoleDto {
   roleName: string;

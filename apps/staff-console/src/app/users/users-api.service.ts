@@ -5,6 +5,7 @@ import {
   User,
   UserWithRoles,
   CreateUserDto,
+  CreateUserResult,
   AssignRoleDto,
   UserRole,
   RoleDto,
@@ -22,8 +23,8 @@ export class UsersApiService {
     return this.api.get<UserWithRoles>(`/accounts/${id}`);
   }
 
-  create(dto: CreateUserDto): Observable<User> {
-    return this.api.post<User>('/accounts', dto);
+  create(dto: CreateUserDto): Observable<CreateUserResult> {
+    return this.api.post<CreateUserResult>('/accounts', dto);
   }
 
   deactivate(id: string): Observable<User> {

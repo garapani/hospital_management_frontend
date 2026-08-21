@@ -132,6 +132,57 @@ describe('AuthService', () => {
     expect(service.isAuthenticated()).toBe(false);
   });
 
+  it('reports mustChangePassword on a 403 response flagged by the backend', () => {
+    let outcome: unknown;
+
+    service.login('jdoe', 'initial-pass').subscribe((result) => (outcome = result));
+
+    const req = httpMock.expectOne('https://gateway.example/api/auth/login');
+    req.flush(
+      { message: 'You must change your password before continuing', mustChangePassword: true },
+      { status: 403, statusText: 'Forbidden' },
+    );
+
+    expect(outcome).toEqual({ kind: 'mustChangePassword' });
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  it('treats a 403 without the mustChangePassword flag as a server error', () => {
+    let outcome: unknown;
+
+    service.login('jdoe', 'secret').subscribe((result) => (outcome = result));
+
+    const req = httpMock.expectOne('https://gateway.example/api/auth/login');
+    req.flush(
+      { message: 'Forbidden' },
+      { status: 403, statusText: 'Forbidden' },
+    );
+
+    expect(outcome).toEqual({ kind: 'serverError', message: 'Forbidden' });
+  });
+
+  describe('changeInitialPassword', () => {
+    it('posts username, current and new password to /auth/change-password', () => {
+      let result: { success: boolean } | undefined;
+
+      service
+        .changeInitialPassword('jdoe', 'initial-pass', 'new-pass-123')
+        .subscribe((r) => (result = r));
+
+      const req = httpMock.expectOne(
+        'https://gateway.example/api/auth/change-password',
+      );
+      expect(req.request.body).toEqual({
+        username: 'jdoe',
+        currentPassword: 'initial-pass',
+        newPassword: 'new-pass-123',
+      });
+      req.flush({ success: true });
+
+      expect(result).toEqual({ success: true });
+    });
+  });
+
   describe('refreshAccessToken', () => {
     beforeEach(() => {
       sessionStorage.setItem('auth.refreshToken', 'refresh-token-1');

@@ -142,6 +142,12 @@ export class Login {
         void this.router.navigateByUrl(landingUrl);
         return;
       }
+      case 'mustChangePassword':
+        // No tokens were issued; carry the username so the change-password screen can prefill it.
+        void this.router.navigate(['/change-password'], {
+          state: { username: this.usernameControl.value },
+        });
+        return;
       case 'invalidCredentials':
         this.errorMessage.set('Invalid username or password');
         return;
