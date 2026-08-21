@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '@org/auth';
@@ -23,8 +23,6 @@ export class ShellChrome implements OnInit, OnDestroy {
   readonly userMenuOpen = signal(false);
   readonly notificationsOpen = signal(false);
   readonly quickActionsOpen = signal(false);
-  readonly searchFocused = signal(false);
-  readonly searchQuery = signal('');
 
   readonly unreadCount = signal(0);
   readonly recentNotifications = signal<Notification[]>([]);
@@ -99,40 +97,6 @@ export class ShellChrome implements OnInit, OnDestroy {
     this.quickActionsOpen.set(false);
     if (!this.notificationsOpen()) {
       this.loadNotifications();
-    }
-  }
-
-  /**
-   * Global keyboard shortcut handler for Ctrl+K to focus search input.
-   */
-  @HostListener('window:keydown.control.k', ['$event'])
-  onSearchShortcut(event: Event): void {
-    event.preventDefault();
-    const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
-    if (searchInput) {
-      searchInput.focus();
-      this.searchFocused.set(true);
-    }
-  }
-
-  /**
-   * Handles search input changes. Can be extended to trigger global search.
-   */
-  onSearchChange(query: string): void {
-    this.searchQuery.set(query);
-    // TODO: Implement global search functionality across modules
-    console.log('Search query:', query);
-  }
-
-  /**
-   * Clears the search input and refocuses.
-   */
-  clearSearch(): void {
-    this.searchQuery.set('');
-    const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
-    if (searchInput) {
-      searchInput.value = '';
-      searchInput.focus();
     }
   }
 }

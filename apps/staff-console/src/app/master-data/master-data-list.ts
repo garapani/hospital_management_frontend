@@ -8,6 +8,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TabsModule } from 'primeng/tabs';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
+import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { MasterDataApiService } from './master-data-api.service.js';
 import { Department, Ward, Bed } from './master-data.model.js';
@@ -29,6 +30,7 @@ import { Department, Ward, Bed } from './master-data.model.js';
 })
 export class MasterDataList {
   private readonly mdApi = inject(MasterDataApiService);
+  private readonly messageService = inject(MessageService);
 
   readonly departments = signal<Department[]>([]);
   readonly deptLoading = signal(false);
@@ -52,13 +54,21 @@ export class MasterDataList {
   readonly selectedWard = signal<Ward | null>(null);
   readonly beds = signal<Bed[]>([]);
   readonly bedsLoading = signal(false);
-  
+
   readonly bedForm = signal<Partial<Bed>>({});
   readonly bedSaving = signal(false);
 
   constructor() {
     this.loadDepartments();
     this.loadWards();
+  }
+
+  private loadError(summary: string): void {
+    this.messageService.add({
+      severity: 'error',
+      summary,
+      detail: 'Please try again.',
+    });
   }
 
   loadDepartments(): void {
@@ -68,7 +78,10 @@ export class MasterDataList {
         this.departments.set(data);
         this.deptLoading.set(false);
       },
-      error: () => this.deptLoading.set(false),
+      error: () => {
+        this.deptLoading.set(false);
+        this.loadError('Could not load departments');
+      },
     });
   }
 
@@ -79,7 +92,10 @@ export class MasterDataList {
         this.wards.set(data);
         this.wardLoading.set(false);
       },
-      error: () => this.wardLoading.set(false),
+      error: () => {
+        this.wardLoading.set(false);
+        this.loadError('Could not load wards');
+      },
     });
   }
 
@@ -97,8 +113,13 @@ export class MasterDataList {
         this.deptSaving.set(false);
         this.showDeptModal.set(false);
         this.loadDepartments();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Department created',
+          detail: `${this.deptForm().departmentName ?? 'Department'} saved.`,
+        });
       },
-      error: (err) => {
+      error: (err: ApiError) => {
         this.deptSaving.set(false);
         if (err.status === 409) {
           this.deptError.set('Department Code already exists.');
@@ -121,40 +142,101 @@ export class MasterDataList {
         this.wardSaving.set(false);
         this.showWardModal.set(false);
         this.loadWards();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Ward created',
+          detail: 'Ward saved.',
+        });
       },
-      error: () => {
+      error: (err: ApiError) => {
         this.wardSaving.set(false);
-        alert('Failed to save ward.');
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Ward create failed',
+          detail: err.message || 'Failed to save ward.',
+        });
       },
     });
   }
 
   toggleDept(dept: Department): void {
+    const id = dept.id;
     if (dept.isActive) {
-      if (confirm('Are you sure you want to deactivate this department?')) {
-        this.mdApi.deactivateDepartment(dept.id).subscribe({
-          next: () => this.loadDepartments(),
-          error: (err: ApiError) => {
-            if (err.status === 400 && err.message?.includes('active children')) {
-              alert(err.message); // Exposes backend rejection per spec
-            } else {
-              alert('Failed to deactivate');
-            }
-          },
-        });
-      }
+      this.mdApi.deactivateDepartment(id).subscribe({
+        next: () => {
+          this.loadDepartments();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Department deactivated',
+            detail: `${dept.departmentName} is no longer active.`,
+          });
+        },
+        error: (err: ApiError) => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Deactivate failed',
+            detail: err.message || 'Failed to deactivate.',
+          });
+        },
+      });
     } else {
-      this.mdApi
-        .reactivateDepartment(dept.id)
-        .subscribe(() => this.loadDepartments());
+      this.mdApi.reactivateDepartment(id).subscribe({
+        next: () => {
+          this.loadDepartments();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Department reactivated',
+            detail: `${dept.departmentName} is active again.`,
+          });
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Reactivate failed',
+            detail: 'Failed to reactivate.',
+          });
+        },
+      });
     }
   }
 
   toggleWard(ward: Ward): void {
     if (ward.isActive) {
-      this.mdApi.deactivateWard(ward.id).subscribe(() => this.loadWards());
+      this.mdApi.deactivateWard(ward.id).subscribe({
+        next: () => {
+          this.loadWards();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Ward deactivated',
+            detail: `${ward.wardName} is no longer active.`,
+          });
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Deactivate failed',
+            detail: 'Failed to deactivate ward.',
+          });
+        },
+      });
     } else {
-      this.mdApi.reactivateWard(ward.id).subscribe(() => this.loadWards());
+      this.mdApi.reactivateWard(ward.id).subscribe({
+        next: () => {
+          this.loadWards();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Ward reactivated',
+            detail: `${ward.wardName} is active again.`,
+          });
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Reactivate failed',
+            detail: 'Failed to reactivate ward.',
+          });
+        },
+      });
     }
   }
 
@@ -181,7 +263,10 @@ export class MasterDataList {
         this.beds.set(data);
         this.bedsLoading.set(false);
       },
-      error: () => this.bedsLoading.set(false),
+      error: () => {
+        this.bedsLoading.set(false);
+        this.loadError('Could not load beds');
+      },
     });
   }
 
@@ -195,19 +280,34 @@ export class MasterDataList {
         this.bedSaving.set(false);
         this.bedForm.set({});
         this.loadBeds(ward.id);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Bed created',
+          detail: 'Bed saved.',
+        });
       },
-      error: () => {
+      error: (err: ApiError) => {
         this.bedSaving.set(false);
-        alert('Failed to save bed.');
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Bed create failed',
+          detail: err.message || 'Failed to save bed.',
+        });
       },
     });
   }
 
   toggleBed(bed: Bed): void {
     if (bed.isActive) {
-      this.mdApi.deactivateBed(bed.id).subscribe(() => this.loadBeds(bed.wardId));
+      this.mdApi.deactivateBed(bed.id).subscribe({
+        next: () => this.loadBeds(bed.wardId),
+        error: () => this.loadError('Could not deactivate bed'),
+      });
     } else {
-      this.mdApi.reactivateBed(bed.id).subscribe(() => this.loadBeds(bed.wardId));
+      this.mdApi.reactivateBed(bed.id).subscribe({
+        next: () => this.loadBeds(bed.wardId),
+        error: () => this.loadError('Could not reactivate bed'),
+      });
     }
   }
 }

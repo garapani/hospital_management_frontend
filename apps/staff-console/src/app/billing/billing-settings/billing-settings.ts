@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { MessageService } from 'primeng/api';
 import { BillingSettingsApiService } from './billing-settings-api.service.js';
 import { BillingSettings } from './billing-settings.model.js';
 
@@ -12,6 +13,7 @@ import { BillingSettings } from './billing-settings.model.js';
 })
 export class BillingSettingsComponent {
   private readonly api = inject(BillingSettingsApiService);
+  private readonly messageService = inject(MessageService);
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -34,7 +36,14 @@ export class BillingSettingsComponent {
         }
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Could not load billing settings.',
+        });
+      },
     });
   }
 
@@ -43,11 +52,19 @@ export class BillingSettingsComponent {
     this.api.updateSettings(this.settingsForm()).subscribe({
       next: () => {
         this.saving.set(false);
-        alert('Billing settings updated successfully.');
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Settings saved',
+          detail: 'Billing settings updated successfully.',
+        });
       },
       error: () => {
         this.saving.set(false);
-        alert('Failed to update billing settings.');
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Save failed',
+          detail: 'Failed to update billing settings.',
+        });
       },
     });
   }
