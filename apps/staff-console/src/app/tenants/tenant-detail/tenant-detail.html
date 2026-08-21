@@ -213,6 +213,142 @@
     </ng-template>
   </p-dialog>
 
+  <!-- Billing -->
+  <div class="surface-panel p-6 flex flex-col gap-5">
+    <div>
+      <h3 class="font-bold text-lg text-slate-800">Billing</h3>
+      <p class="text-sm text-slate-500 mt-1">
+        The platform's own SaaS subscription for this hospital — price, billing cycle, and
+        issued invoices. Not visible to the hospital itself.
+      </p>
+    </div>
+
+    @if (subscriptionLoading()) {
+    <div class="flex justify-center p-6">
+      <i class="pi pi-spin pi-spinner text-2xl text-sky-500"></i>
+    </div>
+    } @else {
+    <div class="bg-white border border-slate-200 p-4 rounded-xl flex flex-col gap-3">
+      @if (subscription(); as sub) {
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2">
+          <p-tag
+            [value]="packageDisplayName(sub.packageCode)"
+            [severity]="packageSeverity(sub.packageCode)"
+            styleClass="rounded-full px-3"
+          />
+          <p-tag
+            [value]="sub.status === 'active' ? 'Active' : 'Canceled'"
+            [severity]="sub.status === 'active' ? 'success' : 'secondary'"
+            [rounded]="true"
+          />
+        </div>
+        <span class="text-sm font-semibold text-slate-800">
+          ₹{{ sub.pricePerCycle | number }} / {{ sub.billingCycle === 'annual' ? 'yr' : 'mo' }}
+        </span>
+      </div>
+      <div class="text-xs text-slate-500">
+        Current period: {{ sub.currentPeriodStart | date: 'mediumDate' }} –
+        {{ sub.currentPeriodEnd | date: 'mediumDate' }}
+      </div>
+      } @else {
+      <p class="text-sm text-slate-500">This tenant has no subscription yet.</p>
+      }
+
+      <div class="flex flex-wrap items-end gap-3 pt-3 border-t border-slate-100">
+        <div class="flex flex-col gap-2 min-w-40">
+          <label for="billingCycle" class="text-sm font-medium">Billing cycle</label>
+          <p-select
+            inputId="billingCycle"
+            [options]="billingCycleOptions"
+            [ngModel]="billingCycleDraft()"
+            (ngModelChange)="billingCycleDraft.set($event)"
+            styleClass="w-full"
+          ></p-select>
+        </div>
+        <p-button
+          [label]="subscription() ? 'Update cycle' : 'Subscribe'"
+          icon="pi pi-check"
+          styleClass="rounded-lg border-none px-5"
+          [loading]="subscriptionActionLoading()"
+          [disabled]="
+            subscription()?.status === 'active' &&
+            subscription()?.billingCycle === billingCycleDraft()
+          "
+          (onClick)="subscribeTenant()"
+        />
+        @if (subscription()?.status === 'active') {
+        <p-button
+          label="Cancel subscription"
+          severity="danger"
+          [text]="true"
+          styleClass="rounded-lg px-5"
+          (onClick)="requestCancelSubscription()"
+        />
+        }
+      </div>
+    </div>
+    }
+
+    <div class="flex items-center justify-between">
+      <h4 class="font-semibold text-slate-700">Invoices</h4>
+      <p-button
+        label="Issue invoice"
+        icon="pi pi-plus"
+        size="small"
+        styleClass="rounded-lg border-none px-4"
+        [loading]="invoiceActionLoading()"
+        [disabled]="!subscription() || subscription()?.status !== 'active'"
+        (onClick)="issueInvoice()"
+      />
+    </div>
+
+    @if (invoicesLoading()) {
+    <p class="text-sm text-slate-500 py-4">Loading invoices…</p>
+    } @else if (invoices().length === 0) {
+    <p class="text-sm text-slate-500 text-center py-4">No invoices issued yet.</p>
+    } @else {
+    <div class="flex flex-col gap-2">
+      @for (invoice of invoices(); track invoice.id) {
+      <div
+        class="flex items-center justify-between gap-3 p-3 rounded-lg bg-white border border-slate-100 flex-wrap"
+      >
+        <div class="min-w-0">
+          <p class="text-sm text-slate-700">
+            {{ invoice.periodStart | date: 'mediumDate' }} –
+            {{ invoice.periodEnd | date: 'mediumDate' }}
+          </p>
+          <p class="text-xs text-slate-500">
+            Issued {{ invoice.issuedAt | date: 'medium' }}
+            @if (invoice.paidAt) {
+            • Paid {{ invoice.paidAt | date: 'medium' }}
+            }
+          </p>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="text-sm font-semibold text-slate-800">₹{{ invoice.amount | number }}</span>
+          <p-tag
+            [value]="invoice.status === 'paid' ? 'Paid' : 'Open'"
+            [severity]="invoice.status === 'paid' ? 'success' : 'warn'"
+            [rounded]="true"
+          />
+          @if (invoice.status === 'open') {
+          <p-button
+            label="Mark paid"
+            size="small"
+            severity="success"
+            styleClass="rounded-lg border-none px-3"
+            [loading]="markPaidLoadingId() === invoice.id"
+            (onClick)="markPaid(invoice.id)"
+          />
+          }
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
+
   <!-- Role availability -->
   <div class="surface-panel p-6 flex flex-col gap-5">
     <div class="flex items-start justify-between gap-4">
@@ -358,6 +494,29 @@
   </div>
   }
 </div>
+
+<!-- Cancel subscription confirmation -->
+<p-dialog
+  header="Cancel subscription?"
+  [(visible)]="showCancelConfirm"
+  [modal]="true"
+  [style]="{ width: '440px' }"
+  styleClass="surface-modal"
+>
+  <div class="flex flex-col gap-3 py-2">
+    <p class="text-sm text-slate-600">
+      <strong>{{ tenant()?.hospitalName }}</strong>'s subscription will be canceled.
+      Already-issued invoices are unaffected; no new invoices can be issued until it subscribes
+      again.
+    </p>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Keep subscription" severity="secondary" [text]="true" (onClick)="showCancelConfirm.set(false)"></p-button>
+      <p-button label="Cancel subscription" severity="danger" [loading]="subscriptionActionLoading()" (onClick)="cancelSubscription()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
 
 <!-- Archive confirmation -->
 <p-dialog

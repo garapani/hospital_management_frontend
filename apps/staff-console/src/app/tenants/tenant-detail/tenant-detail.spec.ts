@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { ApiError } from '@org/api-client';
 import { TenantDetail } from './tenant-detail.js';
 import { TenantsApiService } from '../tenants-api.service.js';
+import { SubscriptionsApiService } from '../subscriptions-api.service.js';
 import { Tenant } from '../tenant.model.js';
+import { Subscription, SubscriptionInvoice } from '../subscription.model.js';
 
 describe('TenantDetail package change', () => {
   function setup() {
@@ -63,6 +66,39 @@ describe('TenantDetail package change', () => {
     } as unknown as TenantsApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
 
+    const subscription: Subscription = {
+      id: 'sub-1',
+      tenantId: 'h1',
+      packageCode: 'basic',
+      billingCycle: 'monthly',
+      pricePerCycle: 4999,
+      status: 'active',
+      currentPeriodStart: '2026-08-01T00:00:00.000Z',
+      currentPeriodEnd: '2026-08-31T00:00:00.000Z',
+      createdAt: '2026-08-01T00:00:00.000Z',
+    };
+    const invoice: SubscriptionInvoice = {
+      id: 'inv-1',
+      subscriptionId: 'sub-1',
+      tenantId: 'h1',
+      periodStart: '2026-08-01T00:00:00.000Z',
+      periodEnd: '2026-08-31T00:00:00.000Z',
+      amount: 4999,
+      status: 'open',
+      issuedAt: '2026-08-01T00:00:00.000Z',
+      paidAt: null,
+    };
+    const subscriptionsApi = {
+      getSubscription: jest.fn().mockReturnValue(of(null)),
+      listInvoices: jest.fn().mockReturnValue(of([])),
+      subscribe: jest.fn().mockReturnValue(of(subscription)),
+      cancel: jest.fn().mockReturnValue(of({ ...subscription, status: 'canceled' })),
+      issueInvoice: jest.fn().mockReturnValue(of(invoice)),
+      markInvoicePaid: jest
+        .fn()
+        .mockReturnValue(of({ ...invoice, status: 'paid', paidAt: '2026-08-05T00:00:00.000Z' })),
+    } as unknown as SubscriptionsApiService;
+
     TestBed.configureTestingModule({
       imports: [TenantDetail],
       providers: [
@@ -71,13 +107,14 @@ describe('TenantDetail package change', () => {
           useValue: { paramMap: of({ get: () => 'h1' }) },
         },
         { provide: TenantsApiService, useValue: tenantsApi },
+        { provide: SubscriptionsApiService, useValue: subscriptionsApi },
         { provide: MessageService, useValue: messageService },
         { provide: Router, useValue: { navigate: jest.fn() } },
       ],
     });
 
     const fixture = TestBed.createComponent(TenantDetail);
-    return { fixture, tenantsApi, messageService };
+    return { fixture, tenantsApi, subscriptionsApi, messageService, subscription, invoice };
   }
 
   it('opens a confirmation instead of calling the API when saving a package change', async () => {
@@ -215,6 +252,116 @@ describe('TenantDetail package change', () => {
     expect(tenantsApi.purge).toHaveBeenCalledWith('h1', 'h1');
     expect(messageService.add).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success', summary: 'Tenant purged' }),
+    );
+  });
+
+  it('loads the subscription and invoices for the tenant on init', async () => {
+    const { fixture, subscriptionsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(subscriptionsApi.getSubscription).toHaveBeenCalledWith('h1');
+    expect(subscriptionsApi.listInvoices).toHaveBeenCalledWith('h1');
+  });
+
+  it('subscribes the tenant on the drafted billing cycle and toasts success', async () => {
+    const { fixture, subscriptionsApi, messageService, subscription } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.billingCycleDraft.set('annual');
+    fixture.componentInstance.subscribeTenant();
+    await fixture.whenStable();
+
+    expect(subscriptionsApi.subscribe).toHaveBeenCalledWith('h1', 'annual');
+    expect(fixture.componentInstance.subscription()).toEqual(subscription);
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Subscription updated' }),
+    );
+  });
+
+  it('cancels a subscription only after confirmation', async () => {
+    const { fixture, subscriptionsApi, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.requestCancelSubscription();
+    expect(fixture.componentInstance.showCancelConfirm()).toBe(true);
+    expect(subscriptionsApi.cancel).not.toHaveBeenCalled();
+
+    fixture.componentInstance.cancelSubscription();
+    await fixture.whenStable();
+
+    expect(subscriptionsApi.cancel).toHaveBeenCalledWith('h1');
+    expect(fixture.componentInstance.showCancelConfirm()).toBe(false);
+    expect(fixture.componentInstance.subscription()?.status).toBe('canceled');
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Subscription canceled' }),
+    );
+  });
+
+  it('issues an invoice and prepends it to the list', async () => {
+    const { fixture, subscriptionsApi, messageService, invoice } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.issueInvoice();
+    await fixture.whenStable();
+
+    expect(subscriptionsApi.issueInvoice).toHaveBeenCalledWith('h1');
+    expect(fixture.componentInstance.invoices()).toEqual([invoice]);
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Invoice issued' }),
+    );
+  });
+
+  it('surfaces a duplicate-invoice 409 as a warning toast', async () => {
+    const { fixture, subscriptionsApi, messageService } = setup();
+    (subscriptionsApi.issueInvoice as jest.Mock).mockReturnValue(
+      throwError(
+        () => ({ status: 409, message: 'An open invoice already exists' }) satisfies ApiError,
+      ),
+    );
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.issueInvoice();
+    await fixture.whenStable();
+
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'warn', summary: 'Invoice already exists' }),
+    );
+  });
+
+  it('marks an invoice paid, updates it in place, and reloads the subscription', async () => {
+    const { fixture, subscriptionsApi, messageService } = setup();
+    (subscriptionsApi.listInvoices as jest.Mock).mockReturnValue(
+      of([
+        {
+          id: 'inv-1',
+          subscriptionId: 'sub-1',
+          tenantId: 'h1',
+          periodStart: '2026-08-01T00:00:00.000Z',
+          periodEnd: '2026-08-31T00:00:00.000Z',
+          amount: 4999,
+          status: 'open',
+          issuedAt: '2026-08-01T00:00:00.000Z',
+          paidAt: null,
+        },
+      ]),
+    );
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.markPaid('inv-1');
+    await fixture.whenStable();
+
+    expect(subscriptionsApi.markInvoicePaid).toHaveBeenCalledWith('inv-1');
+    expect(fixture.componentInstance.invoices()[0].status).toBe('paid');
+    // Reloaded after marking paid — getSubscription is called once on init, once on reload.
+    expect(subscriptionsApi.getSubscription).toHaveBeenCalledTimes(2);
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Invoice marked paid' }),
     );
   });
 });

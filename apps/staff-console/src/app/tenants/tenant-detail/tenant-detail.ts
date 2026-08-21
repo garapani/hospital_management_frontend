@@ -1,5 +1,5 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
@@ -12,6 +12,8 @@ import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuditRecord } from '../../audit/audit.model.js';
 import { TenantsApiService } from '../tenants-api.service.js';
+import { SubscriptionsApiService } from '../subscriptions-api.service.js';
+import { BillingCycle, Subscription, SubscriptionInvoice } from '../subscription.model.js';
 import {
   BlockedRole,
   Package,
@@ -31,6 +33,7 @@ interface SelectOption {
 @Component({
   imports: [
     DatePipe,
+    DecimalPipe,
     RouterModule,
     ButtonModule,
     TagModule,
@@ -47,6 +50,7 @@ export class TenantDetail implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly tenantsApi = inject(TenantsApiService);
+  private readonly subscriptionsApi = inject(SubscriptionsApiService);
   private readonly messageService = inject(MessageService);
 
   readonly tenant = signal<Tenant | null>(null);
@@ -112,6 +116,23 @@ export class TenantDetail implements OnInit {
   readonly history = signal<AuditRecord[]>([]);
   readonly historyLoading = signal(false);
 
+  // Billing: the platform's own SaaS subscription + invoices for this tenant (public schema,
+  // never visible to the hospital itself).
+  readonly subscription = signal<Subscription | null>(null);
+  readonly subscriptionLoading = signal(true);
+  readonly subscriptionActionLoading = signal(false);
+  readonly billingCycleDraft = signal<BillingCycle>('monthly');
+  readonly showCancelConfirm = signal(false);
+  readonly billingCycleOptions: SelectOption[] = [
+    { label: 'Monthly', value: 'monthly' },
+    { label: 'Annual', value: 'annual' },
+  ];
+
+  readonly invoices = signal<SubscriptionInvoice[]>([]);
+  readonly invoicesLoading = signal(true);
+  readonly invoiceActionLoading = signal(false);
+  readonly markPaidLoadingId = signal<string | null>(null);
+
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
@@ -119,9 +140,148 @@ export class TenantDetail implements OnInit {
         this.loadTenant(id);
         this.loadRoles(id);
         this.loadHistory(id);
+        this.loadSubscription(id);
+        this.loadInvoices(id);
       }
     });
     this.loadPackages();
+  }
+
+  private loadSubscription(id: string): void {
+    this.subscriptionLoading.set(true);
+    this.subscriptionsApi.getSubscription(id).subscribe({
+      next: (subscription) => {
+        this.subscription.set(subscription);
+        this.billingCycleDraft.set(subscription?.billingCycle ?? 'monthly');
+        this.subscriptionLoading.set(false);
+      },
+      error: () => {
+        this.subscriptionLoading.set(false);
+      },
+    });
+  }
+
+  private loadInvoices(id: string): void {
+    this.invoicesLoading.set(true);
+    this.subscriptionsApi.listInvoices(id).subscribe({
+      next: (invoices) => {
+        this.invoices.set(invoices);
+        this.invoicesLoading.set(false);
+      },
+      error: () => {
+        this.invoicesLoading.set(false);
+      },
+    });
+  }
+
+  /** Starts a subscription, or (when one already exists) updates its billing cycle/price. */
+  subscribeTenant(): void {
+    const current = this.tenant();
+    if (!current) return;
+    this.subscriptionActionLoading.set(true);
+    this.subscriptionsApi.subscribe(current.hospitalId, this.billingCycleDraft()).subscribe({
+      next: (subscription) => {
+        this.subscriptionActionLoading.set(false);
+        this.subscription.set(subscription);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Subscription updated',
+          detail: `${current.hospitalName} is now on the ${subscription.billingCycle} cycle at ₹${subscription.pricePerCycle}.`,
+        });
+      },
+      error: () => {
+        this.subscriptionActionLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Subscribe failed',
+          detail: 'Could not update the subscription. Please try again.',
+        });
+      },
+    });
+  }
+
+  requestCancelSubscription(): void {
+    this.showCancelConfirm.set(true);
+  }
+
+  cancelSubscription(): void {
+    const current = this.tenant();
+    if (!current) return;
+    this.subscriptionActionLoading.set(true);
+    this.subscriptionsApi.cancel(current.hospitalId).subscribe({
+      next: (subscription) => {
+        this.subscriptionActionLoading.set(false);
+        this.showCancelConfirm.set(false);
+        this.subscription.set(subscription);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Subscription canceled',
+          detail: `${current.hospitalName}'s subscription was canceled.`,
+        });
+      },
+      error: () => {
+        this.subscriptionActionLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Cancel failed',
+          detail: 'Could not cancel the subscription. Please try again.',
+        });
+      },
+    });
+  }
+
+  issueInvoice(): void {
+    const current = this.tenant();
+    if (!current) return;
+    this.invoiceActionLoading.set(true);
+    this.subscriptionsApi.issueInvoice(current.hospitalId).subscribe({
+      next: (invoice) => {
+        this.invoiceActionLoading.set(false);
+        this.invoices.update((list) => [invoice, ...list]);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Invoice issued',
+          detail: `₹${invoice.amount} invoice issued for the current period.`,
+        });
+      },
+      error: (error: ApiError) => {
+        this.invoiceActionLoading.set(false);
+        this.messageService.add({
+          severity: error.status === 409 ? 'warn' : 'error',
+          summary: error.status === 409 ? 'Invoice already exists' : 'Issue failed',
+          detail: error.message || 'Could not issue the invoice. Please try again.',
+        });
+      },
+    });
+  }
+
+  markPaid(invoiceId: string): void {
+    this.markPaidLoadingId.set(invoiceId);
+    this.subscriptionsApi.markInvoicePaid(invoiceId).subscribe({
+      next: (updated) => {
+        this.markPaidLoadingId.set(null);
+        this.invoices.update((list) =>
+          list.map((invoice) => (invoice.id === updated.id ? updated : invoice)),
+        );
+        const current = this.tenant();
+        if (current) {
+          this.loadSubscription(current.hospitalId);
+        }
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Invoice marked paid',
+          detail: `₹${updated.amount} invoice marked paid. The subscription period has advanced.`,
+        });
+      },
+      error: () => {
+        this.markPaidLoadingId.set(null);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Mark paid failed',
+          detail: 'Could not mark the invoice paid. Please try again.',
+        });
+      },
+    });
   }
 
   private loadHistory(id: string): void {
