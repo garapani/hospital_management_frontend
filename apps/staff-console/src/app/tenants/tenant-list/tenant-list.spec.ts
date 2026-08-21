@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
+import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { TenantList } from './tenant-list.js';
 import { TenantsApiService } from '../tenants-api.service.js';
@@ -16,19 +17,25 @@ describe('TenantList', () => {
       ),
       provision:
         provisionResult === 'ok'
-          ? jest.fn().mockReturnValue(of({}))
+          ? jest.fn().mockReturnValue(
+              of({ hospitalId: 'h1', hospitalName: 'New Hospital', packageCode: 'basic' }),
+            )
           : jest.fn().mockReturnValue(
               throwError(() => ({ status: 500, message: 'boom' } as ApiError)),
             ),
     } as unknown as TenantsApiService;
+    const messageService = { add: jest.fn() } as unknown as MessageService;
 
     TestBed.configureTestingModule({
       imports: [TenantList],
-      providers: [{ provide: TenantsApiService, useValue: tenantsApi }],
+      providers: [
+        { provide: TenantsApiService, useValue: tenantsApi },
+        { provide: MessageService, useValue: messageService },
+      ],
     });
 
     const fixture = TestBed.createComponent(TenantList);
-    return { fixture, tenantsApi };
+    return { fixture, tenantsApi, messageService };
   }
 
   it('loads tenants and packages on open, with roles auto-enabled by the backend', async () => {
@@ -53,8 +60,8 @@ describe('TenantList', () => {
     });
   });
 
-  it('provisions with the selected package and reloads on success', async () => {
-    const { fixture, tenantsApi } = setup('ok');
+  it('provisions with the selected package, reloads, and toasts success', async () => {
+    const { fixture, tenantsApi, messageService } = setup('ok');
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -73,10 +80,13 @@ describe('TenantList', () => {
     });
     expect(fixture.componentInstance.showProvisionModal()).toBe(false);
     expect(tenantsApi.list).toHaveBeenCalledTimes(2);
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Tenant provisioned' }),
+    );
   });
 
-  it('surfaces the backend error instead of failing silently', async () => {
-    const { fixture } = setup('error');
+  it('toasts the backend error instead of failing silently', async () => {
+    const { fixture, messageService } = setup('error');
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -90,6 +100,8 @@ describe('TenantList', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.showProvisionModal()).toBe(true);
-    expect(fixture.componentInstance.provisionError()).toBe('boom');
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error', summary: 'Provision failed', detail: 'boom' }),
+    );
   });
 });

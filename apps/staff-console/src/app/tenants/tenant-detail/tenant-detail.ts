@@ -7,6 +7,7 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { MessageModule } from 'primeng/message';
+import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { TenantsApiService } from '../tenants-api.service.js';
 import {
@@ -40,6 +41,7 @@ interface SelectOption {
 export class TenantDetail implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly tenantsApi = inject(TenantsApiService);
+  private readonly messageService = inject(MessageService);
 
   readonly tenant = signal<Tenant | null>(null);
   readonly loading = signal(true);
@@ -112,10 +114,20 @@ export class TenantDetail implements OnInit {
         this.packageSaving.set(false);
         this.tenant.set(updated);
         this.packageDraft.set(updated.packageCode);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Package updated',
+          detail: `${current.hospitalName} is now on ${packageDisplayName(updated.packageCode)}. Takes effect at each user's next login.`,
+        });
       },
       error: () => {
         this.packageSaving.set(false);
         this.packageError.set('Could not change package. Please try again.');
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Package update failed',
+          detail: 'Could not change the package. Please try again.',
+        });
       },
     });
   }
@@ -168,6 +180,11 @@ export class TenantDetail implements OnInit {
         this.roles.set(roles);
         this.resetDraft(roles);
         this.rolesSaving.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Roles updated',
+          detail: `${this.enabledCount()} of ${this.roles().length} roles are now enabled for ${current.hospitalName}.`,
+        });
       },
       error: (error: ApiError) => {
         this.rolesSaving.set(false);
@@ -176,9 +193,19 @@ export class TenantDetail implements OnInit {
         const body = error.body as { blocked?: BlockedRole[] } | undefined;
         if (error.status === 409 && body?.blocked?.length) {
           this.blocked.set(body.blocked);
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Roles not saved',
+            detail: `${body.blocked.length} role(s) are still held by staff accounts. Reassign them first.`,
+          });
           return;
         }
         this.rolesError.set('Could not update roles. Please try again.');
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Roles update failed',
+          detail: 'Could not update roles. Please try again.',
+        });
       },
     });
   }
@@ -202,8 +229,20 @@ export class TenantDetail implements OnInit {
       next: () => {
         this.actionLoading.set(false);
         this.loadTenant(current.hospitalId);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Tenant suspended',
+          detail: `${current.hospitalName} can no longer log in.`,
+        });
       },
-      error: () => this.actionLoading.set(false),
+      error: () => {
+        this.actionLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Suspend failed',
+          detail: 'Could not suspend the tenant. Please try again.',
+        });
+      },
     });
   }
 
@@ -215,8 +254,20 @@ export class TenantDetail implements OnInit {
       next: () => {
         this.actionLoading.set(false);
         this.loadTenant(current.hospitalId);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Tenant reactivated',
+          detail: `${current.hospitalName} can log in again.`,
+        });
       },
-      error: () => this.actionLoading.set(false),
+      error: () => {
+        this.actionLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Reactivate failed',
+          detail: 'Could not reactivate the tenant. Please try again.',
+        });
+      },
     });
   }
 }

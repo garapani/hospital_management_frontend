@@ -8,7 +8,7 @@ import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { MessageModule } from 'primeng/message';
+import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { TenantsApiService } from '../tenants-api.service.js';
 import { packageDisplayName, packageSeverity, Tenant, tenantStatusSeverity } from '../tenant.model.js';
@@ -29,13 +29,13 @@ interface SelectOption {
     FormsModule,
     InputTextModule,
     SelectModule,
-    MessageModule,
   ],
   selector: 'hms-tenant-list',
   templateUrl: './tenant-list.html',
 })
 export class TenantList {
   private readonly tenantsApi = inject(TenantsApiService);
+  private readonly messageService = inject(MessageService);
 
   readonly tenants = signal<Tenant[]>([]);
   readonly loading = signal(false);
@@ -54,7 +54,6 @@ export class TenantList {
     packageCode: 'basic',
   });
   readonly provisionLoading = signal(false);
-  readonly provisionError = signal<string | null>(null);
 
   readonly packageOptions = signal<SelectOption[]>([]);
 
@@ -67,13 +66,19 @@ export class TenantList {
         this.tenants.set(tenants);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load tenants',
+        });
+      },
     });
   }
 
   openProvisionModal(): void {
     this.provisionForm.set({ hospitalId: '', hospitalName: '', packageCode: 'basic' });
-    this.provisionError.set(null);
     this.showProvisionModal.set(true);
 
     if (this.packageOptions().length === 0) {
@@ -82,7 +87,11 @@ export class TenantList {
           this.packageOptions.set(packages.map((p) => ({ label: p.name, value: p.code })));
         },
         error: () => {
-          this.provisionError.set('Could not load packages. Please try again.');
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Could not load packages. Please try again.',
+          });
         },
       });
     }
@@ -90,17 +99,25 @@ export class TenantList {
 
   submitProvision(): void {
     this.provisionLoading.set(true);
-    this.provisionError.set(null);
     this.tenantsApi.provision(this.provisionForm()).subscribe({
-      next: () => {
+      next: (tenant) => {
         this.provisionLoading.set(false);
         this.showProvisionModal.set(false);
         this.load();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Tenant provisioned',
+          detail: `${tenant.hospitalName} is live on ${packageDisplayName(tenant.packageCode)}. Roles were enabled automatically.`,
+        });
       },
       error: (error: ApiError) => {
         this.provisionLoading.set(false);
-        // Never fail silently — surface the backend's message so a failed provision is visible.
-        this.provisionError.set(error.message || 'Could not provision the tenant. Please try again.');
+        // Toast, not silence — a failed provision must be visible (was a silent no-op before).
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Provision failed',
+          detail: error.message || 'Could not provision the tenant. Please try again.',
+        });
       },
     });
   }

@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '@org/auth';
 import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
 import { NotificationsApiService, Notification } from '../notifications/notifications-api.service.js';
 import { Subscription } from 'rxjs';
 
@@ -11,7 +12,7 @@ import { Subscription } from 'rxjs';
  * Nav links are projected in by the wrapping shell (AppShell / PlatformShell) via [shellNav].
  */
 @Component({
-  imports: [RouterModule, TooltipModule, DatePipe],
+  imports: [RouterModule, TooltipModule, ToastModule, DatePipe],
   selector: 'hms-shell-chrome',
   templateUrl: './shell-chrome.html',
 })

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { MessageService } from 'primeng/api';
 import { API_BASE_URL, TENANT_ID } from '@org/api-client';
 import { AppShell } from './app-shell.js';
 
@@ -13,6 +14,7 @@ describe('AppShell', () => {
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
+        MessageService,
         { provide: API_BASE_URL, useValue: 'https://gateway.example/api' },
         { provide: TENANT_ID, useValue: 'demo' },
       ],
