@@ -5,6 +5,7 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { SelectModule } from 'primeng/select';
+import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
@@ -32,6 +33,7 @@ interface SelectOption {
     TagModule,
     ToggleSwitchModule,
     SelectModule,
+    DialogModule,
     FormsModule,
     MessageModule,
   ],
@@ -54,6 +56,16 @@ export class TenantDetail implements OnInit {
   readonly packageDirty = computed(
     () => this.packageDraft() !== '' && this.packageDraft() !== this.tenant()?.packageCode,
   );
+  /** Whether the drafted package is an upgrade or a downgrade relative to the current one. */
+  readonly packageDirection = computed<'upgrade' | 'downgrade'>(() => {
+    const rank = { basic: 0, standard: 1, enterprise: 2 };
+    const from = this.tenant()?.packageCode ?? 'basic';
+    const to = this.packageDraft();
+    return (rank[to as keyof typeof rank] ?? 0) >= (rank[from as keyof typeof rank] ?? 0)
+      ? 'upgrade'
+      : 'downgrade';
+  });
+  readonly showPackageConfirm = signal(false);
 
   readonly packageDisplayName = packageDisplayName;
   readonly packageSeverity = packageSeverity;
@@ -102,11 +114,20 @@ export class TenantDetail implements OnInit {
     });
   }
 
+  /** Opens the confirmation step — a package change affects every user's permissions. */
   savePackage(): void {
+    if (!this.packageDirty()) {
+      return;
+    }
+    this.showPackageConfirm.set(true);
+  }
+
+  confirmPackageChange(): void {
     const current = this.tenant();
     if (!current || !this.packageDirty()) {
       return;
     }
+    this.showPackageConfirm.set(false);
     this.packageSaving.set(true);
     this.packageError.set(null);
     this.tenantsApi.setPackage(current.hospitalId, this.packageDraft()).subscribe({
