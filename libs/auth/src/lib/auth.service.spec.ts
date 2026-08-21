@@ -183,6 +183,25 @@ describe('AuthService', () => {
     });
   });
 
+  describe('changeOwnPassword', () => {
+    it('posts the current and new password to /accounts/me/password', () => {
+      let result: { success: boolean } | undefined;
+
+      service.changeOwnPassword('old-pass', 'new-pass-123').subscribe((r) => (result = r));
+
+      const req = httpMock.expectOne(
+        'https://gateway.example/api/accounts/me/password',
+      );
+      expect(req.request.body).toEqual({
+        currentPassword: 'old-pass',
+        newPassword: 'new-pass-123',
+      });
+      req.flush({ success: true });
+
+      expect(result).toEqual({ success: true });
+    });
+  });
+
   describe('refreshAccessToken', () => {
     beforeEach(() => {
       sessionStorage.setItem('auth.refreshToken', 'refresh-token-1');

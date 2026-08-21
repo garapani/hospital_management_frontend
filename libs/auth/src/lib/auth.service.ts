@@ -102,6 +102,21 @@ export class AuthService {
   }
 
   /**
+   * Self-service password rotation for the signed-in account. The backend verifies the current
+   * password and returns 400 with a message when it is wrong (not 401, so the interceptor's
+   * refresh-on-401 never fires). Errors surface as ApiError.
+   */
+  changeOwnPassword(
+    currentPassword: string,
+    newPassword: string,
+  ): Observable<{ success: boolean }> {
+    return this.apiClient.post<{ success: boolean }>('/accounts/me/password', {
+      currentPassword,
+      newPassword,
+    });
+  }
+
+  /**
    * Single-flight: concurrent callers share one HTTP call. On failure, clears the
    * session and redirects to login — callers just subscribe for the error.
    */

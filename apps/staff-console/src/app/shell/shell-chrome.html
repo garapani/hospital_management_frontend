@@ -133,6 +133,14 @@
                 <p class="text-xs text-slate-500">{{ currentUser()?.hospitalId || 'admin@medicare.os' }}</p>
               </div>
               <button
+                (click)="openPasswordModal()"
+                class="flex items-center gap-3 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 w-full transition-colors"
+              >
+                <i class="pi pi-key text-sm"></i>
+                Change Password
+              </button>
+              <div class="border-t border-slate-200 my-2"></div>
+              <button
                 (click)="logout()"
                 class="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full transition-colors"
               >
@@ -151,3 +159,90 @@
     </main>
   </div>
 </div>
+
+<p-dialog
+  header="Change Password"
+  [(visible)]="showPasswordModal"
+  [modal]="true"
+  [style]="{ width: '400px' }"
+  styleClass="surface-modal"
+  [draggable]="false"
+  [resizable]="false"
+>
+  <div class="flex flex-col gap-4 py-4">
+    @if (passwordError(); as message) {
+    <div
+      class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2"
+    >
+      <i class="pi pi-exclamation-circle"></i>
+      {{ message }}
+    </div>
+    }
+
+    <div class="flex flex-col gap-2">
+      <label for="currentPassword" class="text-sm font-medium text-slate-700"
+        >Current password</label
+      >
+      <p-password
+        inputId="currentPassword"
+        [ngModel]="passwordForm().currentPassword"
+        (ngModelChange)="passwordForm.set({ ...passwordForm(), currentPassword: $event })"
+        [feedback]="false"
+        [toggleMask]="true"
+        autocomplete="current-password"
+        styleClass="w-full"
+        inputStyleClass="w-full rounded-lg"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="newPassword" class="text-sm font-medium text-slate-700"
+        >New password</label
+      >
+      <p-password
+        inputId="newPassword"
+        [ngModel]="passwordForm().newPassword"
+        (ngModelChange)="passwordForm.set({ ...passwordForm(), newPassword: $event })"
+        [feedback]="true"
+        [toggleMask]="true"
+        autocomplete="new-password"
+        placeholder="At least 8 characters"
+        styleClass="w-full"
+        inputStyleClass="w-full rounded-lg"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="confirmPassword" class="text-sm font-medium text-slate-700"
+        >Confirm new password</label
+      >
+      <p-password
+        inputId="confirmPassword"
+        [ngModel]="passwordForm().confirmPassword"
+        (ngModelChange)="passwordForm.set({ ...passwordForm(), confirmPassword: $event })"
+        [feedback]="false"
+        [toggleMask]="true"
+        autocomplete="new-password"
+        styleClass="w-full"
+        inputStyleClass="w-full rounded-lg"
+      />
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [text]="true"
+        (onClick)="closePasswordModal()"
+      ></p-button>
+      <p-button
+        label="Change password"
+        [loading]="passwordSaving()"
+        (onClick)="submitPasswordChange()"
+        [disabled]="!passwordForm().currentPassword || !passwordForm().newPassword"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
