@@ -8,10 +8,10 @@ import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
+import { MessageModule } from 'primeng/message';
+import { ApiError } from '@org/api-client';
 import { TenantsApiService } from '../tenants-api.service.js';
 import { packageDisplayName, packageSeverity, Tenant, tenantStatusSeverity } from '../tenant.model.js';
-import { MasterDataApiService } from '../../master-data/master-data-api.service.js';
-import { MultiSelectModule } from 'primeng/multiselect';
 
 interface SelectOption {
   label: string;
@@ -29,14 +29,13 @@ interface SelectOption {
     FormsModule,
     InputTextModule,
     SelectModule,
-    MultiSelectModule,
+    MessageModule,
   ],
   selector: 'hms-tenant-list',
   templateUrl: './tenant-list.html',
 })
 export class TenantList {
   private readonly tenantsApi = inject(TenantsApiService);
-  private readonly mdApi = inject(MasterDataApiService);
 
   readonly tenants = signal<Tenant[]>([]);
   readonly loading = signal(false);
@@ -45,20 +44,18 @@ export class TenantList {
   readonly packageDisplayName = packageDisplayName;
   readonly packageSeverity = packageSeverity;
 
-  // Provision modal state
+  // Provision modal state. Roles are NOT picked here anymore — the package decides which roles
+  // are enabled (backend auto-enables the package's default roles); departments are not seeded
+  // at provision time.
   readonly showProvisionModal = signal(false);
-  readonly provisionForm = signal<{hospitalId: string; hospitalName: string; packageCode: string; roleIds: string[]; departmentCatalogIds: string[]}>({
+  readonly provisionForm = signal<{ hospitalId: string; hospitalName: string; packageCode: string }>({
     hospitalId: '',
     hospitalName: '',
     packageCode: 'basic',
-    roleIds: [],
-    departmentCatalogIds: []
   });
   readonly provisionLoading = signal(false);
+  readonly provisionError = signal<string | null>(null);
 
-  // Catalogs for provision modal
-  readonly roleOptions = signal<SelectOption[]>([]);
-  readonly deptOptions = signal<SelectOption[]>([]);
   readonly packageOptions = signal<SelectOption[]>([]);
 
   // GET /tenants returns the full, unpaginated tenant list (platform-scale hospital counts
@@ -75,37 +72,35 @@ export class TenantList {
   }
 
   openProvisionModal(): void {
-    this.provisionForm.set({ hospitalId: '', hospitalName: '', packageCode: 'basic', roleIds: [], departmentCatalogIds: [] });
+    this.provisionForm.set({ hospitalId: '', hospitalName: '', packageCode: 'basic' });
+    this.provisionError.set(null);
     this.showProvisionModal.set(true);
 
-    if (this.roleOptions().length === 0) {
-      this.mdApi.getRoles().subscribe((res) => {
-        this.roleOptions.set(res.map((r) => ({ label: r.name, value: r.id })));
-      });
-    }
-    if (this.deptOptions().length === 0) {
-      this.mdApi.listDepartmentCatalogs().subscribe((res) => {
-        this.deptOptions.set(res.map((d) => ({ label: d.departmentName, value: d.id })));
-      });
-    }
     if (this.packageOptions().length === 0) {
-      this.tenantsApi.listPackages().subscribe((res) => {
-        this.packageOptions.set(res.map((p) => ({ label: p.name, value: p.code })));
+      this.tenantsApi.listPackages().subscribe({
+        next: (packages) => {
+          this.packageOptions.set(packages.map((p) => ({ label: p.name, value: p.code })));
+        },
+        error: () => {
+          this.provisionError.set('Could not load packages. Please try again.');
+        },
       });
     }
   }
 
   submitProvision(): void {
     this.provisionLoading.set(true);
+    this.provisionError.set(null);
     this.tenantsApi.provision(this.provisionForm()).subscribe({
       next: () => {
         this.provisionLoading.set(false);
         this.showProvisionModal.set(false);
         this.load();
       },
-      error: () => {
+      error: (error: ApiError) => {
         this.provisionLoading.set(false);
-        // In a real app we might show a toast here.
+        // Never fail silently — surface the backend's message so a failed provision is visible.
+        this.provisionError.set(error.message || 'Could not provision the tenant. Please try again.');
       },
     });
   }

@@ -132,37 +132,14 @@
         styleClass="w-full"
       ></p-select>
       <p class="text-xs text-slate-400">
-        Only the selected edition's features are available to this hospital.
+        Roles are enabled automatically for the selected package (tunable later on the tenant
+        page). Only the selected edition's features are available to this hospital.
       </p>
     </div>
-    
-    <div class="flex flex-col gap-2">
-      <label for="roles" class="text-sm font-medium">Enable Roles</label>
-      <p-multiSelect
-        inputId="roles"
-        [options]="roleOptions()"
-        [ngModel]="provisionForm().roleIds"
-        (ngModelChange)="provisionForm.update(v => ({...v, roleIds: $event}))"
-        placeholder="Select roles"
-        display="chip"
-        [appendTo]="'body'"
-        styleClass="w-full"
-      ></p-multiSelect>
-    </div>
 
-    <div class="flex flex-col gap-2">
-      <label for="depts" class="text-sm font-medium">Provision Departments</label>
-      <p-multiSelect
-        inputId="depts"
-        [options]="deptOptions()"
-        [ngModel]="provisionForm().departmentCatalogIds"
-        (ngModelChange)="provisionForm.update(v => ({...v, departmentCatalogIds: $event}))"
-        placeholder="Select departments"
-        display="chip"
-        [appendTo]="'body'"
-        styleClass="w-full"
-      ></p-multiSelect>
-    </div>
+    @if (provisionError(); as message) {
+    <p-message severity="error" styleClass="w-full">{{ message }}</p-message>
+    }
   </div>
   <ng-template pTemplate="footer">
     <p-button
