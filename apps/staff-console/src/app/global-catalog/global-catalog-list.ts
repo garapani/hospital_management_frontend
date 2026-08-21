@@ -76,6 +76,25 @@ export class GlobalCatalogList {
   readonly roleSaving = signal(false);
   readonly roleError = signal<string | null>(null);
 
+  // Edit Role Modal (description/priority — the name is immutable).
+  readonly showEditRoleModal = signal(false);
+  readonly editRoleForm = signal({ name: '', description: '', priority: 0 });
+  readonly editRoleId = signal<string | null>(null);
+  readonly editRoleSaving = signal(false);
+  readonly editRoleError = signal<string | null>(null);
+
+  // Edit Department Modal (name/description/appt — the code is immutable).
+  readonly showEditDeptModal = signal(false);
+  readonly editDeptForm = signal({
+    departmentCode: '',
+    departmentName: '',
+    description: '',
+    isAppointmentApplicable: true,
+  });
+  readonly editDeptId = signal<string | null>(null);
+  readonly editDeptSaving = signal(false);
+  readonly editDeptError = signal<string | null>(null);
+
   constructor() {
     this.loadDepartments();
     this.loadRoles();
@@ -192,6 +211,131 @@ export class GlobalCatalogList {
         } else {
           this.roleError.set('Failed to save role.');
         }
+      },
+    });
+  }
+
+  openEditRoleModal(role: Role): void {
+    this.editRoleForm.set({
+      name: role.name,
+      description: role.description,
+      priority: role.priority,
+    });
+    this.editRoleId.set(role.id);
+    this.editRoleError.set(null);
+    this.showEditRoleModal.set(true);
+  }
+
+  submitEditRole(): void {
+    const id = this.editRoleId();
+    if (!id) return;
+    this.editRoleSaving.set(true);
+    this.editRoleError.set(null);
+    const form = this.editRoleForm();
+    this.mdApi
+      .updateRole(id, { description: form.description, priority: form.priority })
+      .subscribe({
+        next: () => {
+          this.editRoleSaving.set(false);
+          this.showEditRoleModal.set(false);
+          this.loadRoles();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Role updated',
+            detail: `${form.name} saved.`,
+          });
+        },
+        error: (err: ApiError) => {
+          this.editRoleSaving.set(false);
+          this.editRoleError.set(err.message || 'Failed to update the role.');
+        },
+      });
+  }
+
+  toggleRoleActive(role: Role): void {
+    const action = role.isActive
+      ? this.mdApi.deactivateRole(role.id)
+      : this.mdApi.reactivateRole(role.id);
+    action.subscribe({
+      next: () => {
+        this.loadRoles();
+        this.messageService.add({
+          severity: 'success',
+          summary: role.isActive ? 'Role deactivated' : 'Role reactivated',
+          detail: `${role.name} is ${role.isActive ? 'no longer offered' : 'available again'} to tenants.`,
+        });
+      },
+      error: (err: ApiError) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: role.isActive ? 'Deactivate failed' : 'Reactivate failed',
+          detail: err.message || 'Please try again.',
+        });
+      },
+    });
+  }
+
+  openEditDeptModal(dept: DepartmentCatalog): void {
+    this.editDeptForm.set({
+      departmentCode: dept.departmentCode,
+      departmentName: dept.departmentName,
+      description: dept.description ?? '',
+      isAppointmentApplicable: dept.isAppointmentApplicable,
+    });
+    this.editDeptId.set(dept.id);
+    this.editDeptError.set(null);
+    this.showEditDeptModal.set(true);
+  }
+
+  submitEditDept(): void {
+    const id = this.editDeptId();
+    if (!id) return;
+    this.editDeptSaving.set(true);
+    this.editDeptError.set(null);
+    const form = this.editDeptForm();
+    this.mdApi
+      .updateDepartmentCatalog(id, {
+        departmentName: form.departmentName,
+        description: form.description || null,
+        isAppointmentApplicable: form.isAppointmentApplicable,
+      })
+      .subscribe({
+        next: () => {
+          this.editDeptSaving.set(false);
+          this.showEditDeptModal.set(false);
+          this.loadDepartments();
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Department updated',
+            detail: `${form.departmentName} saved.`,
+          });
+        },
+        error: (err: ApiError) => {
+          this.editDeptSaving.set(false);
+          this.editDeptError.set(err.message || 'Failed to update the department.');
+        },
+      });
+  }
+
+  toggleDeptActive(dept: DepartmentCatalog): void {
+    const action = dept.isActive
+      ? this.mdApi.deactivateDepartmentCatalog(dept.id)
+      : this.mdApi.reactivateDepartmentCatalog(dept.id);
+    action.subscribe({
+      next: () => {
+        this.loadDepartments();
+        this.messageService.add({
+          severity: 'success',
+          summary: dept.isActive ? 'Department deactivated' : 'Department reactivated',
+          detail: `${dept.departmentName} is ${dept.isActive ? 'no longer available' : 'available again'} to tenants.`,
+        });
+      },
+      error: (err: ApiError) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: dept.isActive ? 'Deactivate failed' : 'Reactivate failed',
+          detail: err.message || 'Please try again.',
+        });
       },
     });
   }

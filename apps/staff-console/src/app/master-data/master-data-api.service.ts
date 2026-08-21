@@ -79,6 +79,18 @@ export class MasterDataApiService {
     return this.api.post<Role>('/roles', dto);
   }
 
+  updateRole(id: string, dto: Partial<Role>): Observable<Role> {
+    return this.api.patch<Role>(`/roles/${id}`, dto);
+  }
+
+  deactivateRole(id: string): Observable<Role> {
+    return this.api.patch<Role>(`/roles/${id}/deactivate`, {});
+  }
+
+  reactivateRole(id: string): Observable<Role> {
+    return this.api.patch<Role>(`/roles/${id}/reactivate`, {});
+  }
+
   listDepartmentCatalogs(): Observable<DepartmentCatalog[]> {
     return this.api.get<DepartmentCatalog[]>('/catalogs/departments');
   }
@@ -87,5 +99,20 @@ export class MasterDataApiService {
     dto: CreateDepartmentCatalogDto,
   ): Observable<DepartmentCatalog> {
     return this.api.post<DepartmentCatalog>('/catalogs/departments', dto);
+  }
+
+  updateDepartmentCatalog(
+    id: string,
+    dto: Partial<DepartmentCatalog>,
+  ): Observable<DepartmentCatalog> {
+    return this.api.patch<DepartmentCatalog>(`/catalogs/departments/${id}`, dto);
+  }
+
+  deactivateDepartmentCatalog(id: string): Observable<DepartmentCatalog> {
+    return this.api.patch<DepartmentCatalog>(`/catalogs/departments/${id}/deactivate`, {});
+  }
+
+  reactivateDepartmentCatalog(id: string): Observable<DepartmentCatalog> {
+    return this.api.patch<DepartmentCatalog>(`/catalogs/departments/${id}/reactivate`, {});
   }
 }

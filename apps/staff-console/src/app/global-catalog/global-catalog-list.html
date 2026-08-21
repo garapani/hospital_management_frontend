@@ -39,6 +39,7 @@
                   <th class="table-header-cell">Name</th>
                   <th class="table-header-cell">Appt. Applicable</th>
                   <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell w-28">Actions</th>
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-dept>
@@ -56,6 +57,23 @@
                   </td>
                   <td>
                     <p-tag [value]="dept.isActive ? 'Active' : 'Inactive'" [severity]="dept.isActive ? 'success' : 'warn'"></p-tag>
+                  </td>
+                  <td>
+                    <div class="flex items-center gap-1">
+                      <p-button
+                        icon="pi pi-pencil"
+                        styleClass="p-button-text p-button-secondary p-button-sm p-button-rounded"
+                        (onClick)="openEditDeptModal(dept)"
+                        ariaLabel="Edit department"
+                      ></p-button>
+                      <p-button
+                        [icon]="dept.isActive ? 'pi pi-ban' : 'pi pi-check'"
+                        styleClass="p-button-text p-button-secondary p-button-sm p-button-rounded"
+                        [severity]="dept.isActive ? 'danger' : 'success'"
+                        (onClick)="toggleDeptActive(dept)"
+                        [ariaLabel]="dept.isActive ? 'Deactivate department' : 'Reactivate department'"
+                      ></p-button>
+                    </div>
                   </td>
                 </tr>
               </ng-template>
@@ -86,6 +104,8 @@
                   <th class="table-header-cell">Description</th>
                   <th class="table-header-cell">Priority</th>
                   <th class="table-header-cell">Cross Tenant</th>
+                  <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell w-28">Actions</th>
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-role>
@@ -102,11 +122,33 @@
                       [class.text-slate-300]="!role.isCrossTenant"
                     ></i>
                   </td>
+                  <td>
+                    <p-tag [value]="role.isActive ? 'Active' : 'Inactive'" [severity]="role.isActive ? 'success' : 'warn'"></p-tag>
+                  </td>
+                  <td>
+                    <div class="flex items-center gap-1">
+                      <p-button
+                        icon="pi pi-pencil"
+                        styleClass="p-button-text p-button-secondary p-button-sm p-button-rounded"
+                        (onClick)="openEditRoleModal(role)"
+                        ariaLabel="Edit role"
+                      ></p-button>
+                      @if (!role.isCrossTenant) {
+                      <p-button
+                        [icon]="role.isActive ? 'pi pi-ban' : 'pi pi-check'"
+                        styleClass="p-button-text p-button-sm p-button-rounded"
+                        [severity]="role.isActive ? 'danger' : 'success'"
+                        (onClick)="toggleRoleActive(role)"
+                        [ariaLabel]="role.isActive ? 'Deactivate role' : 'Reactivate role'"
+                      ></p-button>
+                      }
+                    </div>
+                  </td>
                 </tr>
               </ng-template>
               <ng-template pTemplate="emptymessage">
                 <tr>
-                  <td colspan="4" class="text-center p-6 text-slate-500">
+                  <td colspan="6" class="text-center p-6 text-slate-500">
                     No roles found.
                   </td>
                 </tr>
@@ -242,6 +284,122 @@
     <div class="flex justify-end gap-2 mt-4">
       <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showRoleModal.set(false)"></p-button>
       <p-button label="Save" [loading]="roleSaving()" (onClick)="submitRole()" [disabled]="!roleForm().name || !roleForm().description"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Edit Department Modal -->
+<p-dialog
+  header="Edit Global Department"
+  [(visible)]="showEditDeptModal"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  styleClass="surface-modal"
+>
+  <div class="flex flex-col gap-4 py-4">
+    @if (editDeptError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ editDeptError() }}
+    </div>
+    }
+
+    <div class="flex flex-col gap-2">
+      <label for="editDeptCode" class="text-sm font-medium text-slate-700">Department Code</label>
+      <input id="editDeptCode" pInputText [value]="editDeptForm().departmentCode" disabled class="w-full bg-slate-50" />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="editDeptName" class="text-sm font-medium text-slate-700">Department Name</label>
+      <input
+        id="editDeptName"
+        pInputText
+        [ngModel]="editDeptForm().departmentName"
+        (ngModelChange)="editDeptForm.set({ ...editDeptForm(), departmentName: $event })"
+        class="w-full"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="editDeptDesc" class="text-sm font-medium text-slate-700">Description</label>
+      <input
+        id="editDeptDesc"
+        pInputText
+        [ngModel]="editDeptForm().description"
+        (ngModelChange)="editDeptForm.set({ ...editDeptForm(), description: $event })"
+        class="w-full"
+      />
+    </div>
+
+    <div class="flex items-center gap-2 mt-2">
+      <p-checkbox
+        [binary]="true"
+        inputId="editAppt"
+        [ngModel]="editDeptForm().isAppointmentApplicable"
+        (ngModelChange)="editDeptForm.set({ ...editDeptForm(), isAppointmentApplicable: $event })"
+      ></p-checkbox>
+      <label for="editAppt" class="text-sm text-slate-700 cursor-pointer">Appointments Applicable</label>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showEditDeptModal.set(false)"></p-button>
+      <p-button label="Save" [loading]="editDeptSaving()" (onClick)="submitEditDept()" [disabled]="!editDeptForm().departmentName"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Edit Role Modal -->
+<p-dialog
+  header="Edit Role"
+  [(visible)]="showEditRoleModal"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  styleClass="surface-modal"
+>
+  <div class="flex flex-col gap-4 py-4">
+    @if (editRoleError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ editRoleError() }}
+    </div>
+    }
+
+    <div class="flex flex-col gap-2">
+      <label for="editRoleName" class="text-sm font-medium text-slate-700">Role Name</label>
+      <input id="editRoleName" pInputText [value]="editRoleForm().name" disabled class="w-full bg-slate-50" />
+      <p class="text-xs text-slate-400">Role names are immutable — renaming would break tenant role mappings.</p>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="editRoleDesc" class="text-sm font-medium text-slate-700">Description</label>
+      <input
+        id="editRoleDesc"
+        pInputText
+        [ngModel]="editRoleForm().description"
+        (ngModelChange)="editRoleForm.set({ ...editRoleForm(), description: $event })"
+        class="w-full"
+      />
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="editRolePri" class="text-sm font-medium text-slate-700">Priority</label>
+      <input
+        id="editRolePri"
+        pInputText
+        type="number"
+        [ngModel]="editRoleForm().priority"
+        (ngModelChange)="editRoleForm.set({ ...editRoleForm(), priority: +$event })"
+        class="w-full"
+      />
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showEditRoleModal.set(false)"></p-button>
+      <p-button label="Save" [loading]="editRoleSaving()" (onClick)="submitEditRole()"></p-button>
     </div>
   </ng-template>
 </p-dialog>
