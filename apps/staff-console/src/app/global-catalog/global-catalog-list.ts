@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { TabsModule } from 'primeng/tabs';
 import { CheckboxModule } from 'primeng/checkbox';
+import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 import {
@@ -27,7 +28,6 @@ interface RoleFormState {
   description: string;
   priority: number;
   isCrossTenant: boolean;
-  bypassesPermissionChecks: boolean;
 }
 
 @Component({
@@ -46,6 +46,7 @@ interface RoleFormState {
 })
 export class GlobalCatalogList {
   private readonly mdApi = inject(MasterDataApiService);
+  private readonly messageService = inject(MessageService);
 
   readonly departments = signal<DepartmentCatalog[]>([]);
   readonly deptLoading = signal(false);
@@ -71,7 +72,6 @@ export class GlobalCatalogList {
     description: '',
     priority: 0,
     isCrossTenant: false,
-    bypassesPermissionChecks: false,
   });
   readonly roleSaving = signal(false);
   readonly roleError = signal<string | null>(null);
@@ -88,7 +88,14 @@ export class GlobalCatalogList {
         this.departments.set(data);
         this.deptLoading.set(false);
       },
-      error: () => this.deptLoading.set(false),
+      error: () => {
+        this.deptLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Could not load the department catalog.',
+        });
+      },
     });
   }
 
@@ -99,7 +106,14 @@ export class GlobalCatalogList {
         this.roles.set(data);
         this.roleLoading.set(false);
       },
-      error: () => this.roleLoading.set(false),
+      error: () => {
+        this.roleLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Could not load the role catalog.',
+        });
+      },
     });
   }
 
@@ -122,6 +136,11 @@ export class GlobalCatalogList {
         this.deptSaving.set(false);
         this.showDeptModal.set(false);
         this.loadDepartments();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Department added',
+          detail: `${this.deptForm().departmentName} is now available for tenants.`,
+        });
       },
       error: (err: ApiError) => {
         this.deptSaving.set(false);
@@ -140,7 +159,6 @@ export class GlobalCatalogList {
       description: '',
       priority: 0,
       isCrossTenant: false,
-      bypassesPermissionChecks: false,
     });
     this.roleError.set(null);
     this.showRoleModal.set(true);
@@ -161,6 +179,11 @@ export class GlobalCatalogList {
         this.roleSaving.set(false);
         this.showRoleModal.set(false);
         this.loadRoles();
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Role created',
+          detail: `${dto.name} is now part of the global catalog.`,
+        });
       },
       error: (err: ApiError) => {
         this.roleSaving.set(false);

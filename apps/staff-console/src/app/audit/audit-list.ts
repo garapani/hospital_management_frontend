@@ -7,6 +7,7 @@ import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
+import { MessageService } from 'primeng/api';
 import { AuditApiService } from './audit-api.service.js';
 import { AuditRecord } from './audit.model.js';
 
@@ -27,6 +28,7 @@ import { AuditRecord } from './audit.model.js';
 })
 export class AuditList {
   private readonly auditApi = inject(AuditApiService);
+  private readonly messageService = inject(MessageService);
 
   readonly records = signal<AuditRecord[]>([]);
   readonly totalRecords = signal(0);
@@ -74,7 +76,11 @@ export class AuditList {
     const f = this.filters();
     // Enforce bounded date range per spec if they deleted it somehow
     if (!f.startDate || !f.endDate) {
-      alert('A bounded date range is required for audit trail queries.');
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Date range required',
+        detail: 'A bounded date range is required for audit trail queries.',
+      });
       return;
     }
 
@@ -95,7 +101,14 @@ export class AuditList {
           this.totalRecords.set(result.meta.total);
           this.loading.set(false);
         },
-        error: () => this.loading.set(false),
+        error: () => {
+          this.loading.set(false);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Search failed',
+            detail: 'Could not load audit records. Please try again.',
+          });
+        },
       });
   }
 

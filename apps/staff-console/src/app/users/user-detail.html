@@ -145,17 +145,19 @@
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
       <label for="roleName" class="text-sm font-medium text-slate-700"
-        >Role Name</label
+        >Role</label
       >
-      <input
-        pInputText
-        id="roleName"
+      <p-select
+        inputId="roleName"
+        [options]="roles()"
+        optionLabel="name"
+        optionValue="name"
         [ngModel]="assignForm().roleName"
         (ngModelChange)="assignForm.set({ ...assignForm(), roleName: $event })"
-        placeholder="e.g. Doctor, Nurse, Hospital Admin"
-        autocomplete="off"
-        class="w-full"
-      />
+        placeholder="Select a role"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
     </div>
 
     <div class="flex flex-col gap-2">

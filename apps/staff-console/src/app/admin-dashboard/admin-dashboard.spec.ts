@@ -1,0 +1,103 @@
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { of, throwError } from 'rxjs';
+import { MessageService } from 'primeng/api';
+import { AdminDashboard } from './admin-dashboard.js';
+import { TenantsApiService } from '../tenants/tenants-api.service.js';
+import { UsersApiService } from '../users/users-api.service.js';
+import { AuditApiService } from '../audit/audit-api.service.js';
+
+describe('AdminDashboard (platform overview)', () => {
+  function setup(overrides: { auditList?: unknown } = {}) {
+    const tenantsApi = {
+      list: jest
+        .fn()
+        .mockReturnValue(
+          of([
+            { hospitalId: 'h1', hospitalName: 'Hospital One', status: 'active', createdAt: '2026-08-01T00:00:00Z' },
+            { hospitalId: 'h2', hospitalName: 'Hospital Two', status: 'active', createdAt: '2026-08-02T00:00:00Z' },
+            { hospitalId: 'h3', hospitalName: 'Hospital Three', status: 'suspended', createdAt: '2026-08-03T00:00:00Z' },
+          ]),
+        ),
+    } as unknown as TenantsApiService;
+    const usersApi = {
+      list: jest.fn().mockReturnValue(of([{ id: 'a1', username: 'op1' }])),
+    } as unknown as UsersApiService;
+    const auditApi = {
+      list:
+        overrides.auditList === 'error'
+          ? jest.fn().mockReturnValue(throwError(() => new Error('boom')))
+          : jest
+              .fn()
+              .mockReturnValue(
+                of([
+                  {
+                    id: 'aud-1',
+                    tableName: 'accounts',
+                    recordId: 'a1',
+                    action: 'create',
+                    changedByAccountId: 'admin-1',
+                    correlationId: null,
+                    diff: [],
+                    occurredAt: '2026-08-21T07:00:00.000Z',
+                  },
+                ]),
+              ),
+    } as unknown as AuditApiService;
+    const messageService = { add: jest.fn() } as unknown as MessageService;
+
+    TestBed.configureTestingModule({
+      imports: [AdminDashboard],
+      providers: [
+        provideRouter([]),
+        { provide: TenantsApiService, useValue: tenantsApi },
+        { provide: UsersApiService, useValue: usersApi },
+        { provide: AuditApiService, useValue: auditApi },
+        { provide: MessageService, useValue: messageService },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AdminDashboard);
+    return { fixture, tenantsApi, usersApi, auditApi, messageService };
+  }
+
+  it('shows platform stats and never calls the hospital billing API', async () => {
+    const { fixture, tenantsApi, usersApi, auditApi } = setup();
+    await fixture.whenStable();
+
+    const stats = fixture.componentInstance.stats();
+    expect(stats.map((s) => s.title)).toEqual([
+      'Total Tenants',
+      'Active Tenants',
+      'Platform Accounts',
+    ]);
+    expect(stats[0].value).toBe(3);
+    expect(stats[1].value).toBe(2);
+    expect(stats[2].value).toBe(1);
+    // No Pending Invoices card — that metric is meaningless in the platform tenant (no billing).
+    expect(tenantsApi.list).toHaveBeenCalledTimes(1);
+    expect(usersApi.list).toHaveBeenCalledTimes(1);
+    expect(auditApi.list).toHaveBeenCalledWith(1, 5);
+  });
+
+  it('renders recent activity with the audit record fields that actually exist', async () => {
+    const { fixture } = setup();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.recentAuditLogs()[0].tableName).toBe('accounts');
+    expect(fixture.componentInstance.recentAuditLogs()[0].occurredAt).toContain('2026-08-21');
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('accounts · create');
+  });
+
+  it('toasts when the overview fails to load', async () => {
+    const { fixture, messageService } = setup({ auditList: 'error' });
+    await fixture.whenStable();
+
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error', summary: 'Dashboard load failed' }),
+    );
+    expect(fixture.componentInstance.loading()).toBe(false);
+  });
+});

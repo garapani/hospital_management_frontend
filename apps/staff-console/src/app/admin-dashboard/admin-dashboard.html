@@ -28,7 +28,7 @@
   </div>
   } @else {
   <!-- Stats Grid -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     @for (stat of stats(); track stat.title) {
     <div class="surface-card p-6 hover:shadow-md transition-shadow">
       <div class="flex items-start justify-between mb-4">
@@ -54,7 +54,7 @@
     }
   </div>
 
-  <!-- Charts and Tables Row -->
+  <!-- Chart and Activity Row -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Chart -->
     <div class="lg:col-span-2 surface-panel p-6 rounded-xl shadow-sm">
@@ -79,10 +79,11 @@
           <div class="w-2 h-2 rounded-full bg-blue-500 mt-2 shrink-0"></div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-slate-800 truncate">
-              {{ log.action }}
+              {{ log.tableName }} · {{ log.action }}
             </p>
             <p class="text-xs text-slate-500 truncate">
-              {{ log.user }} • {{ log.createdAt | date: 'short' }}
+              {{ log.changedByAccountId ? 'account ' + log.changedByAccountId.slice(0, 8) : 'System' }}
+              • {{ log.occurredAt | date: 'short' }}
             </p>
           </div>
         </div>
@@ -92,72 +93,47 @@
       </div>
     </div>
   </div>
-  
-  <!-- Activity Heatmap & Quick Actions -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Activity Heatmap -->
-    <div class="surface-panel p-6 rounded-xl shadow-sm">
-      <h3 class="text-lg font-bold text-slate-800 mb-4">Weekly Activity Heatmap</h3>
-      <div class="flex flex-col gap-2">
-        @for (day of activityDays; track day) {
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-500 w-12">{{ day }}</span>
-            <div class="flex gap-1">
-              @for (hour of hours; track hour) {
-                <div 
-                  class="w-6 h-6 rounded-md"
-                  [class]="getActivityColor(day, hour)"
-                  pTooltip="{{ day }} {{ hour }}:00 - {{ getActivityCount(day, hour) }} activities"
-                  tooltipPosition="top"
-                ></div>
-              }
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-    
-    <!-- Quick Actions Panel -->
-    <div class="surface-panel p-6 rounded-xl shadow-sm">
-      <h3 class="text-lg font-bold text-slate-800 mb-4">Quick Actions</h3>
-      <div class="grid grid-cols-2 gap-3">
-        <button
-          routerLink="/platform/tenants"
-          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
-        >
-          <div class="w-10 h-10 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center">
-            <i class="pi pi-building"></i>
-          </div>
-          <span class="text-xs font-medium text-slate-700">New Tenant</span>
-        </button>
-        <button
-          routerLink="/platform/admins"
-          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
-        >
-          <div class="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
-            <i class="pi pi-user-plus"></i>
-          </div>
-          <span class="text-xs font-medium text-slate-700">Add User</span>
-        </button>
-        <button
-          routerLink="/platform/catalog"
-          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
-        >
-          <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <i class="pi pi-database"></i>
-          </div>
-          <span class="text-xs font-medium text-slate-700">Global Catalog</span>
-        </button>
-        <button
-          routerLink="/platform/audit"
-          class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
-        >
-          <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-            <i class="pi pi-history"></i>
-          </div>
-          <span class="text-xs font-medium text-slate-700">Audit Logs</span>
-        </button>
-      </div>
+
+  <!-- Quick Actions -->
+  <div class="surface-panel p-6 rounded-xl shadow-sm">
+    <h3 class="text-lg font-bold text-slate-800 mb-4">Quick Actions</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <button
+        routerLink="/platform/tenants"
+        class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
+      >
+        <div class="w-10 h-10 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center">
+          <i class="pi pi-building"></i>
+        </div>
+        <span class="text-xs font-medium text-slate-700">New Tenant</span>
+      </button>
+      <button
+        routerLink="/platform/admins"
+        class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
+      >
+        <div class="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+          <i class="pi pi-user-plus"></i>
+        </div>
+        <span class="text-xs font-medium text-slate-700">Add Account</span>
+      </button>
+      <button
+        routerLink="/platform/catalog"
+        class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
+      >
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <i class="pi pi-database"></i>
+        </div>
+        <span class="text-xs font-medium text-slate-700">Global Catalog</span>
+      </button>
+      <button
+        routerLink="/platform/audit"
+        class="flex flex-col items-center gap-2 p-4 rounded-xl bg-white hover:bg-slate-100 transition-colors"
+      >
+        <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+          <i class="pi pi-history"></i>
+        </div>
+        <span class="text-xs font-medium text-slate-700">Audit Logs</span>
+      </button>
     </div>
   </div>
 

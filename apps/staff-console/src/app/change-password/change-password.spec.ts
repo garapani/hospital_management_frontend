@@ -83,7 +83,7 @@ describe('ChangePassword', () => {
 
   it('shows an inline error on a 401 (wrong current password)', () => {
     history.replaceState({}, '');
-    const { fixture, authService, router } = setup({
+    const { fixture, router } = setup({
       changeResult: throwError(() => ({
         status: 401,
         message: 'Invalid credentials',
