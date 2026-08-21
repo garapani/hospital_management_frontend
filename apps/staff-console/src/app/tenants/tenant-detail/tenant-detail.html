@@ -27,7 +27,7 @@
       <div class="mb-6 flex items-center justify-between">
         <h2 class="text-2xl font-bold text-slate-800">{{ tenant()?.hospitalName }}</h2>
         <p-tag
-          [value]="tenant()?.status"
+          [value]="tenantStatusLabel(tenant()!.status)"
           [severity]="tenantStatusSeverity(tenant()!.status)"
           styleClass="rounded-full px-3"
         />
@@ -86,6 +86,33 @@
           styleClass="w-full rounded-full"
           [loading]="actionLoading()"
           (onClick)="reactivate()"
+        />
+        }
+
+        @if (tenant()?.status === 'active' || tenant()?.status === 'suspended') {
+        <p-button
+          label="Archive Tenant"
+          icon="pi pi-archive"
+          severity="warn"
+          styleClass="w-full rounded-full"
+          [loading]="archiveLoading()"
+          (onClick)="requestArchive()"
+        />
+        } @else if (tenant()?.status === 'archived') {
+        <p-button
+          label="Restore Tenant"
+          icon="pi pi-undo"
+          severity="success"
+          styleClass="w-full rounded-full"
+          [loading]="actionLoading()"
+          (onClick)="restore()"
+        />
+        <p-button
+          label="Purge Tenant (permanent)"
+          icon="pi pi-trash"
+          severity="danger"
+          styleClass="w-full rounded-full"
+          (onClick)="requestPurge()"
         />
         }
       </div>
@@ -331,3 +358,69 @@
   </div>
   }
 </div>
+
+<!-- Archive confirmation -->
+<p-dialog
+  header="Archive tenant?"
+  [(visible)]="showArchiveConfirm"
+  [modal]="true"
+  [style]="{ width: '440px' }"
+  styleClass="surface-modal"
+>
+  <div class="flex flex-col gap-3 py-2">
+    <p class="text-sm text-slate-600">
+      <strong>{{ tenant()?.hospitalName }}</strong> will be unable to log in. Its schema and all
+      data are kept, and the tenant can be restored anytime — this is the soft-delete path for a
+      hospital that has left the platform.
+    </p>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showArchiveConfirm.set(false)"></p-button>
+      <p-button label="Archive tenant" severity="warn" [loading]="archiveLoading()" (onClick)="archive()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Purge confirmation (irreversible, typed) -->
+<p-dialog
+  header="Purge tenant — permanent"
+  [(visible)]="showPurgeConfirm"
+  [modal]="true"
+  [style]="{ width: '460px' }"
+  styleClass="surface-modal"
+  [closable]="false"
+>
+  <div class="flex flex-col gap-4 py-2">
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-start gap-2">
+      <i class="pi pi-exclamation-triangle mt-0.5"></i>
+      <span>
+        This permanently deletes <strong>{{ tenant()?.hospitalName }}</strong> — the database
+        schema, its login role, and all patient/billing/clinical data. <strong>This cannot be
+        undone.</strong>
+      </span>
+    </div>
+    <p class="text-sm text-slate-600">
+      Type <code class="font-mono font-semibold">{{ tenant()?.hospitalId }}</code> to confirm.
+    </p>
+    <input
+      pInputText
+      [ngModel]="purgeTypedId()"
+      (ngModelChange)="purgeTypedId.set($event)"
+      class="w-full"
+      autocomplete="off"
+    />
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showPurgeConfirm.set(false)"></p-button>
+      <p-button
+        label="Purge permanently"
+        severity="danger"
+        [loading]="purgeSaving()"
+        [disabled]="purgeTypedId() !== tenant()?.hospitalId"
+        (onClick)="purge()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

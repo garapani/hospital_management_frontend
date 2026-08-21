@@ -1,4 +1,4 @@
-export type TenantStatus = 'active' | 'suspended';
+export type TenantStatus = 'active' | 'suspended' | 'archived';
 
 /** A sellable edition — which module permission groups a tenant's JWTs carry. */
 export interface Package {
@@ -85,5 +85,11 @@ export interface BlockedRole {
 export function tenantStatusSeverity(
   status: TenantStatus,
 ): 'success' | 'warn' | 'danger' | 'secondary' {
-  return status === 'active' ? 'success' : 'danger';
+  if (status === 'active') return 'success';
+  if (status === 'archived') return 'secondary';
+  return 'danger';
+}
+
+export function tenantStatusLabel(status: TenantStatus): string {
+  return status === 'archived' ? 'Archived' : status === 'suspended' ? 'Suspended' : 'Active';
 }

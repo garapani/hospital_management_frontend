@@ -51,6 +51,21 @@ export class TenantsApiService {
     return this.api.patch<Tenant>(`/tenants/${id}/reactivate`, {});
   }
 
+  /** Soft-delete: keeps schema + data, blocks login, reversible via restore. */
+  archive(id: string): Observable<Tenant> {
+    return this.api.patch<Tenant>(`/tenants/${id}/archive`, {});
+  }
+
+  restore(id: string): Observable<Tenant> {
+    return this.api.patch<Tenant>(`/tenants/${id}/restore`, {});
+  }
+
+  /** Irreversible — drops schema + role + registry row. Archived tenants only; hospitalId must
+   *  be confirmed exactly (typed confirmation in the UI). */
+  purge(id: string, confirmHospitalId: string): Observable<{ purged: string }> {
+    return this.api.patch<{ purged: string }>(`/tenants/${id}/purge`, { confirmHospitalId });
+  }
+
   listRoles(id: string): Observable<TenantRoleOption[]> {
     return this.api.get<TenantRoleOption[]>(`/tenants/${id}/roles`);
   }

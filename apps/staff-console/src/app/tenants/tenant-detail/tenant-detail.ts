@@ -1,6 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
@@ -19,6 +19,7 @@ import {
   packageSeverity,
   Tenant,
   TenantRoleOption,
+  tenantStatusLabel,
   tenantStatusSeverity,
 } from '../tenant.model.js';
 
@@ -44,6 +45,7 @@ interface SelectOption {
 })
 export class TenantDetail implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly tenantsApi = inject(TenantsApiService);
   private readonly messageService = inject(MessageService);
 
@@ -95,6 +97,15 @@ export class TenantDetail implements OnInit {
   );
 
   readonly tenantStatusSeverity = tenantStatusSeverity;
+  readonly tenantStatusLabel = tenantStatusLabel;
+
+  // Archive / restore / purge (deletion & retention).
+  readonly archiveLoading = signal(false);
+  readonly showArchiveConfirm = signal(false);
+  readonly showPurgeConfirm = signal(false);
+  /** Typed confirmation for the irreversible purge. */
+  readonly purgeTypedId = signal('');
+  readonly purgeSaving = signal(false);
 
   /** Platform-side history: audit events whose record is this tenant (created, package changes,
    *  suspension events) — from the platform tenant's own audit schema. */
@@ -344,6 +355,103 @@ export class TenantDetail implements OnInit {
           severity: 'error',
           summary: 'Reactivate failed',
           detail: 'Could not reactivate the tenant. Please try again.',
+        });
+      },
+    });
+  }
+
+  /** Opens the confirmation for archive (soft-delete: reversible). */
+  requestArchive(): void {
+    this.showArchiveConfirm.set(true);
+  }
+
+  archive(): void {
+    const current = this.tenant();
+    if (!current) return;
+    this.archiveLoading.set(true);
+    this.tenantsApi.archive(current.hospitalId).subscribe({
+      next: () => {
+        this.archiveLoading.set(false);
+        this.showArchiveConfirm.set(false);
+        this.loadTenant(current.hospitalId);
+        this.loadHistory(current.hospitalId);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Tenant archived',
+          detail: `${current.hospitalName} can no longer log in. Schema and data are kept — restore anytime.`,
+        });
+      },
+      error: () => {
+        this.archiveLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Archive failed',
+          detail: 'Could not archive the tenant. Please try again.',
+        });
+      },
+    });
+  }
+
+  restore(): void {
+    const current = this.tenant();
+    if (!current) return;
+    this.actionLoading.set(true);
+    this.tenantsApi.restore(current.hospitalId).subscribe({
+      next: () => {
+        this.actionLoading.set(false);
+        this.loadTenant(current.hospitalId);
+        this.loadHistory(current.hospitalId);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Tenant restored',
+          detail: `${current.hospitalName} can log in again.`,
+        });
+      },
+      error: () => {
+        this.actionLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Restore failed',
+          detail: 'Could not restore the tenant. Please try again.',
+        });
+      },
+    });
+  }
+
+  /** Opens the purge dialog (typed confirmation required). Only shown for archived tenants. */
+  requestPurge(): void {
+    this.purgeTypedId.set('');
+    this.showPurgeConfirm.set(true);
+  }
+
+  purge(): void {
+    const current = this.tenant();
+    if (!current) return;
+    if (this.purgeTypedId() !== current.hospitalId) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Confirmation mismatch',
+        detail: `Type ${current.hospitalId} exactly to confirm the purge.`,
+      });
+      return;
+    }
+    this.purgeSaving.set(true);
+    this.tenantsApi.purge(current.hospitalId, current.hospitalId).subscribe({
+      next: () => {
+        this.purgeSaving.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Tenant purged',
+          detail: `${current.hospitalName} and all its data were permanently deleted.`,
+        });
+        this.router.navigate(['/platform/tenants']);
+      },
+      error: (error: ApiError) => {
+        this.purgeSaving.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Purge failed',
+          detail: error.message || 'Could not purge the tenant. Please try again.',
         });
       },
     });

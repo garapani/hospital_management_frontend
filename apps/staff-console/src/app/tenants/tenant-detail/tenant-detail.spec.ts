@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { TenantDetail } from './tenant-detail.js';
 import { TenantsApiService } from '../tenants-api.service.js';
@@ -30,6 +30,9 @@ describe('TenantDetail package change', () => {
       setRoles: jest.fn().mockReturnValue(of([])),
       suspend: jest.fn().mockReturnValue(of(tenant)),
       reactivate: jest.fn().mockReturnValue(of(tenant)),
+      archive: jest.fn().mockReturnValue(of({ ...tenant, status: 'archived' })),
+      restore: jest.fn().mockReturnValue(of({ ...tenant, status: 'active' })),
+      purge: jest.fn().mockReturnValue(of({ purged: 'h1' })),
       history: jest.fn().mockReturnValue(
         of({
           data: [
@@ -69,6 +72,7 @@ describe('TenantDetail package change', () => {
         },
         { provide: TenantsApiService, useValue: tenantsApi },
         { provide: MessageService, useValue: messageService },
+        { provide: Router, useValue: { navigate: jest.fn() } },
       ],
     });
 
@@ -157,5 +161,60 @@ describe('TenantDetail package change', () => {
     expect(fixture.componentInstance.history()[1].diff).toEqual([
       { field: 'packageCode', before: 'basic', after: 'standard' },
     ]);
+  });
+
+  it('archives a tenant after confirmation and toasts', async () => {
+    const { fixture, tenantsApi, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.requestArchive();
+    fixture.componentInstance.archive();
+
+    expect(tenantsApi.archive).toHaveBeenCalledWith('h1');
+    expect(fixture.componentInstance.showArchiveConfirm()).toBe(false);
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Tenant archived' }),
+    );
+  });
+
+  it('restores an archived tenant and toasts', async () => {
+    const { fixture, tenantsApi, messageService } = setup();
+    fixture.componentInstance.tenant.update((t) =>
+      t ? { ...t, status: 'archived' } : t,
+    );
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.restore();
+
+    expect(tenantsApi.restore).toHaveBeenCalledWith('h1');
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Tenant restored' }),
+    );
+  });
+
+  it('purges only when the hospitalId is typed exactly, then navigates away', async () => {
+    const { fixture, tenantsApi, messageService } = setup();
+    fixture.componentInstance.tenant.update((t) =>
+      t ? { ...t, status: 'archived' } : t,
+    );
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.requestPurge();
+    fixture.componentInstance.purgeTypedId.set('wrong-id');
+    fixture.componentInstance.purge();
+    expect(tenantsApi.purge).not.toHaveBeenCalled();
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'warn', summary: 'Confirmation mismatch' }),
+    );
+
+    fixture.componentInstance.purgeTypedId.set('h1');
+    fixture.componentInstance.purge();
+    expect(tenantsApi.purge).toHaveBeenCalledWith('h1', 'h1');
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Tenant purged' }),
+    );
   });
 });
