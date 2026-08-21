@@ -58,10 +58,10 @@
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Chart -->
     <div class="lg:col-span-2 surface-panel p-6 rounded-xl shadow-sm">
-      <h3 class="text-lg font-bold text-slate-800 mb-4">Tenant Growth</h3>
+      <h3 class="text-lg font-bold text-slate-800 mb-4">Tenants by Status</h3>
       <div class="h-64">
         <p-chart
-          type="line"
+          type="bar"
           [data]="chartData()"
           [options]="chartOptions()"
         ></p-chart>

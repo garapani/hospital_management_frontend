@@ -9,12 +9,12 @@ import { NotificationsApiService } from '../notifications/notifications-api.serv
 import { ShellChrome } from './shell-chrome.js';
 
 describe('ShellChrome user menu', () => {
-  function setup(isPlatformAdmin: boolean) {
+  function setup() {
     const authService = {
-      isPlatformAdmin: () => isPlatformAdmin,
+      isPlatformAdmin: () => false,
       currentUser: () => ({
-        roles: isPlatformAdmin ? ['Super Admin'] : ['Hospital Admin'],
-        hospitalId: isPlatformAdmin ? '__platform' : 'demo',
+        roles: ['Hospital Admin'],
+        hospitalId: 'demo',
       }),
       logout: jest.fn().mockReturnValue(of(undefined)),
     } as unknown as AuthService;
@@ -52,24 +52,14 @@ describe('ShellChrome user menu', () => {
     fixture.detectChanges();
   }
 
-  it('hides My Profile and Settings for a platform (super) admin, keeping Logout', () => {
-    const { fixture } = setup(true);
-    openUserMenu(fixture);
-
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    // Menu is open (the header shows the operator role) but the tenant-only links are absent.
-    expect(text).toContain('Super Admin');
-    expect(text).not.toContain('My Profile');
-    expect(text).not.toContain('Settings');
-  });
-
-  it('shows My Profile and Settings for a hospital tenant user', () => {
-    const { fixture } = setup(false);
+  it('shows only the account header and Logout — no My Profile or Settings for any user', () => {
+    const { fixture } = setup();
     openUserMenu(fixture);
 
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Hospital Admin');
-    expect(text).toContain('My Profile');
-    expect(text).toContain('Settings');
+    expect(text).toContain('Logout');
+    expect(text).not.toContain('My Profile');
+    expect(text).not.toContain('Settings');
   });
 });

@@ -96,9 +96,10 @@ export class AdminDashboard {
           },
         ]);
 
-        // Recent tenants
+        // Recent tenants — copy before sorting: .sort() mutates in place, and the original
+        // order is still needed for the status counts below.
         this.recentTenants.set(
-          (tenants || [])
+          [...(tenants || [])]
             .sort(
               (a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -109,18 +110,21 @@ export class AdminDashboard {
         // Recent audit logs
         this.recentAuditLogs.set(audits || []);
 
-        // Chart data for tenant growth (mock historical points ending at the real count).
+        // Tenants by status — real data from the registry (no fabricated history).
+        const statusCounts = new Map<string, number>();
+        for (const tenant of tenants ?? []) {
+          const status = tenant.status ?? 'unknown';
+          statusCounts.set(status, (statusCounts.get(status) ?? 0) + 1);
+        }
+        const statusLabels = [...statusCounts.keys()];
         this.chartData.set({
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          labels: statusLabels,
           datasets: [
             {
-              label: 'Tenant Growth',
-              data: [2, 4, 6, 8, 10, tenantCount],
-              backgroundColor: 'rgba(79, 70, 229, 0.12)',
-              borderColor: 'rgba(79, 70, 229, 1)',
-              borderWidth: 2,
-              tension: 0.4,
-              fill: true,
+              label: 'Tenants',
+              data: statusLabels.map((label) => statusCounts.get(label) ?? 0),
+              backgroundColor: 'rgba(0, 109, 119, 0.75)',
+              borderRadius: 4,
             },
           ],
         });
@@ -136,6 +140,9 @@ export class AdminDashboard {
           scales: {
             y: {
               beginAtZero: true,
+              ticks: {
+                precision: 0,
+              },
               grid: {
                 color: 'rgba(200, 200, 200, 0.1)',
               },

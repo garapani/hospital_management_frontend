@@ -80,6 +80,15 @@ describe('AdminDashboard (platform overview)', () => {
     expect(auditApi.list).toHaveBeenCalledWith(1, 5);
   });
 
+  it('charts tenants by status from real registry data (no fabricated growth history)', async () => {
+    const { fixture } = setup();
+    await fixture.whenStable();
+
+    const chart = fixture.componentInstance.chartData();
+    expect(chart.labels).toEqual(['active', 'suspended']);
+    expect(chart.datasets[0].data).toEqual([2, 1]);
+  });
+
   it('renders recent activity with the audit record fields that actually exist', async () => {
     const { fixture } = setup();
     await fixture.whenStable();
