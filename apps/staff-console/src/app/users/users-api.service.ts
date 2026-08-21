@@ -39,6 +39,18 @@ export class UsersApiService {
     return this.api.patch<User>(`/accounts/${id}/unlock`, {});
   }
 
+  /** Admin-initiated password reset; when no password is supplied the backend generates one
+   *  and returns it once (the account must change it on next login). */
+  resetPassword(
+    id: string,
+    dto?: { password?: string },
+  ): Observable<{ success: boolean; initialPassword?: string }> {
+    return this.api.post<{ success: boolean; initialPassword?: string }>(
+      `/accounts/${id}/reset-password`,
+      dto ?? {},
+    );
+  }
+
   assignRole(id: string, dto: AssignRoleDto): Observable<UserRole> {
     return this.api.post<UserRole>(`/accounts/${id}/roles`, dto);
   }

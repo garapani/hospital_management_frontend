@@ -21,6 +21,7 @@ export class AuditApiService {
     if (query.action) params['action'] = query.action;
     if (query.changedByAccountId)
       params['changedByAccountId'] = query.changedByAccountId;
+    if (query.recordId) params['recordId'] = query.recordId;
     if (query.correlationId) params['correlationId'] = query.correlationId;
     params['page'] = query.page;
     params['limit'] = query.limit;

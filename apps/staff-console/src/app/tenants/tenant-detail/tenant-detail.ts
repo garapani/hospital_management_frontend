@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuditRecord } from '../../audit/audit.model.js';
 import { TenantsApiService } from '../tenants-api.service.js';
 import {
   BlockedRole,
@@ -95,16 +96,47 @@ export class TenantDetail implements OnInit {
 
   readonly tenantStatusSeverity = tenantStatusSeverity;
 
+  /** Platform-side history: audit events whose record is this tenant (created, package changes,
+   *  suspension events) — from the platform tenant's own audit schema. */
+  readonly history = signal<AuditRecord[]>([]);
+  readonly historyLoading = signal(false);
+
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
       if (id) {
         this.loadTenant(id);
         this.loadRoles(id);
+        this.loadHistory(id);
       }
     });
     this.loadPackages();
   }
+
+  private loadHistory(id: string): void {
+    this.historyLoading.set(true);
+    this.tenantsApi.history(id).subscribe({
+      next: (result) => {
+        this.history.set(result.data);
+        this.historyLoading.set(false);
+      },
+      error: () => {
+        this.historyLoading.set(false);
+      },
+    });
+  }
+
+  /** Human label for a platform-history event (package changes are the common update). */
+  readonly historyEventLabel = (event: AuditRecord): string => {
+    const diff = event.diff as { field?: string }[] | undefined;
+    if (event.action === 'create') {
+      return 'Tenant provisioned';
+    }
+    if (event.action === 'update' && diff?.[0]?.field === 'packageCode') {
+      return 'Package changed';
+    }
+    return 'Tenant record updated';
+  };
 
   private loadPackages(): void {
     if (this.packageOptions().length > 0) {
@@ -157,6 +189,7 @@ export class TenantDetail implements OnInit {
         this.packageSaving.set(false);
         this.tenant.set(updated);
         this.packageDraft.set(updated.packageCode);
+        this.loadHistory(current.hospitalId);
         this.messageService.add({
           severity: 'success',
           summary: 'Package updated',
@@ -272,6 +305,7 @@ export class TenantDetail implements OnInit {
       next: () => {
         this.actionLoading.set(false);
         this.loadTenant(current.hospitalId);
+        this.loadHistory(current.hospitalId);
         this.messageService.add({
           severity: 'success',
           summary: 'Tenant suspended',
@@ -297,6 +331,7 @@ export class TenantDetail implements OnInit {
       next: () => {
         this.actionLoading.set(false);
         this.loadTenant(current.hospitalId);
+        this.loadHistory(current.hospitalId);
         this.messageService.add({
           severity: 'success',
           summary: 'Tenant reactivated',

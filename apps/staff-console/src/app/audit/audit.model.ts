@@ -25,6 +25,7 @@ export interface SearchAuditRecordsQuery {
   tableName?: string;
   action?: 'create' | 'update' | 'delete';
   changedByAccountId?: string;
+  recordId?: string;
   correlationId?: string;
   page: number;
   limit: number;

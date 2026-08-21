@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClientService } from '@org/api-client';
 import { Observable } from 'rxjs';
+import { PaginatedResponse, AuditRecord } from '../audit/audit.model.js';
 import {
   AdminCredentials,
   Package,
@@ -60,5 +61,22 @@ export class TenantsApiService {
    */
   setRoles(id: string, roleIds: string[]): Observable<TenantRoleOption[]> {
     return this.api.patch<TenantRoleOption[]>(`/tenants/${id}/roles`, { roleIds });
+  }
+
+  /** Platform-side history for one tenant: the platform audit trail's events whose record is
+   *  this tenant (created, package changes, suspension events) — from the platform tenant's own
+   *  audit schema, so no cross-tenant data is involved. A wide date range is passed because the
+   *  audit search defaults to a 24h window. */
+  history(id: string): Observable<PaginatedResponse<AuditRecord>> {
+    return this.api.get<PaginatedResponse<AuditRecord>>('/audit', {
+      params: {
+        tableName: 'tenants',
+        recordId: id,
+        startDate: '2000-01-01T00:00:00.000Z',
+        endDate: new Date().toISOString(),
+        page: 1,
+        limit: 50,
+      },
+    });
   }
 }

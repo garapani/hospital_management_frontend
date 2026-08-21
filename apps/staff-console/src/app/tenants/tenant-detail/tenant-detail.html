@@ -277,6 +277,54 @@
     </div>
     }
   </div>
+
+  <!-- Platform history -->
+  <div class="surface-panel p-6 flex flex-col gap-4">
+    <div>
+      <h3 class="font-bold text-lg text-slate-800">Platform history</h3>
+      <p class="text-sm text-slate-500 mt-1">
+        Platform-side events for this hospital: provisioning, package changes, and
+        suspension/reactivation — from the platform audit trail.
+      </p>
+    </div>
+
+    @if (historyLoading()) {
+    <div class="flex justify-center p-6">
+      <i class="pi pi-spin pi-spinner text-2xl text-sky-500"></i>
+    </div>
+    } @else if (history().length === 0) {
+    <p class="text-sm text-slate-500 text-center py-4">
+      No platform events recorded yet.
+    </p>
+    } @else {
+    <div class="flex flex-col gap-2">
+      @for (event of history(); track event.id) {
+      <div
+        class="flex items-center gap-3 p-3 rounded-lg bg-white border border-slate-100"
+      >
+        @if (event.action === 'create') {
+        <p-tag value="Created" severity="success" [rounded]="true"></p-tag>
+        } @else if (event.action === 'update') {
+        <p-tag value="Updated" severity="info" [rounded]="true"></p-tag>
+        } @else {
+        <p-tag value="Deleted" severity="danger" [rounded]="true"></p-tag>
+        }
+        <div class="flex-1 min-w-0">
+          <p class="text-sm text-slate-700">
+            {{ historyEventLabel(event) }}
+          </p>
+          <p class="text-xs text-slate-500">
+            {{ event.occurredAt | date: 'medium' }}
+            @if (event.changedByAccountId) {
+            • by account {{ event.changedByAccountId.slice(0, 8) }}
+            }
+          </p>
+        </div>
+      </div>
+      }
+    </div>
+    }
+  </div>
   } @else {
   <div class="surface-panel p-8 text-center text-slate-500">
     Tenant not found.

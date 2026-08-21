@@ -37,7 +37,14 @@
         severity="success"
         (onClick)="unlock()"
       ></p-button>
-      } @if (data.account.isActive) {
+      }
+      <p-button
+        label="Reset Password"
+        icon="pi pi-key"
+        severity="warn"
+        (onClick)="openResetModal()"
+      ></p-button>
+      @if (data.account.isActive) {
       <p-button
         label="Deactivate"
         icon="pi pi-ban"
@@ -113,12 +120,20 @@
       </div>
       } @else {
       <div class="flex flex-wrap gap-2">
-        @for (roleName of data.roleNames; track roleName) {
+        @for (assignment of data.assignments; track assignment.id) {
         <div
           class="px-3 py-1.5 bg-sky-50 text-sky-700 border border-sky-100 rounded-lg text-sm font-medium flex items-center gap-2"
         >
           <i class="pi pi-shield"></i>
-          {{ roleName }}
+          {{ assignment.roleName }}
+          <button
+            type="button"
+            class="text-sky-400 hover:text-red-500 transition-colors"
+            (click)="removeRole(assignment)"
+            aria-label="Remove role {{ assignment.roleName }}"
+          >
+            <i class="pi pi-times text-xs"></i>
+          </button>
         </div>
         }
       </div>
@@ -204,5 +219,78 @@
         [disabled]="!assignForm().roleName"
       ></p-button>
     </div>
+  </ng-template>
+</p-dialog>
+
+<p-dialog
+  [header]="resetResult() ? 'Password reset' : 'Reset Password'"
+  [(visible)]="showResetModal"
+  [modal]="true"
+  [style]="{ width: '420px' }"
+  styleClass="surface-modal"
+  [closable]="false"
+  [draggable]="false"
+  [resizable]="false"
+>
+  @if (resetResult(); as password) {
+  <div class="flex flex-col gap-4 py-4">
+    <p class="text-sm text-slate-600">
+      The account must use this password on next login and will be asked to change it.
+    </p>
+    <div class="rounded-lg border border-green-200 bg-green-50 p-4 flex flex-col gap-2">
+      <p class="text-xs font-semibold text-green-800 uppercase tracking-wide">
+        New temporary password — shown once, share it now
+      </p>
+      <code class="text-sm font-mono text-slate-900 text-center text-lg py-1">
+        {{ password }}
+      </code>
+    </div>
+  </div>
+  } @else {
+  <div class="flex flex-col gap-4 py-4">
+    <p class="text-sm text-slate-600">
+      The account will be forced to change its password on next login. Leave the
+      temporary password blank to generate one automatically.
+    </p>
+    <div class="flex flex-col gap-2">
+      <label for="tempPassword" class="text-sm font-medium text-slate-700"
+        >Temporary password (optional)</label
+      >
+      <input
+        pInputText
+        id="tempPassword"
+        [ngModel]="resetForm().password"
+        (ngModelChange)="resetForm.set({ ...resetForm(), password: $event })"
+        placeholder="Leave blank to generate"
+        autocomplete="off"
+        class="w-full"
+      />
+    </div>
+  </div>
+  }
+  <ng-template pTemplate="footer">
+    @if (resetResult()) {
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button
+        label="Done"
+        icon="pi pi-check"
+        (onClick)="closeReset()"
+      ></p-button>
+    </div>
+    } @else {
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [text]="true"
+        (onClick)="showResetModal.set(false)"
+      ></p-button>
+      <p-button
+        label="Reset password"
+        [loading]="resetLoading()"
+        (onClick)="confirmReset()"
+      ></p-button>
+    </div>
+    }
   </ng-template>
 </p-dialog>

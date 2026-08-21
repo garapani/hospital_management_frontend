@@ -30,6 +30,33 @@ describe('TenantDetail package change', () => {
       setRoles: jest.fn().mockReturnValue(of([])),
       suspend: jest.fn().mockReturnValue(of(tenant)),
       reactivate: jest.fn().mockReturnValue(of(tenant)),
+      history: jest.fn().mockReturnValue(
+        of({
+          data: [
+            {
+              id: 'aud-1',
+              tableName: 'tenants',
+              recordId: 'h1',
+              action: 'create',
+              changedByAccountId: 'admin-1',
+              correlationId: null,
+              diff: [],
+              occurredAt: '2026-08-01T00:00:00.000Z',
+            },
+            {
+              id: 'aud-2',
+              tableName: 'tenants',
+              recordId: 'h1',
+              action: 'update',
+              changedByAccountId: 'admin-1',
+              correlationId: null,
+              diff: [{ field: 'packageCode', before: 'basic', after: 'standard' }],
+              occurredAt: '2026-08-10T00:00:00.000Z',
+            },
+          ],
+          meta: { total: 2, page: 1, limit: 50, totalPages: 1 },
+        }),
+      ),
     } as unknown as TenantsApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
 
@@ -116,6 +143,19 @@ describe('TenantDetail package change', () => {
 
     expect(fixture.componentInstance.assignableRoles().map((r) => r.name)).toEqual([
       'Hospital Admin',
+    ]);
+  });
+
+  it('loads the platform history for the tenant on init', async () => {
+    const { fixture, tenantsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(tenantsApi.history).toHaveBeenCalledWith('h1');
+    expect(fixture.componentInstance.history()).toHaveLength(2);
+    expect(fixture.componentInstance.history()[0].tableName).toBe('tenants');
+    expect(fixture.componentInstance.history()[1].diff).toEqual([
+      { field: 'packageCode', before: 'basic', after: 'standard' },
     ]);
   });
 });

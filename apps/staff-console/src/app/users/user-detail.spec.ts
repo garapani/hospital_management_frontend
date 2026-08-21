@@ -7,34 +7,40 @@ import { UserDetail } from './user-detail.js';
 import { UsersApiService } from './users-api.service.js';
 
 describe('UserDetail', () => {
-  function setup(options: { assignError?: unknown } = {}) {
+  const accountWithRoles = {
+    account: {
+      id: 'acc-1',
+      accountType: 'staff',
+      username: 'op1',
+      email: 'op1@platform.local',
+      displayName: 'Operator One',
+      isActive: true,
+      needsPasswordUpdate: false,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      createdAt: '2026-08-01T00:00:00Z',
+    },
+    roleIds: ['role-1'],
+    roleNames: ['Super Admin'],
+    assignments: [{ id: 'assign-1', roleId: 'role-1', roleName: 'Super Admin' }],
+  };
+
+  function setup(options: { assignError?: unknown; revokeError?: unknown } = {}) {
     const usersApi = {
-      getOne: jest.fn().mockReturnValue(
-        of({
-          account: {
-            id: 'acc-1',
-            accountType: 'staff',
-            username: 'op1',
-            email: 'op1@platform.local',
-            displayName: 'Operator One',
-            isActive: true,
-            needsPasswordUpdate: false,
-            failedLoginAttempts: 0,
-            lockedUntil: null,
-            createdAt: '2026-08-01T00:00:00Z',
-          },
-          roleIds: [],
-          roleNames: [],
-        }),
-      ),
+      getOne: jest.fn().mockReturnValue(of(accountWithRoles)),
       getRoles: jest.fn().mockReturnValue(of([{ name: 'Super Admin', description: 'Platform ops' }])),
       deactivate: jest.fn().mockReturnValue(of({})),
       reactivate: jest.fn().mockReturnValue(of({})),
       unlock: jest.fn().mockReturnValue(of({})),
+      resetPassword: jest.fn().mockReturnValue(of({ success: true, initialPassword: 'Gen3rated-Pass' })),
       assignRole:
         options.assignError === undefined
           ? jest.fn().mockReturnValue(of({ id: 'role-assignment-1' }))
           : jest.fn().mockReturnValue(options.assignError),
+      revokeRole:
+        options.revokeError === undefined
+          ? jest.fn().mockReturnValue(of({ revoked: true }))
+          : jest.fn().mockReturnValue(options.revokeError),
     } as unknown as UsersApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
     const router = { navigate: jest.fn() } as unknown as Router;
@@ -99,16 +105,82 @@ describe('UserDetail', () => {
     expect(fixture.componentInstance.showAssignModal()).toBe(true);
   });
 
-  it('deactivates with a success toast and reloads', async () => {
+  it('removes a role assignment via the chip action and toasts', async () => {
     const { fixture, usersApi, messageService } = setup();
     await fixture.whenStable();
 
-    fixture.componentInstance.deactivate();
+    fixture.componentInstance.removeRole({ id: 'assign-1', roleName: 'Super Admin' });
 
-    expect(usersApi.deactivate).toHaveBeenCalledWith('acc-1');
+    expect(usersApi.revokeRole).toHaveBeenCalledWith('acc-1', 'assign-1');
     expect(usersApi.getOne).toHaveBeenCalledTimes(2);
     expect(messageService.add).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success', summary: 'Account deactivated' }),
+      expect.objectContaining({ severity: 'success', summary: 'Role Super Admin removed' }),
+    );
+  });
+
+  it('toasts the backend message when role removal is blocked (e.g. last Super Admin)', async () => {
+    const { fixture, messageService } = setup({
+      revokeError: throwError(() => ({
+        status: 400,
+        message: 'Cannot remove the last Super Admin from the platform tenant',
+      } as ApiError)),
+    });
+    await fixture.whenStable();
+
+    fixture.componentInstance.removeRole({ id: 'assign-1', roleName: 'Super Admin' });
+
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: 'Cannot remove the last Super Admin from the platform tenant',
+      }),
+    );
+  });
+
+  it('reset with no temporary password shows the generated password once', async () => {
+    const { fixture, usersApi } = setup();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openResetModal();
+    fixture.componentInstance.confirmReset();
+
+    expect(usersApi.resetPassword).toHaveBeenCalledWith('acc-1', { password: undefined });
+    expect(fixture.componentInstance.resetResult()).toBe('Gen3rated-Pass');
+    expect(fixture.componentInstance.showResetModal()).toBe(true);
+
+    fixture.componentInstance.closeReset();
+    expect(fixture.componentInstance.showResetModal()).toBe(false);
+    expect(fixture.componentInstance.resetResult()).toBeNull();
+    expect(usersApi.getOne).toHaveBeenCalledTimes(2);
+  });
+
+  it('reset with a supplied temporary password toasts and closes', async () => {
+    const usersApi = {
+      getOne: jest.fn().mockReturnValue(of(accountWithRoles)),
+      getRoles: jest.fn().mockReturnValue(of([])),
+      resetPassword: jest.fn().mockReturnValue(of({ success: true })),
+    } as unknown as UsersApiService;
+    const messageService = { add: jest.fn() } as unknown as MessageService;
+    TestBed.configureTestingModule({
+      imports: [UserDetail],
+      providers: [
+        { provide: ActivatedRoute, useValue: { paramMap: of({ get: () => 'acc-1' }) } },
+        { provide: UsersApiService, useValue: usersApi },
+        { provide: MessageService, useValue: messageService },
+        { provide: Router, useValue: { navigate: jest.fn() } },
+      ],
+    });
+    const fixture = TestBed.createComponent(UserDetail);
+    await fixture.whenStable();
+
+    fixture.componentInstance.openResetModal();
+    fixture.componentInstance.resetForm.set({ password: 'TempPass!123' });
+    fixture.componentInstance.confirmReset();
+
+    expect(usersApi.resetPassword).toHaveBeenCalledWith('acc-1', { password: 'TempPass!123' });
+    expect(fixture.componentInstance.showResetModal()).toBe(false);
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Password reset' }),
     );
   });
 });

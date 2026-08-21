@@ -23,6 +23,8 @@ export interface UserWithRoles {
   account: User;
   roleIds: string[];
   roleNames: string[];
+  /** Active role assignments with their ids, so a specific assignment can be revoked. */
+  assignments: { id: string; roleId: string; roleName: string }[];
 }
 
 export interface CreateUserDto {

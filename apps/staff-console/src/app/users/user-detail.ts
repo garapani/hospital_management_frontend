@@ -46,6 +46,14 @@ export class UserDetail {
   readonly assignForm = signal({ roleName: '', startDate: '', endDate: '' });
   readonly assignLoading = signal(false);
 
+  // Reset Password Modal. A generated password is shown once; an admin-supplied temporary
+  // password is used as-is. Either way the account must change it on next login.
+  readonly showResetModal = signal(false);
+  readonly resetForm = signal({ password: '' });
+  readonly resetLoading = signal(false);
+  /** Generated one-time password to display; null once the admin sets their own. */
+  readonly resetResult = signal<string | null>(null);
+
   constructor() {
     this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
@@ -176,5 +184,66 @@ export class UserDetail {
           });
         },
       });
+  }
+
+  removeRole(assignment: { id: string; roleName: string }): void {
+    const id = this.accountData()?.account.id;
+    if (!id) return;
+    this.usersApi.revokeRole(id, assignment.id).subscribe({
+      next: () => this.afterAction(`Role ${assignment.roleName} removed`),
+      error: (error: ApiError) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Role removal failed',
+          detail: error.message || 'Could not remove the role. Please try again.',
+        });
+      },
+    });
+  }
+
+  openResetModal(): void {
+    this.resetForm.set({ password: '' });
+    this.resetResult.set(null);
+    this.showResetModal.set(true);
+  }
+
+  confirmReset(): void {
+    const id = this.accountData()?.account.id;
+    if (!id) return;
+
+    this.resetLoading.set(true);
+    this.resetResult.set(null);
+    const password = this.resetForm().password || undefined;
+    this.usersApi.resetPassword(id, { password }).subscribe({
+      next: (result) => {
+        this.resetLoading.set(false);
+        if (result.initialPassword) {
+          // Generated once — hold the modal open until it is copied.
+          this.resetResult.set(result.initialPassword);
+          return;
+        }
+        this.showResetModal.set(false);
+        this.load(id);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Password reset',
+          detail: 'The account must use the temporary password on next login.',
+        });
+      },
+      error: (error: ApiError) => {
+        this.resetLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Password reset failed',
+          detail: error.message || 'Could not reset the password. Please try again.',
+        });
+      },
+    });
+  }
+
+  closeReset(): void {
+    this.resetResult.set(null);
+    this.showResetModal.set(false);
+    this.load(this.accountData()?.account.id ?? '');
   }
 }
