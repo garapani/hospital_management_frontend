@@ -47,7 +47,15 @@ export class PayrollApiService {
     year?: number;
     status?: PayslipStatus;
   }): Observable<Paginated<Payslip>> {
-    return this.api.get<Paginated<Payslip>>('/payroll/payslips', { params });
+    // Angular's HttpClient stringifies an `undefined` value to the literal "undefined" in the
+    // query string rather than omitting the key — build the query object conditionally, same as
+    // every other *-api.service.ts in this app, instead of passing possibly-undefined filters
+    // straight through.
+    const query: Record<string, string | number> = { page: params.page, limit: params.limit };
+    if (params.month !== undefined) query['month'] = params.month;
+    if (params.year !== undefined) query['year'] = params.year;
+    if (params.status !== undefined) query['status'] = params.status;
+    return this.api.get<Paginated<Payslip>>('/payroll/payslips', { params: query });
   }
 
   markPaid(id: string): Observable<Payslip> {
