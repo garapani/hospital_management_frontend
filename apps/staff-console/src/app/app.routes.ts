@@ -233,6 +233,11 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./reporting/reporting-dashboard/reporting-dashboard.js').then((m) => m.ReportingDashboard),
         canActivate: [permissionGuard(Permissions.REPORTING_READ)],
       },
+      {
+        path: 'insurance',
+        loadComponent: () => import('./insurance/insurance-dashboard/insurance-dashboard.js').then((m) => m.InsuranceDashboard),
+        canActivate: [permissionGuard(Permissions.INSURANCE_READ)],
+      },
     ],
   },
   { path: '**', redirectTo: '' },

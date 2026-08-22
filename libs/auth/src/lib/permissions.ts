@@ -71,6 +71,10 @@ export const Permissions = {
   // HR — Payroll
   PAYROLL_READ: 'payroll.read' as const,
   PAYROLL_MANAGE: 'payroll.manage' as const,
+
+  // Insurance
+  INSURANCE_READ: 'insurance.read' as const,
+  INSURANCE_MANAGE: 'insurance.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];

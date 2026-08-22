@@ -1,0 +1,484 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="page-title">Insurance</h1>
+      <p class="text-sm text-slate-500 mt-1">Payers, patient policies, and reimbursement claims.</p>
+    </div>
+  </div>
+
+  @if (auth.hasPermission('insurance.read')) {
+  <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white p-4">
+    <p-tabs [(value)]="activeTab" styleClass="w-full h-full flex flex-col">
+      <p-tablist>
+        <p-tab value="payers"><i class="pi pi-building mr-2"></i> Payers</p-tab>
+        <p-tab value="policies"><i class="pi pi-id-card mr-2"></i> Policies</p-tab>
+        <p-tab value="claims"><i class="pi pi-file mr-2"></i> Claims</p-tab>
+      </p-tablist>
+      <p-tabpanels class="flex-1 bg-white p-4 overflow-y-auto">
+
+        <!-- Payers -->
+        <p-tabpanel value="payers">
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center justify-end">
+              @if (auth.hasPermission('insurance.manage')) {
+              <p-button label="Add Payer" icon="pi pi-plus" size="small" (onClick)="openPayerModal()"></p-button>
+              }
+            </div>
+
+            @if (payersLoading()) {
+            <p class="text-sm text-slate-500 py-4">Loading payers…</p>
+            } @else {
+            <p-table [value]="payers()" dataKey="id" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Name</th>
+                  <th class="table-header-cell">Type</th>
+                  <th class="table-header-cell">Contact</th>
+                  <th class="table-header-cell">Phone</th>
+                  <th class="table-header-cell">Status</th>
+                  @if (auth.hasPermission('insurance.manage')) {
+                  <th class="table-header-cell text-right">Actions</th>
+                  }
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-payer>
+                <tr>
+                  <td class="font-medium">{{ payer.name }}</td>
+                  <td><p-tag [value]="payer.type" [severity]="payerTypeSeverity(payer.type)" [rounded]="true"></p-tag></td>
+                  <td>{{ payer.contactPerson ?? '—' }}</td>
+                  <td>{{ payer.phone ?? '—' }}</td>
+                  <td>
+                    <p-tag [value]="payer.isActive ? 'Active' : 'Inactive'" [severity]="payer.isActive ? 'success' : 'secondary'" [rounded]="true"></p-tag>
+                  </td>
+                  @if (auth.hasPermission('insurance.manage')) {
+                  <td class="text-right">
+                    <div class="flex justify-end gap-2">
+                      <p-button icon="pi pi-pencil" [text]="true" size="small" (onClick)="openEditPayerModal(payer)"></p-button>
+                      <p-button
+                        [icon]="payer.isActive ? 'pi pi-ban' : 'pi pi-check'"
+                        [text]="true"
+                        size="small"
+                        [severity]="payer.isActive ? 'danger' : 'success'"
+                        (onClick)="togglePayerActive(payer)"
+                      ></p-button>
+                    </div>
+                  </td>
+                  }
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr><td colspan="6" class="text-center p-6 text-slate-500">No insurance payers yet.</td></tr>
+              </ng-template>
+            </p-table>
+            }
+          </div>
+        </p-tabpanel>
+
+        <!-- Policies -->
+        <p-tabpanel value="policies">
+          <div class="flex flex-col gap-4">
+            <div class="rounded-xl shadow-sm border border-slate-200 bg-slate-50 p-4 flex flex-wrap items-end justify-between gap-3">
+              <div class="flex flex-wrap items-end gap-3">
+                <div class="flex flex-col gap-2">
+                  <label for="policyPatientFilter" class="text-xs font-semibold text-slate-600">Patient ID</label>
+                  <input
+                    pInputText
+                    id="policyPatientFilter"
+                    [ngModel]="policyPatientFilter()"
+                    (ngModelChange)="policyPatientFilter.set($event)"
+                    placeholder="Filter by patient ID"
+                    class="w-64"
+                  />
+                </div>
+                <p-button label="Apply" size="small" severity="secondary" (onClick)="applyPolicyFilter()"></p-button>
+              </div>
+              @if (auth.hasPermission('insurance.manage')) {
+              <p-button label="Add Policy" icon="pi pi-plus" size="small" (onClick)="openPolicyModal()"></p-button>
+              }
+            </div>
+
+            <p-table
+              [value]="policies()"
+              [lazy]="true"
+              [lazyLoadOnInit]="false"
+              (onLazyLoad)="onPolicyLazyLoad($event)"
+              [loading]="policiesLoading()"
+              [paginator]="true"
+              [rows]="policyPageSize()"
+              [totalRecords]="policyTotalRecords()"
+              [first]="policyFirstRecord()"
+              dataKey="id"
+              styleClass="p-datatable-sm p-datatable-gridlines"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Policy #</th>
+                  <th class="table-header-cell">Patient ID</th>
+                  <th class="table-header-cell">Payer</th>
+                  <th class="table-header-cell">Coverage Window</th>
+                  <th class="table-header-cell text-right">Sum Insured</th>
+                  <th class="table-header-cell text-right">Copay %</th>
+                  <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell text-right">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-policy>
+                <tr>
+                  <td class="font-medium">{{ policy.policyNumber }}</td>
+                  <td class="font-mono text-xs text-slate-600">{{ policy.patientId }}</td>
+                  <td>{{ payerNameById().get(policy.payerId) ?? policy.payerId }}</td>
+                  <td>{{ policy.coverageStartDate }} – {{ policy.coverageEndDate }}</td>
+                  <td class="text-right font-mono">₹{{ policy.sumInsured | number }}</td>
+                  <td class="text-right">{{ policy.copayPercent }}%</td>
+                  <td>
+                    <p-tag [value]="policy.isActive ? 'Active' : 'Inactive'" [severity]="policy.isActive ? 'success' : 'secondary'" [rounded]="true"></p-tag>
+                  </td>
+                  <td class="text-right">
+                    <div class="flex justify-end gap-2">
+                      <p-button label="Check Coverage" size="small" [text]="true" (onClick)="checkCoverage(policy)"></p-button>
+                      @if (auth.hasPermission('insurance.manage')) {
+                      <p-button
+                        [icon]="policy.isActive ? 'pi pi-ban' : 'pi pi-check'"
+                        [text]="true"
+                        size="small"
+                        [severity]="policy.isActive ? 'danger' : 'success'"
+                        [loading]="policyActionLoadingId() === policy.id"
+                        (onClick)="togglePolicyActive(policy)"
+                      ></p-button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr><td colspan="8" class="text-center p-6 text-slate-500">No patient policies found.</td></tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+
+        <!-- Claims -->
+        <p-tabpanel value="claims">
+          <div class="flex flex-col gap-4">
+            <div class="rounded-xl shadow-sm border border-slate-200 bg-slate-50 p-4 flex flex-wrap items-end justify-between gap-3">
+              <div class="flex flex-wrap items-end gap-3">
+                <div class="flex flex-col gap-2">
+                  <label for="claimPatientFilter" class="text-xs font-semibold text-slate-600">Patient ID</label>
+                  <input
+                    pInputText
+                    id="claimPatientFilter"
+                    [ngModel]="claimPatientFilter()"
+                    (ngModelChange)="claimPatientFilter.set($event)"
+                    placeholder="Filter by patient ID"
+                    class="w-56"
+                  />
+                </div>
+                <div class="flex flex-col gap-2">
+                  <label for="claimStatusFilter" class="text-xs font-semibold text-slate-600">Status</label>
+                  <p-select
+                    inputId="claimStatusFilter"
+                    [options]="claimStatusOptions"
+                    [ngModel]="claimStatusFilter()"
+                    (ngModelChange)="claimStatusFilter.set($event)"
+                    placeholder="All statuses"
+                    [showClear]="true"
+                    styleClass="w-48"
+                  ></p-select>
+                </div>
+                <p-button label="Apply" size="small" severity="secondary" (onClick)="applyClaimFilter()"></p-button>
+              </div>
+              @if (auth.hasPermission('insurance.manage')) {
+              <p-button label="New Claim" icon="pi pi-plus" size="small" (onClick)="openClaimModal()"></p-button>
+              }
+            </div>
+
+            <p-table
+              [value]="claims()"
+              [lazy]="true"
+              [lazyLoadOnInit]="false"
+              (onLazyLoad)="onClaimLazyLoad($event)"
+              [loading]="claimsLoading()"
+              [paginator]="true"
+              [rows]="claimPageSize()"
+              [totalRecords]="claimTotalRecords()"
+              [first]="claimFirstRecord()"
+              dataKey="id"
+              styleClass="p-datatable-sm p-datatable-gridlines"
+            >
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Claim #</th>
+                  <th class="table-header-cell">Patient ID</th>
+                  <th class="table-header-cell text-right">Claimed</th>
+                  <th class="table-header-cell text-right">Approved</th>
+                  <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell">Submitted</th>
+                  @if (auth.hasPermission('insurance.manage')) {
+                  <th class="table-header-cell text-right">Actions</th>
+                  }
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-claim>
+                <tr>
+                  <td class="font-medium">{{ claim.claimNumber }}</td>
+                  <td class="font-mono text-xs text-slate-600">{{ claim.patientId }}</td>
+                  <td class="text-right font-mono">₹{{ claim.amountClaimed | number }}</td>
+                  <td class="text-right font-mono">{{ claim.amountApproved !== null ? '₹' + (claim.amountApproved | number) : '—' }}</td>
+                  <td><p-tag [value]="claim.status" [severity]="claimStatusSeverity(claim.status)" [rounded]="true"></p-tag></td>
+                  <td>{{ claim.submittedAt ? (claim.submittedAt | date: 'mediumDate') : '—' }}</td>
+                  @if (auth.hasPermission('insurance.manage')) {
+                  <td class="text-right">
+                    <div class="flex justify-end gap-2 flex-wrap">
+                      @if (claim.status === 'Draft') {
+                      <p-button
+                        label="Submit"
+                        size="small"
+                        [loading]="claimActionLoadingId() === claim.id"
+                        (onClick)="submitClaimForSubmission(claim)"
+                      ></p-button>
+                      } @if (claim.status === 'Submitted') {
+                      <p-button label="Approve" size="small" severity="success" (onClick)="openApproveModal(claim)"></p-button>
+                      <p-button label="Reject" size="small" severity="danger" [text]="true" (onClick)="openRejectModal(claim)"></p-button>
+                      } @if (claim.status === 'Approved') {
+                      <p-button
+                        label="Mark Paid"
+                        size="small"
+                        severity="success"
+                        [loading]="claimActionLoadingId() === claim.id"
+                        (onClick)="markClaimPaid(claim)"
+                      ></p-button>
+                      }
+                    </div>
+                  </td>
+                  }
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr><td colspan="7" class="text-center p-6 text-slate-500">No insurance claims found.</td></tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+
+      </p-tabpanels>
+    </p-tabs>
+  </div>
+  } @else {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-8 text-center text-slate-500">
+    You don't have permission to view insurance.
+  </div>
+  }
+</div>
+
+<!-- Add Payer -->
+<p-dialog header="Add Insurance Payer" [(visible)]="showPayerModal" [modal]="true" [style]="{ width: '440px' }">
+  <div class="flex flex-col gap-4 py-2">
+    @if (payerError(); as message) {
+    <p-message severity="error" styleClass="w-full">{{ message }}</p-message>
+    }
+    <div class="flex flex-col gap-2">
+      <label for="payerName" class="text-sm font-medium">Name</label>
+      <input pInputText id="payerName" [ngModel]="payerForm().name" (ngModelChange)="payerForm.set({ ...payerForm(), name: $event })" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="payerType" class="text-sm font-medium">Type</label>
+      <p-select inputId="payerType" [options]="payerTypeOptions" [ngModel]="payerForm().type" (ngModelChange)="payerForm.set({ ...payerForm(), type: $event })"></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="payerContact" class="text-sm font-medium">Contact person</label>
+      <input pInputText id="payerContact" [ngModel]="payerForm().contactPerson" (ngModelChange)="payerForm.set({ ...payerForm(), contactPerson: $event })" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="payerPhone" class="text-sm font-medium">Phone</label>
+      <input pInputText id="payerPhone" [ngModel]="payerForm().phone" (ngModelChange)="payerForm.set({ ...payerForm(), phone: $event })" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="payerAddress" class="text-sm font-medium">Address</label>
+      <input pInputText id="payerAddress" [ngModel]="payerForm().address" (ngModelChange)="payerForm.set({ ...payerForm(), address: $event })" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showPayerModal.set(false)"></p-button>
+    <p-button label="Save" [loading]="payerSaving()" (onClick)="submitPayer()"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Edit Payer -->
+<p-dialog header="Edit Insurance Payer" [(visible)]="showEditPayerModal" [modal]="true" [style]="{ width: '440px' }">
+  <div class="flex flex-col gap-4 py-2">
+    @if (editPayerError(); as message) {
+    <p-message severity="error" styleClass="w-full">{{ message }}</p-message>
+    }
+    <div class="flex flex-col gap-2">
+      <label for="editPayerName" class="text-sm font-medium">Name</label>
+      <input pInputText id="editPayerName" [ngModel]="editPayerForm().name" (ngModelChange)="editPayerForm.set({ ...editPayerForm(), name: $event })" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editPayerType" class="text-sm font-medium">Type</label>
+      <p-select inputId="editPayerType" [options]="payerTypeOptions" [ngModel]="editPayerForm().type" (ngModelChange)="editPayerForm.set({ ...editPayerForm(), type: $event })"></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editPayerContact" class="text-sm font-medium">Contact person</label>
+      <input pInputText id="editPayerContact" [ngModel]="editPayerForm().contactPerson" (ngModelChange)="editPayerForm.set({ ...editPayerForm(), contactPerson: $event })" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editPayerPhone" class="text-sm font-medium">Phone</label>
+      <input pInputText id="editPayerPhone" [ngModel]="editPayerForm().phone" (ngModelChange)="editPayerForm.set({ ...editPayerForm(), phone: $event })" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editPayerAddress" class="text-sm font-medium">Address</label>
+      <input pInputText id="editPayerAddress" [ngModel]="editPayerForm().address" (ngModelChange)="editPayerForm.set({ ...editPayerForm(), address: $event })" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showEditPayerModal.set(false)"></p-button>
+    <p-button label="Save" [loading]="editPayerSaving()" (onClick)="submitEditPayer()"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Add Policy -->
+<p-dialog header="Add Patient Policy" [(visible)]="showPolicyModal" [modal]="true" [style]="{ width: '480px' }">
+  <div class="flex flex-col gap-4 py-2">
+    @if (policyError(); as message) {
+    <p-message severity="error" styleClass="w-full">{{ message }}</p-message>
+    }
+    <div class="flex flex-col gap-2">
+      <label for="policyPatientId" class="text-sm font-medium">Patient ID</label>
+      <input pInputText id="policyPatientId" [ngModel]="policyForm().patientId" (ngModelChange)="policyForm.set({ ...policyForm(), patientId: $event })" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="policyPayer" class="text-sm font-medium">Payer</label>
+      <p-select
+        inputId="policyPayer"
+        [options]="payers()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="policyForm().payerId"
+        (ngModelChange)="policyForm.set({ ...policyForm(), payerId: $event })"
+        placeholder="Select a payer"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="policyNumber" class="text-sm font-medium">Policy number</label>
+      <input pInputText id="policyNumber" [ngModel]="policyForm().policyNumber" (ngModelChange)="policyForm.set({ ...policyForm(), policyNumber: $event })" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="policyInsuredName" class="text-sm font-medium">Insured name</label>
+      <input pInputText id="policyInsuredName" [ngModel]="policyForm().insuredName" (ngModelChange)="policyForm.set({ ...policyForm(), insuredName: $event })" />
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-2">
+        <label for="policyStart" class="text-sm font-medium">Coverage start</label>
+        <input pInputText type="date" id="policyStart" [ngModel]="policyForm().coverageStartDate" (ngModelChange)="policyForm.set({ ...policyForm(), coverageStartDate: $event })" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="policyEnd" class="text-sm font-medium">Coverage end</label>
+        <input pInputText type="date" id="policyEnd" [ngModel]="policyForm().coverageEndDate" (ngModelChange)="policyForm.set({ ...policyForm(), coverageEndDate: $event })" />
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="flex flex-col gap-2">
+        <label for="policySumInsured" class="text-sm font-medium">Sum insured (₹)</label>
+        <p-inputNumber inputId="policySumInsured" [ngModel]="policyForm().sumInsured" (ngModelChange)="policyForm.set({ ...policyForm(), sumInsured: $event })" [min]="0"></p-inputNumber>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="policyCopay" class="text-sm font-medium">Copay %</label>
+        <p-inputNumber inputId="policyCopay" [ngModel]="policyForm().copayPercent" (ngModelChange)="policyForm.set({ ...policyForm(), copayPercent: $event })" [min]="0" [max]="100"></p-inputNumber>
+      </div>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showPolicyModal.set(false)"></p-button>
+    <p-button label="Save" [loading]="policySaving()" (onClick)="submitPolicy()"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Coverage check result -->
+<p-dialog header="Coverage Check" [(visible)]="showCoverageModal" [modal]="true" [style]="{ width: '420px' }">
+  @if (coverageLoading()) {
+  <p class="text-sm text-slate-500 py-4">Checking coverage…</p>
+  } @else if (coverageResult(); as result) {
+  <div class="flex flex-col gap-3 py-2">
+    <p-tag [value]="result.eligible ? 'Eligible' : 'Not Eligible'" [severity]="result.eligible ? 'success' : 'danger'" [rounded]="true" styleClass="w-fit"></p-tag>
+    @if (!result.eligible && result.reason) {
+    <p class="text-sm text-slate-600">Reason: {{ result.reason === 'policy-inactive' ? 'Policy is inactive' : 'Outside the coverage window' }}</p>
+    }
+    <div class="grid grid-cols-2 gap-3 text-sm">
+      <div><span class="text-slate-500">Payer</span><p class="font-medium">{{ result.payerName }}</p></div>
+      <div><span class="text-slate-500">Sum Insured</span><p class="font-medium">₹{{ result.sumInsured | number }}</p></div>
+      <div><span class="text-slate-500">Copay</span><p class="font-medium">{{ result.copayPercent }}%</p></div>
+      <div><span class="text-slate-500">Window</span><p class="font-medium">{{ result.coverageStartDate }} – {{ result.coverageEndDate }}</p></div>
+    </div>
+  </div>
+  }
+  <ng-template pTemplate="footer">
+    <p-button label="Close" severity="secondary" (onClick)="showCoverageModal.set(false)"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- New Claim -->
+<p-dialog header="New Insurance Claim" [(visible)]="showClaimModal" [modal]="true" [style]="{ width: '440px' }">
+  <div class="flex flex-col gap-4 py-2">
+    @if (claimError(); as message) {
+    <p-message severity="error" styleClass="w-full">{{ message }}</p-message>
+    }
+    <div class="flex flex-col gap-2">
+      <label for="claimPatientId" class="text-sm font-medium">Patient ID</label>
+      <input pInputText id="claimPatientId" [ngModel]="claimForm().patientId" (ngModelChange)="claimForm.set({ ...claimForm(), patientId: $event })" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="claimPolicyId" class="text-sm font-medium">Policy ID</label>
+      <input pInputText id="claimPolicyId" [ngModel]="claimForm().policyId" (ngModelChange)="claimForm.set({ ...claimForm(), policyId: $event })" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="claimInvoiceId" class="text-sm font-medium">Invoice ID</label>
+      <input pInputText id="claimInvoiceId" [ngModel]="claimForm().invoiceId" (ngModelChange)="claimForm.set({ ...claimForm(), invoiceId: $event })" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="claimAmount" class="text-sm font-medium">Amount claimed (₹)</label>
+      <p-inputNumber inputId="claimAmount" [ngModel]="claimForm().amountClaimed" (ngModelChange)="claimForm.set({ ...claimForm(), amountClaimed: $event })" [min]="0"></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="claimRemarks" class="text-sm font-medium">Remarks</label>
+      <input pInputText id="claimRemarks" [ngModel]="claimForm().remarks" (ngModelChange)="claimForm.set({ ...claimForm(), remarks: $event })" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showClaimModal.set(false)"></p-button>
+    <p-button label="Save" [loading]="claimSaving()" (onClick)="submitClaim()"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Approve claim -->
+<p-dialog header="Approve Claim" [(visible)]="showApproveModal" [modal]="true" [style]="{ width: '380px' }">
+  <div class="flex flex-col gap-4 py-2">
+    <div class="flex flex-col gap-2">
+      <label for="approveAmount" class="text-sm font-medium">Amount approved (₹)</label>
+      <p-inputNumber inputId="approveAmount" [ngModel]="approveAmountDraft()" (ngModelChange)="approveAmountDraft.set($event)" [min]="0"></p-inputNumber>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showApproveModal.set(false)"></p-button>
+    <p-button label="Approve" severity="success" [loading]="approveSaving()" (onClick)="confirmApprove()"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Reject claim -->
+<p-dialog header="Reject Claim" [(visible)]="showRejectModal" [modal]="true" [style]="{ width: '380px' }">
+  <div class="flex flex-col gap-4 py-2">
+    <div class="flex flex-col gap-2">
+      <label for="rejectRemarks" class="text-sm font-medium">Rejection remarks</label>
+      <input pInputText id="rejectRemarks" [ngModel]="rejectRemarksDraft()" (ngModelChange)="rejectRemarksDraft.set($event)" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showRejectModal.set(false)"></p-button>
+    <p-button
+      label="Reject"
+      severity="danger"
+      [loading]="rejectSaving()"
+      [disabled]="!rejectRemarksDraft().trim()"
+      (onClick)="confirmReject()"
+    ></p-button>
+  </ng-template>
+</p-dialog>

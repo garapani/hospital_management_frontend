@@ -11,6 +11,17 @@
       Invoices
     </a>
     }
+    @if (auth.hasPermission('insurance.read')) {
+    <a
+      routerLink="/insurance"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-verified text-base"></i>
+      Insurance
+    </a>
+    }
     @if (auth.hasPermission('patients.read') || auth.hasPermission('appointment.read') ||
     auth.hasPermission('triage.read') || auth.hasPermission('vitals.read') ||
     auth.hasPermission('encounter.read') || auth.hasPermission('order.read') ||
