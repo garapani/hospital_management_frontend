@@ -7,6 +7,7 @@ import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { NotificationsApiService } from '../notifications/notifications-api.service.js';
+import { BrandingService } from '../branding/branding.service.js';
 import { ShellChrome } from './shell-chrome.js';
 
 describe('ShellChrome user menu', () => {
@@ -35,6 +36,11 @@ describe('ShellChrome user menu', () => {
       messageObserver: new Subject(),
       clearObserver: new Subject(),
     } as unknown as MessageService;
+    const brandingService = {
+      displayName: () => null,
+      logoUrl: () => null,
+      primaryColor: () => null,
+    } as unknown as BrandingService;
 
     TestBed.configureTestingModule({
       imports: [ShellChrome],
@@ -45,6 +51,7 @@ describe('ShellChrome user menu', () => {
         { provide: AuthService, useValue: authService },
         { provide: NotificationsApiService, useValue: notificationsApi },
         { provide: MessageService, useValue: messageService },
+        { provide: BrandingService, useValue: brandingService },
       ],
     });
 

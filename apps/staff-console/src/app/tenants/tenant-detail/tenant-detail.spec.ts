@@ -8,6 +8,7 @@ import { TenantsApiService } from '../tenants-api.service.js';
 import { SubscriptionsApiService } from '../subscriptions-api.service.js';
 import { Tenant } from '../tenant.model.js';
 import { Subscription, SubscriptionInvoice } from '../subscription.model.js';
+import { BrandingApiService } from '../../branding/branding-api.service.js';
 
 describe('TenantDetail package change', () => {
   function setup() {
@@ -99,6 +100,17 @@ describe('TenantDetail package change', () => {
         .mockReturnValue(of({ ...invoice, status: 'paid', paidAt: '2026-08-05T00:00:00.000Z' })),
     } as unknown as SubscriptionsApiService;
 
+    const brandingApi = {
+      getForAdmin: jest.fn().mockReturnValue(of({ displayName: null, primaryColor: null, logoUrl: null })),
+      upsert: jest.fn().mockReturnValue(
+        of({ displayName: 'City Hospital', primaryColor: '#006D77', logoUrl: null }),
+      ),
+      uploadLogo: jest.fn().mockReturnValue(
+        of({ displayName: null, primaryColor: null, logoUrl: 'https://minio.example/logo.png' }),
+      ),
+      removeLogo: jest.fn().mockReturnValue(of({ displayName: null, primaryColor: null, logoUrl: null })),
+    } as unknown as BrandingApiService;
+
     TestBed.configureTestingModule({
       imports: [TenantDetail],
       providers: [
@@ -108,13 +120,14 @@ describe('TenantDetail package change', () => {
         },
         { provide: TenantsApiService, useValue: tenantsApi },
         { provide: SubscriptionsApiService, useValue: subscriptionsApi },
+        { provide: BrandingApiService, useValue: brandingApi },
         { provide: MessageService, useValue: messageService },
         { provide: Router, useValue: { navigate: jest.fn() } },
       ],
     });
 
     const fixture = TestBed.createComponent(TenantDetail);
-    return { fixture, tenantsApi, subscriptionsApi, messageService, subscription, invoice };
+    return { fixture, tenantsApi, subscriptionsApi, brandingApi, messageService, subscription, invoice };
   }
 
   it('opens a confirmation instead of calling the API when saving a package change', async () => {
@@ -362,6 +375,101 @@ describe('TenantDetail package change', () => {
     expect(subscriptionsApi.getSubscription).toHaveBeenCalledTimes(2);
     expect(messageService.add).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success', summary: 'Invoice marked paid' }),
+    );
+  });
+
+  it('loads branding for the tenant on init', async () => {
+    const { fixture, brandingApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(brandingApi.getForAdmin).toHaveBeenCalledWith('h1');
+    expect(fixture.componentInstance.brandingForm()).toEqual({ displayName: '', primaryColor: '' });
+  });
+
+  it('rejects saving a malformed primary color without calling the API', async () => {
+    const { fixture, brandingApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.brandingForm.set({ displayName: 'City Hospital', primaryColor: 'teal' });
+    fixture.componentInstance.saveBranding();
+
+    expect(brandingApi.upsert).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.brandingError()).toContain('hex');
+  });
+
+  it('saves branding and toasts success', async () => {
+    const { fixture, brandingApi, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.brandingForm.set({ displayName: 'City Hospital', primaryColor: '#006D77' });
+    fixture.componentInstance.saveBranding();
+    await fixture.whenStable();
+
+    expect(brandingApi.upsert).toHaveBeenCalledWith('h1', { displayName: 'City Hospital', primaryColor: '#006D77' });
+    expect(fixture.componentInstance.branding()?.displayName).toBe('City Hospital');
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Branding saved' }),
+    );
+  });
+
+  it('resets branding to default by clearing both fields', async () => {
+    const { fixture, brandingApi, messageService } = setup();
+    (brandingApi.upsert as jest.Mock).mockReturnValue(of({ displayName: null, primaryColor: null, logoUrl: null }));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.resetBranding();
+    await fixture.whenStable();
+
+    expect(brandingApi.upsert).toHaveBeenCalledWith('h1', { displayName: null, primaryColor: null });
+    expect(fixture.componentInstance.brandingForm()).toEqual({ displayName: '', primaryColor: '' });
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Branding reset' }),
+    );
+  });
+
+  it('uploads a logo from a selected file', async () => {
+    const { fixture, brandingApi, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const file = new File(['fake-bytes'], 'logo.png', { type: 'image/png' });
+    const input = { files: [file], value: '' } as unknown as HTMLInputElement;
+    fixture.componentInstance.onLogoFileSelected({ target: input } as unknown as Event);
+    await fixture.whenStable();
+
+    expect(brandingApi.uploadLogo).toHaveBeenCalledWith('h1', file);
+    expect(fixture.componentInstance.branding()?.logoUrl).toBe('https://minio.example/logo.png');
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Logo uploaded' }),
+    );
+  });
+
+  it('does nothing when the file input change fires with no file selected', async () => {
+    const { fixture, brandingApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const input = { files: [], value: '' } as unknown as HTMLInputElement;
+    fixture.componentInstance.onLogoFileSelected({ target: input } as unknown as Event);
+
+    expect(brandingApi.uploadLogo).not.toHaveBeenCalled();
+  });
+
+  it('removes the logo and toasts success', async () => {
+    const { fixture, brandingApi, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.removeLogo();
+    await fixture.whenStable();
+
+    expect(brandingApi.removeLogo).toHaveBeenCalledWith('h1');
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Logo removed' }),
     );
   });
 });

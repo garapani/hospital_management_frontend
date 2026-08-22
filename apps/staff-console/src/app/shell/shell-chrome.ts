@@ -12,6 +12,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { NotificationsApiService, Notification } from '../notifications/notifications-api.service.js';
+import { BrandingService } from '../branding/branding.service.js';
 import { Subscription } from 'rxjs';
 
 /**
@@ -35,6 +36,7 @@ import { Subscription } from 'rxjs';
 })
 export class ShellChrome implements OnInit, OnDestroy {
   readonly auth = inject(AuthService);
+  readonly branding = inject(BrandingService);
   private readonly notificationsApi = inject(NotificationsApiService);
   private readonly messageService = inject(MessageService);
 

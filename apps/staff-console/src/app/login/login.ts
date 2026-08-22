@@ -15,6 +15,7 @@ import { PasswordModule } from 'primeng/password';
 import { MessageModule } from 'primeng/message';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { BrandingService } from '../branding/branding.service.js';
 
 /**
  * Exact match to seed-rbac-catalog.ts role names — each role's daily-entry-point screen, not just
@@ -72,6 +73,7 @@ export class Login {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly tenantId = inject(TENANT_ID);
+  readonly branding = inject(BrandingService);
 
   /**
    * Which console this host serves. The two audiences share one login screen, so without this a

@@ -6,6 +6,7 @@ import { AuthService } from '@org/auth';
 import { TENANT_ID } from '@org/api-client';
 import { of, throwError } from 'rxjs';
 import { Login } from './login.js';
+import { BrandingService } from '../branding/branding.service.js';
 
 describe('Login', () => {
   function setup(loginResult: unknown) {
@@ -19,6 +20,11 @@ describe('Login', () => {
       navigateByUrl: jest.fn(),
       navigate: jest.fn(),
     } as unknown as Router;
+    const brandingService = {
+      displayName: () => null,
+      logoUrl: () => null,
+      primaryColor: () => null,
+    } as unknown as BrandingService;
 
     TestBed.configureTestingModule({
       imports: [Login],
@@ -26,6 +32,7 @@ describe('Login', () => {
         { provide: AuthService, useValue: authService },
         { provide: TENANT_ID, useValue: 'demo' },
         { provide: Router, useValue: router },
+        { provide: BrandingService, useValue: brandingService },
       ],
     });
 
@@ -92,6 +99,10 @@ describe('Login', () => {
         { provide: AuthService, useValue: authService },
         { provide: TENANT_ID, useValue: 'demo' },
         { provide: Router, useValue: { navigateByUrl: jest.fn() } },
+        {
+          provide: BrandingService,
+          useValue: { displayName: () => null, logoUrl: () => null, primaryColor: () => null } as unknown as BrandingService,
+        },
       ],
     });
     const fixture = TestBed.createComponent(Login);
@@ -131,6 +142,10 @@ describe('Login redirect', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authService },
+        {
+          provide: BrandingService,
+          useValue: { displayName: () => null, logoUrl: () => null, primaryColor: () => null } as unknown as BrandingService,
+        },
       ],
     });
     const router = TestBed.inject(Router);

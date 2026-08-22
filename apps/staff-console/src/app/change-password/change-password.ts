@@ -14,6 +14,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { MessageModule } from 'primeng/message';
 import { ToastModule } from 'primeng/toast';
+import { BrandingService } from '../branding/branding.service.js';
 
 /**
  * Onboarding screen for accounts the backend flagged must-change-password: login with an
@@ -37,6 +38,7 @@ export class ChangePassword {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
+  readonly branding = inject(BrandingService);
 
   /** Username carried over from the login screen's 403 mustChangePassword navigation state. */
   readonly usernameFromState = (history.state as { username?: string } | undefined)?.username ?? '';

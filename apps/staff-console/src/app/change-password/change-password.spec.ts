@@ -4,6 +4,7 @@ import { AuthService } from '@org/auth';
 import { MessageService } from 'primeng/api';
 import { of, throwError } from 'rxjs';
 import { ChangePassword } from './change-password.js';
+import { BrandingService } from '../branding/branding.service.js';
 
 describe('ChangePassword', () => {
   function setup(options: { changeResult?: unknown; router?: Partial<Router> } = {}) {
@@ -21,6 +22,11 @@ describe('ChangePassword', () => {
       navigateByUrl: jest.fn(),
       ...(options.router ?? {}),
     } as unknown as Router;
+    const brandingService = {
+      displayName: () => null,
+      logoUrl: () => null,
+      primaryColor: () => null,
+    } as unknown as BrandingService;
 
     TestBed.configureTestingModule({
       imports: [ChangePassword],
@@ -28,6 +34,7 @@ describe('ChangePassword', () => {
         { provide: AuthService, useValue: authService },
         { provide: MessageService, useValue: messageService },
         { provide: Router, useValue: router },
+        { provide: BrandingService, useValue: brandingService },
       ],
     });
 

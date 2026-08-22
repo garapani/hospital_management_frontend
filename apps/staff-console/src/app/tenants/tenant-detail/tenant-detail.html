@@ -349,6 +349,112 @@
     }
   </div>
 
+  <!-- Branding -->
+  <div class="surface-panel p-6 flex flex-col gap-5">
+    <div>
+      <h3 class="font-bold text-lg text-slate-800">Branding</h3>
+      <p class="text-sm text-slate-500 mt-1">
+        White-label look for this hospital's console and login page — display name, logo, and
+        primary color. Unconfigured fields fall back to the default Vaidya brand.
+      </p>
+    </div>
+
+    @if (brandingLoading()) {
+    <div class="flex justify-center p-6">
+      <i class="pi pi-spin pi-spinner text-2xl text-sky-500"></i>
+    </div>
+    } @else {
+    @if (brandingError(); as message) {
+    <p-message severity="error" styleClass="w-full">{{ message }}</p-message>
+    }
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="flex flex-col gap-2">
+        <label for="brandingDisplayName" class="text-sm font-medium">Display name</label>
+        <input
+          pInputText
+          id="brandingDisplayName"
+          [ngModel]="brandingForm().displayName"
+          (ngModelChange)="brandingForm.set({ ...brandingForm(), displayName: $event })"
+          placeholder="Vaidya"
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="brandingColor" class="text-sm font-medium">Primary color</label>
+        <div class="flex items-center gap-2">
+          <input
+            type="color"
+            [ngModel]="brandingForm().primaryColor || '#006d77'"
+            (ngModelChange)="brandingForm.set({ ...brandingForm(), primaryColor: $event })"
+            class="h-9 w-10 shrink-0 cursor-pointer rounded border border-slate-200"
+          />
+          <input
+            pInputText
+            id="brandingColor"
+            [ngModel]="brandingForm().primaryColor"
+            (ngModelChange)="brandingForm.set({ ...brandingForm(), primaryColor: $event })"
+            placeholder="#006D77"
+            class="flex-1"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+      <div class="flex items-center gap-3">
+        @if (branding()?.logoUrl; as logo) {
+        <img [src]="logo" alt="Current logo" class="h-10 w-10 rounded-lg object-contain border border-slate-200" />
+        }
+        <div class="flex flex-col gap-1">
+          <label
+            class="text-sm font-medium text-primary-700 cursor-pointer hover:underline w-fit"
+          >
+            {{ branding()?.logoUrl ? 'Replace logo' : 'Upload logo' }}
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              class="hidden"
+              [disabled]="logoUploading()"
+              (change)="onLogoFileSelected($event)"
+            />
+          </label>
+          <span class="text-xs text-slate-400">PNG, JPEG, WebP, or SVG — up to 2MB</span>
+        </div>
+        @if (logoUploading()) {
+        <i class="pi pi-spin pi-spinner text-slate-500"></i>
+        }
+      </div>
+      @if (branding()?.logoUrl) {
+      <p-button
+        label="Remove logo"
+        severity="danger"
+        [text]="true"
+        size="small"
+        [loading]="logoRemoving()"
+        (onClick)="removeLogo()"
+      />
+      }
+    </div>
+
+    <div class="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+      <p-button
+        label="Reset to default"
+        severity="secondary"
+        [text]="true"
+        [loading]="brandingSaving()"
+        (onClick)="resetBranding()"
+      />
+      <p-button
+        label="Save branding"
+        icon="pi pi-check"
+        styleClass="rounded-lg border-none px-5"
+        [loading]="brandingSaving()"
+        (onClick)="saveBranding()"
+      />
+    </div>
+    }
+  </div>
+
   <!-- Role availability -->
   <div class="surface-panel p-6 flex flex-col gap-5">
     <div class="flex items-start justify-between gap-4">

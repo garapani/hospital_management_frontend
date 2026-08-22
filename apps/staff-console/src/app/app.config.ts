@@ -13,6 +13,7 @@ import { API_BASE_URL, TENANT_ID } from '@org/api-client';
 import { authInterceptor, provideAuthBootstrap, PLATFORM_TENANT_ID } from '@org/auth';
 import { environment } from '../environments/environment';
 import { appRoutes } from './app.routes';
+import { provideBrandingBootstrap } from './branding/provide-branding-bootstrap.js';
 
 /**
  * Vaidya brand teal on cool slate neutrals. Must stay in sync with the accent tokens in
@@ -101,6 +102,7 @@ export const appConfig: ApplicationConfig = {
     { provide: API_BASE_URL, useValue: environment.apiBaseUrl },
     { provide: TENANT_ID, useFactory: resolveTenantId },
     provideAuthBootstrap(),
+    provideBrandingBootstrap(),
     providePrimeNG({
       theme: {
         preset: VaidyaTealPreset,

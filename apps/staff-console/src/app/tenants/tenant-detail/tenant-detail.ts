@@ -6,6 +6,7 @@ import { TagModule } from 'primeng/tag';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { SelectModule } from 'primeng/select';
 import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
@@ -14,6 +15,8 @@ import { AuditRecord } from '../../audit/audit.model.js';
 import { TenantsApiService } from '../tenants-api.service.js';
 import { SubscriptionsApiService } from '../subscriptions-api.service.js';
 import { BillingCycle, Subscription, SubscriptionInvoice } from '../subscription.model.js';
+import { BrandingApiService } from '../../branding/branding-api.service.js';
+import { isValidHexColor, TenantBranding } from '../../branding/branding.model.js';
 import {
   BlockedRole,
   Package,
@@ -40,6 +43,7 @@ interface SelectOption {
     ToggleSwitchModule,
     SelectModule,
     DialogModule,
+    InputTextModule,
     FormsModule,
     MessageModule,
   ],
@@ -51,6 +55,7 @@ export class TenantDetail implements OnInit {
   private readonly router = inject(Router);
   private readonly tenantsApi = inject(TenantsApiService);
   private readonly subscriptionsApi = inject(SubscriptionsApiService);
+  private readonly brandingApi = inject(BrandingApiService);
   private readonly messageService = inject(MessageService);
 
   readonly tenant = signal<Tenant | null>(null);
@@ -142,6 +147,7 @@ export class TenantDetail implements OnInit {
         this.loadHistory(id);
         this.loadSubscription(id);
         this.loadInvoices(id);
+        this.loadBranding(id);
       }
     });
     this.loadPackages();
@@ -612,6 +618,145 @@ export class TenantDetail implements OnInit {
           severity: 'error',
           summary: 'Purge failed',
           detail: error.message || 'Could not purge the tenant. Please try again.',
+        });
+      },
+    });
+  }
+
+  // ---------- Branding ----------
+  readonly branding = signal<TenantBranding | null>(null);
+  readonly brandingLoading = signal(true);
+  readonly brandingForm = signal<{ displayName: string; primaryColor: string }>({
+    displayName: '',
+    primaryColor: '',
+  });
+  readonly brandingSaving = signal(false);
+  readonly brandingError = signal<string | null>(null);
+  readonly logoUploading = signal(false);
+  readonly logoRemoving = signal(false);
+  readonly isValidHexColor = isValidHexColor;
+
+  private loadBranding(id: string): void {
+    this.brandingLoading.set(true);
+    this.brandingApi.getForAdmin(id).subscribe({
+      next: (branding) => {
+        this.branding.set(branding);
+        this.brandingForm.set({
+          displayName: branding.displayName ?? '',
+          primaryColor: branding.primaryColor ?? '',
+        });
+        this.brandingLoading.set(false);
+      },
+      error: () => {
+        this.brandingLoading.set(false);
+      },
+    });
+  }
+
+  saveBranding(): void {
+    const current = this.tenant();
+    if (!current) return;
+    const form = this.brandingForm();
+    if (form.primaryColor && !isValidHexColor(form.primaryColor)) {
+      this.brandingError.set('Primary color must be a 6-digit hex code, e.g. #006D77.');
+      return;
+    }
+    this.brandingSaving.set(true);
+    this.brandingError.set(null);
+    this.brandingApi
+      .upsert(current.hospitalId, {
+        displayName: form.displayName.trim() || null,
+        primaryColor: form.primaryColor || null,
+      })
+      .subscribe({
+        next: (branding) => {
+          this.brandingSaving.set(false);
+          this.branding.set(branding);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Branding saved',
+            detail: `${current.hospitalName}'s branding was updated.`,
+          });
+        },
+        error: (error: ApiError) => {
+          this.brandingSaving.set(false);
+          this.brandingError.set(error.message || 'Could not save branding. Please try again.');
+        },
+      });
+  }
+
+  resetBranding(): void {
+    const current = this.tenant();
+    if (!current) return;
+    this.brandingSaving.set(true);
+    this.brandingError.set(null);
+    this.brandingApi.upsert(current.hospitalId, { displayName: null, primaryColor: null }).subscribe({
+      next: (branding) => {
+        this.brandingSaving.set(false);
+        this.branding.set(branding);
+        this.brandingForm.set({ displayName: '', primaryColor: '' });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Branding reset',
+          detail: `${current.hospitalName} now shows the default Vaidya brand.`,
+        });
+      },
+      error: (error: ApiError) => {
+        this.brandingSaving.set(false);
+        this.brandingError.set(error.message || 'Could not reset branding. Please try again.');
+      },
+    });
+  }
+
+  onLogoFileSelected(event: Event): void {
+    const current = this.tenant();
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!current || !file) return;
+
+    this.logoUploading.set(true);
+    this.brandingApi.uploadLogo(current.hospitalId, file).subscribe({
+      next: (branding) => {
+        this.logoUploading.set(false);
+        this.branding.set(branding);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Logo uploaded',
+          detail: `${current.hospitalName}'s logo was updated.`,
+        });
+      },
+      error: (error: ApiError) => {
+        this.logoUploading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Logo upload failed',
+          detail: error.message || 'Please try again with a PNG, JPEG, WebP, or SVG under 2MB.',
+        });
+      },
+    });
+  }
+
+  removeLogo(): void {
+    const current = this.tenant();
+    if (!current) return;
+    this.logoRemoving.set(true);
+    this.brandingApi.removeLogo(current.hospitalId).subscribe({
+      next: (branding) => {
+        this.logoRemoving.set(false);
+        this.branding.set(branding);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Logo removed',
+          detail: `${current.hospitalName} now shows the default brand mark.`,
+        });
+      },
+      error: (error: ApiError) => {
+        this.logoRemoving.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Remove failed',
+          detail: error.message || 'Could not remove the logo. Please try again.',
         });
       },
     });

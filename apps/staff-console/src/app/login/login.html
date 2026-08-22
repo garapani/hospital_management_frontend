@@ -13,12 +13,16 @@
     "
   >
     <div class="flex items-center gap-2.5">
+      @if (branding.logoUrl(); as logo) {
+      <img [src]="logo" alt="" class="h-9 w-9 rounded-lg object-contain ring-1 ring-white/25" />
+      } @else {
       <span
         class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 ring-1 ring-white/25"
       >
         <i class="pi pi-plus text-sm font-bold"></i>
       </span>
-      <span class="brand-mark">Vaidya</span>
+      }
+      <span class="brand-mark">{{ branding.displayName() ?? 'Vaidya' }}</span>
     </div>
 
     <div class="flex flex-col gap-5">
@@ -47,7 +51,7 @@
     </div>
 
     <p class="text-xs text-primary-200">
-      &copy; {{ currentYear }} Vaidya
+      &copy; {{ currentYear }} {{ branding.displayName() ?? 'Vaidya' }}
     </p>
   </div>
 
@@ -60,12 +64,16 @@
     >
       <!-- Brand mark, shown only when the left panel is hidden -->
       <div class="flex items-center gap-2.5 lg:hidden">
+        @if (branding.logoUrl(); as logo) {
+        <img [src]="logo" alt="" class="h-9 w-9 rounded-lg object-contain" />
+        } @else {
         <span
           class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-600 text-white"
         >
           <i class="pi pi-plus text-sm font-bold"></i>
         </span>
-        <span class="brand-mark text-slate-900">Vaidya</span>
+        }
+        <span class="brand-mark text-slate-900">{{ branding.displayName() ?? 'Vaidya' }}</span>
       </div>
 
       <div class="flex flex-col gap-2">
