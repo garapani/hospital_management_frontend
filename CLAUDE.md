@@ -135,6 +135,15 @@ body }`.
   same component instance alive across a params-only navigation (e.g. browser back/forward between
   two `billing/invoices/:id` URLs), and a snapshot-only read never re-fetches, silently leaving
   stale data on screen under a changed id.
+- **Never pass a params object with possibly-`undefined` values straight to `ApiClientService.get`
+  (or `HttpClient` directly)** — Angular's `HttpClient` stringifies an `undefined` value to the
+  literal string `"undefined"` in the query string instead of omitting the key, and a backend
+  DTO field like `month?: number` sees that as present, not absent. Found in
+  `PayrollApiService.listPayslips` (2026-08-22): `month: this.monthFilter() ?? undefined` reached
+  the query string as `month=undefined`, which the backend then tried to bind into an integer
+  column and 500'd. Every other `*-api.service.ts` in this app already avoids this by building the
+  query object conditionally (`if (params.x !== undefined) query['x'] = params.x`) — match that,
+  don't spread a raw filters object into `{ params }`.
 
 ## Known scaffold gotchas (found getting this workspace running)
 
