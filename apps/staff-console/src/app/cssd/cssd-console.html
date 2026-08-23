@@ -1,0 +1,203 @@
+<div class="h-full flex flex-col gap-6">
+  <div>
+    <h1 class="page-title">CSSD</h1>
+    <p class="text-sm text-slate-500 mt-1">Sterile instrument catalog and sterilization cycles.</p>
+  </div>
+
+  <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white">
+    <p-tabs value="0">
+      <p-tablist>
+        <p-tab value="0">Instruments</p-tab>
+        <p-tab value="1">Sterilization Cycles</p-tab>
+      </p-tablist>
+
+      <p-tabpanels styleClass="p-0">
+        <p-tabpanel value="0">
+          <div class="p-4 flex flex-col gap-4">
+            <div class="flex justify-end">
+              <p-button label="Add Instrument" icon="pi pi-plus" size="small" (onClick)="openInstrumentModal()"></p-button>
+            </div>
+            <p-table [value]="instruments()" [loading]="instrumentsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Code</th>
+                  <th class="table-header-cell">Name</th>
+                  <th class="table-header-cell">Category</th>
+                  <th class="table-header-cell">Quantity</th>
+                  <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell w-32">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-instrument>
+                <tr>
+                  <td class="font-mono font-medium">{{ instrument.code }}</td>
+                  <td>{{ instrument.name }}</td>
+                  <td>{{ instrument.category || '—' }}</td>
+                  <td>{{ instrument.quantity }}</td>
+                  <td>
+                    <p-tag [value]="instrument.isActive ? 'Active' : 'Inactive'" [severity]="instrument.isActive ? 'success' : 'warn'"></p-tag>
+                  </td>
+                  <td>
+                    <p-button
+                      [label]="instrument.isActive ? 'Deactivate' : 'Reactivate'"
+                      [text]="true"
+                      size="small"
+                      (onClick)="toggleInstrumentActive(instrument)"
+                    ></p-button>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6" class="py-8 text-center text-sm text-slate-500">No instruments yet.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel value="1">
+          <div class="p-4 flex flex-col gap-4">
+            <div class="flex justify-end">
+              <p-button label="Start Cycle" icon="pi pi-plus" size="small" (onClick)="openCycleModal()"></p-button>
+            </div>
+            <p-table [value]="cycles()" [loading]="cyclesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Instrument</th>
+                  <th class="table-header-cell">Method</th>
+                  <th class="table-header-cell">Started</th>
+                  <th class="table-header-cell">Sterile Until</th>
+                  <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell w-48">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-cycle>
+                <tr>
+                  <td>{{ instrumentNameFor(cycle.instrumentId) }}</td>
+                  <td>{{ cycle.method }}</td>
+                  <td>{{ cycle.startedAt ? (cycle.startedAt | date: 'short') : '—' }}</td>
+                  <td>{{ cycle.sterileExpiryAt ? (cycle.sterileExpiryAt | date: 'short') : '—' }}</td>
+                  <td>
+                    <p-tag
+                      [value]="cycle.status"
+                      [severity]="cycle.status === 'Completed' ? 'success' : cycle.status === 'Failed' ? 'danger' : 'info'"
+                    ></p-tag>
+                  </td>
+                  <td class="flex gap-2">
+                    @if (cycle.status === 'InProgress') {
+                    <p-button label="Complete" [text]="true" size="small" (onClick)="openCompleteModal(cycle)"></p-button>
+                    <p-button label="Fail" severity="danger" [text]="true" size="small" (onClick)="openFailModal(cycle)"></p-button>
+                    }
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6" class="py-8 text-center text-sm text-slate-500">No sterilization cycles yet.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </div>
+</div>
+
+<!-- Add Instrument Modal -->
+<p-dialog header="Add Instrument" [(visible)]="showInstrumentModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (instrumentError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ instrumentError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Code</label>
+      <input pInputText [ngModel]="instrumentForm().code" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), code: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Name</label>
+      <input pInputText [ngModel]="instrumentForm().name" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), name: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Category</label>
+      <input pInputText [ngModel]="instrumentForm().category" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), category: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Quantity</label>
+      <p-inputNumber [ngModel]="instrumentForm().quantity" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), quantity: $event })" [min]="0" styleClass="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showInstrumentModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="instrumentSaving()"
+        (onClick)="submitInstrument()"
+        [disabled]="!instrumentForm().code || !instrumentForm().name"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Start Cycle Modal -->
+<p-dialog header="Start Sterilization Cycle" [(visible)]="showCycleModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (cycleError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ cycleError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Instrument</label>
+      <p-select [options]="instrumentOptions" [ngModel]="cycleForm().instrumentId" (ngModelChange)="cycleForm.set({ ...cycleForm(), instrumentId: $event })" styleClass="w-full"></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Method</label>
+      <p-select [options]="sterilizationMethods" [ngModel]="cycleForm().method" (ngModelChange)="cycleForm.set({ ...cycleForm(), method: $event })" styleClass="w-full"></p-select>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCycleModal.set(false)"></p-button>
+      <p-button label="Start" [loading]="cycleSaving()" (onClick)="submitCycle()" [disabled]="!cycleForm().instrumentId"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Complete Cycle Modal -->
+<p-dialog header="Complete Cycle" [(visible)]="showCompleteModal" [modal]="true" [style]="{ width: '360px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Sterile Hours</label>
+      <p-inputNumber [ngModel]="sterileHours()" (ngModelChange)="sterileHours.set($event)" [min]="1" styleClass="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCompleteModal.set(false)"></p-button>
+      <p-button label="Complete" [loading]="completeSaving()" (onClick)="submitComplete()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Fail Cycle Modal -->
+<p-dialog header="Mark Cycle Failed" [(visible)]="showFailModal" [modal]="true" [style]="{ width: '360px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Failure Reason</label>
+      <input pInputText [ngModel]="failureReason()" (ngModelChange)="failureReason.set($event)" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showFailModal.set(false)"></p-button>
+      <p-button label="Mark Failed" severity="danger" [loading]="failSaving()" (onClick)="submitFail()" [disabled]="!failureReason()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

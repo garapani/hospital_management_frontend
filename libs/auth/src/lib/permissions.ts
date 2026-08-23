@@ -95,6 +95,10 @@ export const Permissions = {
   // Vaccination
   VACCINATION_READ: 'vaccination.read' as const,
   VACCINATION_MANAGE: 'vaccination.manage' as const,
+
+  // CSSD
+  CSSD_READ: 'cssd.read' as const,
+  CSSD_MANAGE: 'cssd.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];

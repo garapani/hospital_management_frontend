@@ -175,7 +175,8 @@
     </a>
     }
     }
-    @if (auth.hasPermission('admission.read') || auth.hasPermission('inventory.read')) {
+    @if (auth.hasPermission('admission.read') || auth.hasPermission('inventory.read') ||
+    auth.hasPermission('cssd.read')) {
     <div class="nav-section-label">
       Operations
     </div>
@@ -198,6 +199,16 @@
     >
       <i class="pi pi-box text-base"></i>
       Inventory
+    </a>
+    } @if (auth.hasPermission('cssd.read')) {
+    <a
+      routerLink="/cssd"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-sync text-base"></i>
+      CSSD
     </a>
     }
     }

@@ -105,6 +105,11 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.VACCINATION_READ)],
       },
       {
+        path: 'cssd',
+        loadComponent: () => import('./cssd/cssd-console.js').then((m) => m.CssdConsole),
+        canActivate: [permissionGuard(Permissions.CSSD_READ)],
+      },
+      {
         path: 'admin/users',
         loadComponent: () => import('./users/user-list.js').then((m) => m.UserList),
         canActivate: [permissionGuard(Permissions.IDENTITY_ACCOUNTS_MANAGE)],
