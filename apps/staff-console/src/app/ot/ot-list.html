@@ -1,0 +1,150 @@
+<div class="flex flex-col gap-6">
+  <div class="surface-panel p-6 flex flex-col gap-6">
+    <div class="flex justify-between items-start">
+      <div>
+        <h1 class="page-title">Operation Theatre</h1>
+        <p class="page-subtitle">Surgery scheduling and status.</p>
+      </div>
+      <p-button label="Schedule Surgery" icon="pi pi-plus" (onClick)="openScheduleModal()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+    </div>
+
+    <div class="flex items-end gap-3">
+      <label class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-slate-700">Patient ID</span>
+        <input
+          pInputText
+          [ngModel]="patientIdFilter()"
+          (ngModelChange)="patientIdFilter.set($event)"
+          (keyup.enter)="applyFilters()"
+          placeholder="Filter by patient ID"
+          class="w-64"
+        />
+      </label>
+      <label class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-slate-700">Status</span>
+        <p-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); applyFilters()" styleClass="w-48"></p-select>
+      </label>
+      <p-button label="Filter" (onClick)="applyFilters()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+    </div>
+  </div>
+
+  <div class="surface-panel overflow-hidden">
+    <p-table
+      [value]="surgeries()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      (onLazyLoad)="onLazyLoad($event)"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [first]="firstRecord()"
+      [totalRecords]="totalRecords()"
+      [loading]="loading()"
+      dataKey="id"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Surgery #</th>
+          <th class="table-header-cell">Patient ID</th>
+          <th class="table-header-cell">Procedure</th>
+          <th class="table-header-cell">OT Room</th>
+          <th class="table-header-cell">Scheduled</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell w-56">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-surgery>
+        <tr class="hover:bg-slate-100 transition-colors">
+          <td class="font-mono font-semibold text-slate-700 border-b border-slate-200">{{ surgery.surgeryNumber }}</td>
+          <td class="font-mono text-slate-600 border-b border-slate-200">{{ surgery.patientId }}</td>
+          <td class="border-b border-slate-200">{{ surgery.procedureName }}</td>
+          <td class="border-b border-slate-200">{{ surgery.otRoom || '—' }}</td>
+          <td class="border-b border-slate-200">{{ surgery.scheduledAt ? (surgery.scheduledAt | date: 'short') : '—' }}</td>
+          <td class="border-b border-slate-200">
+            <p-tag
+              [value]="surgery.status"
+              [severity]="surgery.status === 'Completed' ? 'success' : surgery.status === 'Cancelled' ? 'danger' : surgery.status === 'InProgress' ? 'info' : 'secondary'"
+              styleClass="rounded-full px-3"
+            ></p-tag>
+          </td>
+          <td class="border-b border-slate-200 flex gap-2">
+            <p-button label="View" [text]="true" size="small" (onClick)="viewSurgery(surgery)"></p-button>
+            @if (surgery.status === 'Scheduled') {
+            <p-button label="Start" [text]="true" size="small" [loading]="actionId() === surgery.id" (onClick)="start(surgery)"></p-button>
+            <p-button label="Cancel" severity="danger" [text]="true" size="small" [loading]="actionId() === surgery.id" (onClick)="cancel(surgery)"></p-button>
+            }
+            @if (surgery.status === 'InProgress') {
+            <p-button label="Complete" [text]="true" size="small" [loading]="actionId() === surgery.id" (onClick)="complete(surgery)"></p-button>
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="py-8 text-center text-sm text-slate-500">No surgeries found.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Schedule Surgery Modal -->
+<p-dialog header="Schedule Surgery" [(visible)]="showScheduleModal" [modal]="true" [style]="{ width: '450px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (scheduleError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ scheduleError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Patient ID</label>
+      <input pInputText [ngModel]="scheduleForm().patientId" (ngModelChange)="scheduleForm.set({ ...scheduleForm(), patientId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Procedure Name</label>
+      <input pInputText [ngModel]="scheduleForm().procedureName" (ngModelChange)="scheduleForm.set({ ...scheduleForm(), procedureName: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">OT Room</label>
+      <input pInputText [ngModel]="scheduleForm().otRoom" (ngModelChange)="scheduleForm.set({ ...scheduleForm(), otRoom: $event })" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showScheduleModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="scheduleSaving()"
+        (onClick)="submitSchedule()"
+        [disabled]="!scheduleForm().patientId || !scheduleForm().procedureName"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Surgery Detail Dialog -->
+<p-dialog header="Surgery Record" [(visible)]="showDetail" [modal]="true" [style]="{ width: '480px' }" styleClass="surface-modal">
+  @if (detailLoading()) {
+  <p class="text-sm text-slate-500 py-4">Loading…</p>
+  } @else if (detail(); as d) {
+  <div class="grid grid-cols-2 gap-2 text-sm">
+    <span class="text-slate-500">Surgery #</span>
+    <span class="font-mono">{{ d.surgeryNumber }}</span>
+    <span class="text-slate-500">Procedure</span>
+    <span>{{ d.procedureName }}</span>
+    <span class="text-slate-500">OT Room</span>
+    <span>{{ d.otRoom || '—' }}</span>
+    <span class="text-slate-500">Status</span>
+    <span>{{ d.status }}</span>
+    <span class="text-slate-500">Scheduled</span>
+    <span>{{ d.scheduledAt ? (d.scheduledAt | date: 'medium') : '—' }}</span>
+    <span class="text-slate-500">Started</span>
+    <span>{{ d.startedAt ? (d.startedAt | date: 'medium') : '—' }}</span>
+    <span class="text-slate-500">Ended</span>
+    <span>{{ d.endedAt ? (d.endedAt | date: 'medium') : '—' }}</span>
+    <span class="text-slate-500">Notes</span>
+    <span>{{ d.notes || '—' }}</span>
+  </div>
+  }
+</p-dialog>

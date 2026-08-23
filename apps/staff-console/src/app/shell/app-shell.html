@@ -37,7 +37,8 @@
     auth.hasPermission('triage.read') || auth.hasPermission('vitals.read') ||
     auth.hasPermission('encounter.read') || auth.hasPermission('order.read') ||
     auth.hasPermission('lab.read') || auth.hasPermission('radiology.read') ||
-    auth.hasPermission('pharmacy.read') || auth.hasPermission('nursing.read')) {
+    auth.hasPermission('pharmacy.read') || auth.hasPermission('nursing.read') ||
+    auth.hasPermission('ot.read')) {
     <div class="nav-section-label">
       Clinical
     </div>
@@ -100,6 +101,16 @@
     >
       <i class="pi pi-shield text-base"></i>
       Nursing
+    </a>
+    } @if (auth.hasPermission('ot.read')) {
+    <a
+      routerLink="/clinical/ot"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-briefcase text-base"></i>
+      Operation Theatre
     </a>
     } @if (auth.hasPermission('order.read')) {
     <a

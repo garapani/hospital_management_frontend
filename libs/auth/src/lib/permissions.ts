@@ -83,6 +83,10 @@ export const Permissions = {
   // Nursing
   NURSING_READ: 'nursing.read' as const,
   NURSING_MANAGE: 'nursing.manage' as const,
+
+  // Operation Theatre
+  OT_READ: 'ot.read' as const,
+  OT_MANAGE: 'ot.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];
