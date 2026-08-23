@@ -176,7 +176,7 @@
     }
     }
     @if (auth.hasPermission('admission.read') || auth.hasPermission('inventory.read') ||
-    auth.hasPermission('cssd.read')) {
+    auth.hasPermission('cssd.read') || auth.hasPermission('ward-supply.read')) {
     <div class="nav-section-label">
       Operations
     </div>
@@ -209,6 +209,16 @@
     >
       <i class="pi pi-sync text-base"></i>
       CSSD
+    </a>
+    } @if (auth.hasPermission('ward-supply.read')) {
+    <a
+      routerLink="/ward-supply"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-truck text-base"></i>
+      Ward Supply
     </a>
     }
     }

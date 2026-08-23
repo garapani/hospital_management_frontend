@@ -99,6 +99,10 @@ export const Permissions = {
   // CSSD
   CSSD_READ: 'cssd.read' as const,
   CSSD_MANAGE: 'cssd.manage' as const,
+
+  // Ward Supply
+  WARD_SUPPLY_READ: 'ward-supply.read' as const,
+  WARD_SUPPLY_MANAGE: 'ward-supply.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];

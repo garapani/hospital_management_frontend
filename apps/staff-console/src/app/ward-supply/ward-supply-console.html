@@ -1,0 +1,180 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex justify-between items-start">
+    <div>
+      <h1 class="page-title">Ward Supply</h1>
+      <p class="text-sm text-slate-500 mt-1">Department sub-store stock balances and receive/consume transactions.</p>
+    </div>
+    <div class="flex gap-2">
+      <p-button label="Receive Stock" icon="pi pi-arrow-down" size="small" (onClick)="openReceiveModal()"></p-button>
+      <p-button label="Consume Stock" icon="pi pi-arrow-up" severity="secondary" size="small" (onClick)="openConsumeModal()"></p-button>
+    </div>
+  </div>
+
+  <div class="surface-panel p-4 flex items-end gap-3">
+    <label class="flex flex-col gap-2">
+      <span class="text-sm font-medium text-slate-700">Department ID</span>
+      <input
+        pInputText
+        [ngModel]="departmentIdFilter()"
+        (ngModelChange)="departmentIdFilter.set($event)"
+        (keyup.enter)="applyFilter()"
+        placeholder="Filter by department ID"
+        class="w-64"
+      />
+    </label>
+    <p-button label="Filter" (onClick)="applyFilter()" size="small"></p-button>
+  </div>
+
+  <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white">
+    <p-tabs value="0">
+      <p-tablist>
+        <p-tab value="0">Stock Balances</p-tab>
+        <p-tab value="1">Transactions</p-tab>
+      </p-tablist>
+
+      <p-tabpanels styleClass="p-0">
+        <p-tabpanel value="0">
+          <div class="p-4">
+            <p-table [value]="balances()" [loading]="balancesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Department ID</th>
+                  <th class="table-header-cell">Item ID</th>
+                  <th class="table-header-cell text-right">Available Quantity</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-balance>
+                <tr>
+                  <td class="font-mono">{{ balance.departmentId }}</td>
+                  <td class="font-mono">{{ balance.itemId }}</td>
+                  <td class="text-right font-mono">{{ balance.availableQuantity | number: '1.2-2' }}</td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="3" class="py-8 text-center text-sm text-slate-500">No stock balances found.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel value="1">
+          <div class="p-4">
+            <p-table [value]="transactions()" [loading]="transactionsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Department ID</th>
+                  <th class="table-header-cell">Item ID</th>
+                  <th class="table-header-cell">Type</th>
+                  <th class="table-header-cell text-right">Quantity</th>
+                  <th class="table-header-cell">Performed</th>
+                  <th class="table-header-cell">Remarks</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-txn>
+                <tr>
+                  <td class="font-mono">{{ txn.departmentId }}</td>
+                  <td class="font-mono">{{ txn.itemId }}</td>
+                  <td>
+                    <p-tag [value]="txn.transactionType" [severity]="txn.transactionType === 'Receive' ? 'success' : 'warn'"></p-tag>
+                  </td>
+                  <td class="text-right font-mono">{{ txn.quantity | number: '1.2-2' }}</td>
+                  <td>{{ txn.performedAt | date: 'short' }}</td>
+                  <td>{{ txn.remarks || '—' }}</td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6" class="py-8 text-center text-sm text-slate-500">No transactions found.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </div>
+</div>
+
+<!-- Receive Stock Modal -->
+<p-dialog header="Receive Stock" [(visible)]="showReceiveModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (receiveError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ receiveError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Department ID</label>
+      <input pInputText [ngModel]="receiveForm().departmentId" (ngModelChange)="receiveForm.set({ ...receiveForm(), departmentId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Item ID</label>
+      <input pInputText [ngModel]="receiveForm().itemId" (ngModelChange)="receiveForm.set({ ...receiveForm(), itemId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Quantity</label>
+      <p-inputNumber [ngModel]="receiveForm().quantity" (ngModelChange)="receiveForm.set({ ...receiveForm(), quantity: $event })" [min]="0" styleClass="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Remarks</label>
+      <input pInputText [ngModel]="receiveForm().remarks" (ngModelChange)="receiveForm.set({ ...receiveForm(), remarks: $event })" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showReceiveModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="receiveSaving()"
+        (onClick)="submitReceive()"
+        [disabled]="!receiveForm().departmentId || !receiveForm().itemId || !receiveForm().quantity"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Consume Stock Modal -->
+<p-dialog header="Consume Stock" [(visible)]="showConsumeModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (consumeError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ consumeError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Department ID</label>
+      <input pInputText [ngModel]="consumeForm().departmentId" (ngModelChange)="consumeForm.set({ ...consumeForm(), departmentId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Item ID</label>
+      <input pInputText [ngModel]="consumeForm().itemId" (ngModelChange)="consumeForm.set({ ...consumeForm(), itemId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Quantity</label>
+      <p-inputNumber [ngModel]="consumeForm().quantity" (ngModelChange)="consumeForm.set({ ...consumeForm(), quantity: $event })" [min]="0" styleClass="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Patient ID</label>
+      <input pInputText [ngModel]="consumeForm().patientId" (ngModelChange)="consumeForm.set({ ...consumeForm(), patientId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Remarks</label>
+      <input pInputText [ngModel]="consumeForm().remarks" (ngModelChange)="consumeForm.set({ ...consumeForm(), remarks: $event })" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showConsumeModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="consumeSaving()"
+        (onClick)="submitConsume()"
+        [disabled]="!consumeForm().departmentId || !consumeForm().itemId || !consumeForm().quantity"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

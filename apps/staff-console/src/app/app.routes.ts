@@ -110,6 +110,11 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.CSSD_READ)],
       },
       {
+        path: 'ward-supply',
+        loadComponent: () => import('./ward-supply/ward-supply-console.js').then((m) => m.WardSupplyConsole),
+        canActivate: [permissionGuard(Permissions.WARD_SUPPLY_READ)],
+      },
+      {
         path: 'admin/users',
         loadComponent: () => import('./users/user-list.js').then((m) => m.UserList),
         canActivate: [permissionGuard(Permissions.IDENTITY_ACCOUNTS_MANAGE)],
