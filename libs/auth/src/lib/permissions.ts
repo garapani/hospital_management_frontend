@@ -87,6 +87,10 @@ export const Permissions = {
   // Operation Theatre
   OT_READ: 'ot.read' as const,
   OT_MANAGE: 'ot.manage' as const,
+
+  // Maternity
+  MATERNITY_READ: 'maternity.read' as const,
+  MATERNITY_MANAGE: 'maternity.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];

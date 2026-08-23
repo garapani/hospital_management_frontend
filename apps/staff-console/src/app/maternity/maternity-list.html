@@ -1,0 +1,157 @@
+<div class="flex flex-col gap-6">
+  <div class="surface-panel p-6 flex flex-col gap-6">
+    <div class="flex justify-between items-start">
+      <div>
+        <h1 class="page-title">Maternity</h1>
+        <p class="page-subtitle">Antenatal records and delivery outcomes.</p>
+      </div>
+      <p-button label="New Record" icon="pi pi-plus" (onClick)="openCreateModal()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+    </div>
+
+    <div class="flex items-end gap-3">
+      <label class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-slate-700">Patient ID</span>
+        <input
+          pInputText
+          [ngModel]="patientIdFilter()"
+          (ngModelChange)="patientIdFilter.set($event)"
+          (keyup.enter)="applyFilter()"
+          placeholder="Filter by patient ID"
+          class="w-64"
+        />
+      </label>
+      <p-button label="Filter" (onClick)="applyFilter()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+    </div>
+  </div>
+
+  <div class="surface-panel overflow-hidden">
+    <p-table
+      [value]="records()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      (onLazyLoad)="onLazyLoad($event)"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [first]="firstRecord()"
+      [totalRecords]="totalRecords()"
+      [loading]="loading()"
+      dataKey="id"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Patient ID</th>
+          <th class="table-header-cell">Admission ID</th>
+          <th class="table-header-cell">G / P</th>
+          <th class="table-header-cell">EDD</th>
+          <th class="table-header-cell">Delivery</th>
+          <th class="table-header-cell w-32">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-record>
+        <tr class="hover:bg-slate-100 transition-colors">
+          <td class="font-mono text-slate-600 border-b border-slate-200">{{ record.patientId }}</td>
+          <td class="font-mono text-slate-600 border-b border-slate-200">{{ record.admissionId }}</td>
+          <td class="border-b border-slate-200">{{ record.gravida }} / {{ record.para }}</td>
+          <td class="border-b border-slate-200">{{ record.edd ? (record.edd | date: 'mediumDate') : '—' }}</td>
+          <td class="border-b border-slate-200">
+            @if (record.deliveryDate) {
+            <p-tag [value]="record.deliveryType + ' — ' + (record.deliveryDate | date: 'mediumDate')" severity="success" styleClass="rounded-full px-3"></p-tag>
+            } @else {
+            <p-tag value="Pending" severity="secondary" styleClass="rounded-full px-3"></p-tag>
+            }
+          </td>
+          <td class="border-b border-slate-200">
+            @if (!record.deliveryDate) {
+            <p-button label="Record Delivery" [text]="true" size="small" (onClick)="openDeliveryModal(record)"></p-button>
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="py-8 text-center text-sm text-slate-500">No maternity records found.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- New Record Modal -->
+<p-dialog header="New Maternity Record" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '450px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (createError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ createError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Patient ID</label>
+      <input pInputText [ngModel]="createForm().patientId" (ngModelChange)="createForm.set({ ...createForm(), patientId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Admission ID</label>
+      <input pInputText [ngModel]="createForm().admissionId" (ngModelChange)="createForm.set({ ...createForm(), admissionId: $event })" class="w-full" />
+    </div>
+    <div class="flex gap-4">
+      <div class="flex flex-col gap-2 flex-1">
+        <label class="text-sm font-medium text-slate-700">Gravida</label>
+        <p-inputNumber [ngModel]="createForm().gravida" (ngModelChange)="createForm.set({ ...createForm(), gravida: $event })" [min]="0" styleClass="w-full" />
+      </div>
+      <div class="flex flex-col gap-2 flex-1">
+        <label class="text-sm font-medium text-slate-700">Para</label>
+        <p-inputNumber [ngModel]="createForm().para" (ngModelChange)="createForm.set({ ...createForm(), para: $event })" [min]="0" styleClass="w-full" />
+      </div>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">EDD</label>
+      <input pInputText type="date" [ngModel]="createForm().edd" (ngModelChange)="createForm.set({ ...createForm(), edd: $event })" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCreateModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="createSaving()"
+        (onClick)="submitCreate()"
+        [disabled]="!createForm().patientId || !createForm().admissionId"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Record Delivery Modal -->
+<p-dialog header="Record Delivery" [(visible)]="showDeliveryModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (deliveryError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ deliveryError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Delivery Date</label>
+      <input pInputText type="date" [ngModel]="deliveryForm().deliveryDate" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), deliveryDate: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Delivery Type</label>
+      <p-select [options]="deliveryTypes" [ngModel]="deliveryForm().deliveryType" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), deliveryType: $event })" styleClass="w-full"></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Baby Count</label>
+      <p-inputNumber [ngModel]="deliveryForm().babyCount" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), babyCount: $event })" [min]="1" styleClass="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Complications</label>
+      <input pInputText [ngModel]="deliveryForm().complications" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), complications: $event })" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showDeliveryModal.set(false)"></p-button>
+      <p-button label="Save" [loading]="deliverySaving()" (onClick)="submitDelivery()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
