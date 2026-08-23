@@ -38,7 +38,8 @@
     auth.hasPermission('encounter.read') || auth.hasPermission('order.read') ||
     auth.hasPermission('lab.read') || auth.hasPermission('radiology.read') ||
     auth.hasPermission('pharmacy.read') || auth.hasPermission('nursing.read') ||
-    auth.hasPermission('ot.read') || auth.hasPermission('maternity.read')) {
+    auth.hasPermission('ot.read') || auth.hasPermission('maternity.read') ||
+    auth.hasPermission('vaccination.read')) {
     <div class="nav-section-label">
       Clinical
     </div>
@@ -121,6 +122,16 @@
     >
       <i class="pi pi-heart-fill text-base"></i>
       Maternity
+    </a>
+    } @if (auth.hasPermission('vaccination.read')) {
+    <a
+      routerLink="/clinical/vaccination"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-shield text-base"></i>
+      Vaccination
     </a>
     } @if (auth.hasPermission('order.read')) {
     <a

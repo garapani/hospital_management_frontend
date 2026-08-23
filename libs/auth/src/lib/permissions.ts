@@ -91,6 +91,10 @@ export const Permissions = {
   // Maternity
   MATERNITY_READ: 'maternity.read' as const,
   MATERNITY_MANAGE: 'maternity.manage' as const,
+
+  // Vaccination
+  VACCINATION_READ: 'vaccination.read' as const,
+  VACCINATION_MANAGE: 'vaccination.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];

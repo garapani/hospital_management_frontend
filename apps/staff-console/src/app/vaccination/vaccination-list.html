@@ -1,0 +1,111 @@
+<div class="flex flex-col gap-6">
+  <div class="surface-panel p-6 flex flex-col gap-6">
+    <div class="flex justify-between items-start">
+      <div>
+        <h1 class="page-title">Vaccination</h1>
+        <p class="page-subtitle">Patient vaccination records.</p>
+      </div>
+      <p-button label="Record Vaccination" icon="pi pi-plus" (onClick)="openModal()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+    </div>
+
+    <div class="flex items-end gap-3">
+      <label class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-slate-700">Patient ID</span>
+        <input
+          pInputText
+          [ngModel]="patientIdFilter()"
+          (ngModelChange)="patientIdFilter.set($event)"
+          (keyup.enter)="applyFilter()"
+          placeholder="Filter by patient ID"
+          class="w-64"
+        />
+      </label>
+      <p-button label="Filter" (onClick)="applyFilter()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+    </div>
+  </div>
+
+  <div class="surface-panel overflow-hidden">
+    <p-table
+      [value]="records()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      (onLazyLoad)="onLazyLoad($event)"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [first]="firstRecord()"
+      [totalRecords]="totalRecords()"
+      [loading]="loading()"
+      dataKey="id"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Patient ID</th>
+          <th class="table-header-cell">Vaccine</th>
+          <th class="table-header-cell">Dose #</th>
+          <th class="table-header-cell">Administered</th>
+          <th class="table-header-cell">Batch #</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-record>
+        <tr class="hover:bg-slate-100 transition-colors">
+          <td class="font-mono text-slate-600 border-b border-slate-200">{{ record.patientId }}</td>
+          <td class="font-medium border-b border-slate-200">{{ record.vaccine }}</td>
+          <td class="border-b border-slate-200">{{ record.doseNumber }}</td>
+          <td class="border-b border-slate-200">{{ record.administeredDate | date: 'mediumDate' }}</td>
+          <td class="border-b border-slate-200">{{ record.batchNumber || '—' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="py-8 text-center text-sm text-slate-500">No vaccination records found.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Record Vaccination Modal -->
+<p-dialog header="Record Vaccination" [(visible)]="showModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (error()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ error() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Patient ID</label>
+      <input pInputText [ngModel]="form().patientId" (ngModelChange)="form.set({ ...form(), patientId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Vaccine</label>
+      <input pInputText [ngModel]="form().vaccine" (ngModelChange)="form.set({ ...form(), vaccine: $event })" class="w-full" />
+    </div>
+    <div class="flex gap-4">
+      <div class="flex flex-col gap-2 flex-1">
+        <label class="text-sm font-medium text-slate-700">Dose #</label>
+        <p-inputNumber [ngModel]="form().doseNumber" (ngModelChange)="form.set({ ...form(), doseNumber: $event })" [min]="1" styleClass="w-full" />
+      </div>
+      <div class="flex flex-col gap-2 flex-1">
+        <label class="text-sm font-medium text-slate-700">Administered Date</label>
+        <input pInputText type="date" [ngModel]="form().administeredDate" (ngModelChange)="form.set({ ...form(), administeredDate: $event })" class="w-full" />
+      </div>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Batch #</label>
+      <input pInputText [ngModel]="form().batchNumber" (ngModelChange)="form.set({ ...form(), batchNumber: $event })" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="saving()"
+        (onClick)="submit()"
+        [disabled]="!form().patientId || !form().vaccine || !form().administeredDate"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

@@ -100,6 +100,11 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.MATERNITY_READ)],
       },
       {
+        path: 'clinical/vaccination',
+        loadComponent: () => import('./vaccination/vaccination-list.js').then((m) => m.VaccinationList),
+        canActivate: [permissionGuard(Permissions.VACCINATION_READ)],
+      },
+      {
         path: 'admin/users',
         loadComponent: () => import('./users/user-list.js').then((m) => m.UserList),
         canActivate: [permissionGuard(Permissions.IDENTITY_ACCOUNTS_MANAGE)],
