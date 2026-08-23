@@ -1,0 +1,393 @@
+<div class="h-full flex flex-col gap-6">
+  <div>
+    <h1 class="page-title">Accounting</h1>
+    <p class="text-sm text-slate-500 mt-1">Chart of accounts, journal entries, and financial reports.</p>
+  </div>
+
+  <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white">
+    <p-tabs value="0">
+      <p-tablist>
+        <p-tab value="0">Chart of Accounts</p-tab>
+        <p-tab value="1">Journal Entries</p-tab>
+        <p-tab value="2">Reports</p-tab>
+      </p-tablist>
+
+      <p-tabpanels styleClass="p-0">
+        <!-- CHART OF ACCOUNTS -->
+        <p-tabpanel value="0">
+          <div class="p-4 flex flex-col gap-4">
+            <div class="flex justify-end">
+              <p-button label="Add Account" icon="pi pi-plus" size="small" (onClick)="openAccountModal()"></p-button>
+            </div>
+            <p-table [value]="accounts()" [loading]="accountsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Code</th>
+                  <th class="table-header-cell">Name</th>
+                  <th class="table-header-cell">Type</th>
+                  <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell w-28">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-account>
+                <tr>
+                  <td class="font-mono font-medium">{{ account.accountCode }}</td>
+                  <td>{{ account.name }}</td>
+                  <td>{{ account.type }}</td>
+                  <td>
+                    <p-tag [value]="account.isActive ? 'Active' : 'Inactive'" [severity]="account.isActive ? 'success' : 'warn'"></p-tag>
+                  </td>
+                  <td>
+                    <p-button
+                      [label]="account.isActive ? 'Deactivate' : 'Reactivate'"
+                      [text]="true"
+                      size="small"
+                      (onClick)="toggleAccountActive(account)"
+                    ></p-button>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="5" class="py-8 text-center text-sm text-slate-500">No accounts yet.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+
+        <!-- JOURNAL ENTRIES -->
+        <p-tabpanel value="1">
+          <div class="p-4 flex flex-col gap-4">
+            <div class="flex justify-between items-end">
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-slate-700">Status</label>
+                <p-select
+                  [options]="journalStatusOptions"
+                  [ngModel]="journalStatusFilter()"
+                  (ngModelChange)="setJournalStatusFilter($event)"
+                  styleClass="w-48"
+                ></p-select>
+              </div>
+              <p-button label="New Journal Entry" icon="pi pi-plus" size="small" (onClick)="openJournalModal()"></p-button>
+            </div>
+            <p-table [value]="journals()" [loading]="journalsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Journal #</th>
+                  <th class="table-header-cell">Date</th>
+                  <th class="table-header-cell">Narration</th>
+                  <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell w-40">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-journal>
+                <tr>
+                  <td class="font-mono font-medium">{{ journal.journalNumber }}</td>
+                  <td>{{ journal.entryDate | date: 'mediumDate' }}</td>
+                  <td>{{ journal.narration || '—' }}</td>
+                  <td>
+                    <p-tag [value]="journal.status" [severity]="journal.status === 'Posted' ? 'success' : 'secondary'"></p-tag>
+                  </td>
+                  <td class="flex gap-2">
+                    <p-button label="View" [text]="true" size="small" (onClick)="viewJournal(journal)"></p-button>
+                    @if (journal.status === 'Draft') {
+                    <p-button
+                      label="Post"
+                      [text]="true"
+                      size="small"
+                      [loading]="postingJournalId() === journal.id"
+                      (onClick)="postJournal(journal)"
+                    ></p-button>
+                    }
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="5" class="py-8 text-center text-sm text-slate-500">No journal entries yet.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+
+        <!-- REPORTS -->
+        <p-tabpanel value="2">
+          <div class="p-4 flex flex-col gap-4">
+            <div class="flex items-end gap-3 flex-wrap">
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-slate-700">Report</label>
+                <p-select
+                  [options]="reportKindOptions"
+                  [ngModel]="reportKind()"
+                  (ngModelChange)="setReportKind($event)"
+                  styleClass="w-56"
+                ></p-select>
+              </div>
+              @if (reportKind() !== 'balance-sheet') {
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-slate-700">From</label>
+                <p-datepicker [ngModel]="reportFrom()" (ngModelChange)="reportFrom.set($event)" dateFormat="yy-mm-dd" styleClass="w-40" />
+              </div>
+              }
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-slate-700">{{ reportKind() === 'balance-sheet' ? 'As of' : 'To' }}</label>
+                <p-datepicker [ngModel]="reportTo()" (ngModelChange)="reportTo.set($event)" dateFormat="yy-mm-dd" styleClass="w-40" />
+              </div>
+              <p-button label="Run" size="small" [loading]="reportLoading()" (onClick)="runReport()"></p-button>
+            </div>
+
+            @if (reportKind() === 'trial-balance') {
+            <p-table [value]="trialBalanceRows()" [loading]="reportLoading()" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Code</th>
+                  <th class="table-header-cell">Account</th>
+                  <th class="table-header-cell">Type</th>
+                  <th class="table-header-cell text-right">Debit</th>
+                  <th class="table-header-cell text-right">Credit</th>
+                  <th class="table-header-cell text-right">Balance</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-row>
+                <tr>
+                  <td class="font-mono">{{ row.accountCode }}</td>
+                  <td>{{ row.accountName }}</td>
+                  <td>{{ row.accountType }}</td>
+                  <td class="text-right font-mono">{{ row.debitTotal | number: '1.2-2' }}</td>
+                  <td class="text-right font-mono">{{ row.creditTotal | number: '1.2-2' }}</td>
+                  <td class="text-right font-mono font-semibold">{{ row.balance | number: '1.2-2' }}</td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6" class="py-8 text-center text-sm text-slate-500">No posted activity in this range.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+            }
+
+            @if (reportKind() === 'income-statement' && incomeStatement(); as statement) {
+            <div class="flex flex-col gap-6">
+              <div>
+                <h3 class="font-semibold text-slate-700 mb-2">Income</h3>
+                <table class="w-full text-sm">
+                  <tbody>
+                    @for (row of statement.income; track row.accountCode) {
+                    <tr class="border-b border-slate-100">
+                      <td class="py-1.5">{{ row.accountCode }} — {{ row.accountName }}</td>
+                      <td class="py-1.5 text-right font-mono">{{ row.amount | number: '1.2-2' }}</td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <h3 class="font-semibold text-slate-700 mb-2">Expenses</h3>
+                <table class="w-full text-sm">
+                  <tbody>
+                    @for (row of statement.expenses; track row.accountCode) {
+                    <tr class="border-b border-slate-100">
+                      <td class="py-1.5">{{ row.accountCode }} — {{ row.accountName }}</td>
+                      <td class="py-1.5 text-right font-mono">{{ row.amount | number: '1.2-2' }}</td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+              <div class="flex justify-between font-semibold border-t border-slate-200 pt-3">
+                <span>Net Income</span>
+                <span class="font-mono">{{ statement.netIncome | number: '1.2-2' }}</span>
+              </div>
+            </div>
+            }
+
+            @if (reportKind() === 'balance-sheet' && balanceSheet(); as sheet) {
+            <div class="flex flex-col gap-6">
+              <div>
+                <h3 class="font-semibold text-slate-700 mb-2">Assets</h3>
+                <table class="w-full text-sm">
+                  <tbody>
+                    @for (row of sheet.assets; track row.accountCode) {
+                    <tr class="border-b border-slate-100">
+                      <td class="py-1.5">{{ row.accountCode }} — {{ row.accountName }}</td>
+                      <td class="py-1.5 text-right font-mono">{{ row.amount | number: '1.2-2' }}</td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+                <div class="flex justify-between font-semibold pt-2">
+                  <span>Total Assets</span>
+                  <span class="font-mono">{{ sheet.totalAssets | number: '1.2-2' }}</span>
+                </div>
+              </div>
+              <div>
+                <h3 class="font-semibold text-slate-700 mb-2">Liabilities &amp; Equity</h3>
+                <table class="w-full text-sm">
+                  <tbody>
+                    @for (row of sheet.liabilitiesAndEquity; track row.accountCode) {
+                    <tr class="border-b border-slate-100">
+                      <td class="py-1.5">{{ row.accountCode }} — {{ row.accountName }}</td>
+                      <td class="py-1.5 text-right font-mono">{{ row.amount | number: '1.2-2' }}</td>
+                    </tr>
+                    }
+                  </tbody>
+                </table>
+                <div class="flex justify-between font-semibold pt-2">
+                  <span>Total Liabilities &amp; Equity</span>
+                  <span class="font-mono">{{ sheet.totalLiabilitiesAndEquity | number: '1.2-2' }}</span>
+                </div>
+              </div>
+            </div>
+            }
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </div>
+</div>
+
+<!-- Add Account Modal -->
+<p-dialog header="Add Account" [(visible)]="showAccountModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (accountError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ accountError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Account Code</label>
+      <input pInputText [ngModel]="accountForm().accountCode" (ngModelChange)="accountForm.set({ ...accountForm(), accountCode: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Name</label>
+      <input pInputText [ngModel]="accountForm().name" (ngModelChange)="accountForm.set({ ...accountForm(), name: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Type</label>
+      <p-select [options]="accountTypeOptions" [ngModel]="accountForm().type" (ngModelChange)="accountForm.set({ ...accountForm(), type: $event })" styleClass="w-full"></p-select>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showAccountModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="accountSaving()"
+        (onClick)="submitAccount()"
+        [disabled]="!accountForm().accountCode || !accountForm().name"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- New Journal Entry Modal -->
+<p-dialog header="New Journal Entry" [(visible)]="showJournalModal" [modal]="true" [style]="{ width: '640px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (journalError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ journalError() }}
+    </div>
+    }
+    <div class="flex gap-4">
+      <div class="flex flex-col gap-2 flex-1">
+        <label class="text-sm font-medium text-slate-700">Entry Date</label>
+        <p-datepicker [ngModel]="journalEntryDate()" (ngModelChange)="journalEntryDate.set($event)" dateFormat="yy-mm-dd" styleClass="w-full" />
+      </div>
+      <div class="flex flex-col gap-2 flex-[2]">
+        <label class="text-sm font-medium text-slate-700">Narration</label>
+        <input pInputText [ngModel]="journalNarration()" (ngModelChange)="journalNarration.set($event)" class="w-full" />
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <div class="flex justify-between items-center">
+        <label class="text-sm font-medium text-slate-700">Lines</label>
+        <p-button label="Add Line" [text]="true" size="small" icon="pi pi-plus" (onClick)="addJournalLine()"></p-button>
+      </div>
+      @for (line of journalLines(); track $index) {
+      <div class="flex gap-2 items-center">
+        <p-select
+          [options]="accountOptions"
+          [ngModel]="line.accountId"
+          (ngModelChange)="updateJournalLine($index, { accountId: $event })"
+          placeholder="Account"
+          styleClass="flex-[2]"
+        ></p-select>
+        <p-inputNumber
+          [ngModel]="line.debit"
+          (ngModelChange)="updateJournalLine($index, { debit: $event })"
+          placeholder="Debit"
+          mode="decimal"
+          [minFractionDigits]="2"
+          styleClass="w-28"
+        ></p-inputNumber>
+        <p-inputNumber
+          [ngModel]="line.credit"
+          (ngModelChange)="updateJournalLine($index, { credit: $event })"
+          placeholder="Credit"
+          mode="decimal"
+          [minFractionDigits]="2"
+          styleClass="w-28"
+        ></p-inputNumber>
+        <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="removeJournalLine($index)"></p-button>
+      </div>
+      }
+    </div>
+
+    <div class="flex justify-between text-sm font-medium border-t border-slate-200 pt-3">
+      <span>Total debit: <span class="font-mono">{{ journalDebitTotal | number: '1.2-2' }}</span></span>
+      <span>Total credit: <span class="font-mono">{{ journalCreditTotal | number: '1.2-2' }}</span></span>
+      @if (!journalIsBalanced) {
+      <span class="text-red-600">Debits and credits must balance</span>
+      }
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showJournalModal.set(false)"></p-button>
+      <p-button label="Save" [loading]="journalSaving()" (onClick)="submitJournal()" [disabled]="!journalIsBalanced"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Journal Detail Dialog -->
+<p-dialog header="Journal Entry" [(visible)]="showJournalDetail" [modal]="true" [style]="{ width: '560px' }" styleClass="surface-modal">
+  @if (journalDetailLoading()) {
+  <p class="text-sm text-slate-500 py-4">Loading…</p>
+  } @else if (journalDetail(); as detail) {
+  <div class="flex flex-col gap-4">
+    <div class="grid grid-cols-2 gap-2 text-sm">
+      <span class="text-slate-500">Journal #</span>
+      <span class="font-mono">{{ detail.journalNumber }}</span>
+      <span class="text-slate-500">Date</span>
+      <span>{{ detail.entryDate | date: 'mediumDate' }}</span>
+      <span class="text-slate-500">Status</span>
+      <span>{{ detail.status }}</span>
+      <span class="text-slate-500">Narration</span>
+      <span>{{ detail.narration || '—' }}</span>
+    </div>
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-slate-200">
+          <th class="text-left py-1.5">Account</th>
+          <th class="text-right py-1.5">Debit</th>
+          <th class="text-right py-1.5">Credit</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (line of detail.lines; track line.id) {
+        <tr class="border-b border-slate-100">
+          <td class="py-1.5">{{ accountNameFor(line.accountId) }}</td>
+          <td class="text-right font-mono py-1.5">{{ line.debit | number: '1.2-2' }}</td>
+          <td class="text-right font-mono py-1.5">{{ line.credit | number: '1.2-2' }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  }
+</p-dialog>

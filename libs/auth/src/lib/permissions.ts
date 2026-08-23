@@ -75,6 +75,10 @@ export const Permissions = {
   // Insurance
   INSURANCE_READ: 'insurance.read' as const,
   INSURANCE_MANAGE: 'insurance.manage' as const,
+
+  // Accounting
+  ACCOUNTING_READ: 'accounting.read' as const,
+  ACCOUNTING_MANAGE: 'accounting.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];

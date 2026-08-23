@@ -80,6 +80,11 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.MASTER_DATA_MANAGE)],
       },
       {
+        path: 'accounting',
+        loadComponent: () => import('./accounting/accounting-console.js').then((m) => m.AccountingConsole),
+        canActivate: [permissionGuard(Permissions.ACCOUNTING_READ)],
+      },
+      {
         path: 'admin/users',
         loadComponent: () => import('./users/user-list.js').then((m) => m.UserList),
         canActivate: [permissionGuard(Permissions.IDENTITY_ACCOUNTS_MANAGE)],

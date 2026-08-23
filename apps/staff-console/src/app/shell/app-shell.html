@@ -22,6 +22,17 @@
       Insurance
     </a>
     }
+    @if (auth.hasPermission('accounting.read')) {
+    <a
+      routerLink="/accounting"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-book text-base"></i>
+      Accounting
+    </a>
+    }
     @if (auth.hasPermission('patients.read') || auth.hasPermission('appointment.read') ||
     auth.hasPermission('triage.read') || auth.hasPermission('vitals.read') ||
     auth.hasPermission('encounter.read') || auth.hasPermission('order.read') ||
