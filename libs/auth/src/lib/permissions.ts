@@ -107,6 +107,10 @@ export const Permissions = {
   // Fixed Assets
   FIXED_ASSET_READ: 'fixed-asset.read' as const,
   FIXED_ASSET_MANAGE: 'fixed-asset.manage' as const,
+
+  // Doctor Revenue Share (Fraction)
+  FRACTION_READ: 'fraction.read' as const,
+  FRACTION_MANAGE: 'fraction.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];

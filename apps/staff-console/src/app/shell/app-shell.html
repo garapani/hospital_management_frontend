@@ -233,6 +233,20 @@
     </a>
     }
     }
+    @if (auth.hasPermission('fraction.read')) {
+    <div class="nav-section-label">
+      Back Office
+    </div>
+    <a
+      routerLink="/fraction"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-percentage text-base"></i>
+      Doctor Revenue Share
+    </a>
+    }
     @if (auth.hasPermission('employee.read') || auth.hasPermission('payroll.read')) {
     <div class="nav-section-label">
       HR &amp; Payroll
