@@ -79,6 +79,10 @@ export const Permissions = {
   // Accounting
   ACCOUNTING_READ: 'accounting.read' as const,
   ACCOUNTING_MANAGE: 'accounting.manage' as const,
+
+  // Nursing
+  NURSING_READ: 'nursing.read' as const,
+  NURSING_MANAGE: 'nursing.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];

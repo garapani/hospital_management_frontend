@@ -1,0 +1,197 @@
+<div class="h-full flex flex-col gap-6">
+  <div>
+    <h1 class="page-title">Nursing</h1>
+    <p class="text-sm text-slate-500 mt-1">Care tasks and the medication administration record (MAR).</p>
+  </div>
+
+  <div class="surface-panel p-4 flex items-end gap-3">
+    <label class="flex flex-col gap-2">
+      <span class="text-sm font-medium text-slate-700">Admission ID</span>
+      <input
+        pInputText
+        [ngModel]="admissionIdFilter()"
+        (ngModelChange)="admissionIdFilter.set($event)"
+        (keyup.enter)="applyFilter()"
+        placeholder="Filter by admission ID"
+        class="w-64"
+      />
+    </label>
+    <p-button label="Filter" (onClick)="applyFilter()" size="small"></p-button>
+  </div>
+
+  <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white">
+    <p-tabs value="0">
+      <p-tablist>
+        <p-tab value="0">Tasks</p-tab>
+        <p-tab value="1">Medication Administration (MAR)</p-tab>
+      </p-tablist>
+
+      <p-tabpanels styleClass="p-0">
+        <p-tabpanel value="0">
+          <div class="p-4 flex flex-col gap-4">
+            <div class="flex justify-end">
+              <p-button label="New Task" icon="pi pi-plus" size="small" (onClick)="openTaskModal()"></p-button>
+            </div>
+            <p-table [value]="tasks()" [loading]="tasksLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Type</th>
+                  <th class="table-header-cell">Description</th>
+                  <th class="table-header-cell">Due</th>
+                  <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell w-56">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-task>
+                <tr>
+                  <td class="font-medium">{{ task.taskType }}</td>
+                  <td>{{ task.description }}</td>
+                  <td>{{ task.dueAt ? (task.dueAt | date: 'short') : '—' }}</td>
+                  <td>
+                    <p-tag
+                      [value]="task.status"
+                      [severity]="task.status === 'Completed' ? 'success' : task.status === 'Cancelled' ? 'danger' : task.status === 'InProgress' ? 'info' : 'secondary'"
+                    ></p-tag>
+                  </td>
+                  <td class="flex gap-2">
+                    @if (task.status === 'Pending') {
+                    <p-button label="Start" [text]="true" size="small" [loading]="taskActionId() === task.id" (onClick)="startTask(task)"></p-button>
+                    }
+                    @if (task.status === 'Pending' || task.status === 'InProgress') {
+                    <p-button label="Complete" [text]="true" size="small" [loading]="taskActionId() === task.id" (onClick)="completeTask(task)"></p-button>
+                    <p-button label="Cancel" severity="danger" [text]="true" size="small" [loading]="taskActionId() === task.id" (onClick)="cancelTask(task)"></p-button>
+                    }
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="5" class="py-8 text-center text-sm text-slate-500">No nursing tasks found.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel value="1">
+          <div class="p-4 flex flex-col gap-4">
+            <div class="flex justify-end">
+              <p-button label="Schedule Medication" icon="pi pi-plus" size="small" (onClick)="openAdminModal()"></p-button>
+            </div>
+            <p-table [value]="administrations()" [loading]="administrationsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Drug</th>
+                  <th class="table-header-cell">Dose</th>
+                  <th class="table-header-cell">Route</th>
+                  <th class="table-header-cell">Scheduled</th>
+                  <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell w-40">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-admin>
+                <tr>
+                  <td class="font-medium">{{ admin.drugName }}</td>
+                  <td>{{ admin.dose }}</td>
+                  <td>{{ admin.route || '—' }}</td>
+                  <td>{{ admin.scheduledAt ? (admin.scheduledAt | date: 'short') : '—' }}</td>
+                  <td>
+                    <p-tag
+                      [value]="admin.status"
+                      [severity]="admin.status === 'Administered' ? 'success' : admin.status === 'Skipped' ? 'warn' : 'secondary'"
+                    ></p-tag>
+                  </td>
+                  <td class="flex gap-2">
+                    @if (admin.status === 'Scheduled') {
+                    <p-button label="Administer" [text]="true" size="small" [loading]="adminActionId() === admin.id" (onClick)="administer(admin)"></p-button>
+                    <p-button label="Skip" severity="danger" [text]="true" size="small" [loading]="adminActionId() === admin.id" (onClick)="skipAdministration(admin)"></p-button>
+                    }
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6" class="py-8 text-center text-sm text-slate-500">No medication administrations found.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </div>
+</div>
+
+<!-- New Task Modal -->
+<p-dialog header="New Nursing Task" [(visible)]="showTaskModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (taskError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ taskError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Admission ID</label>
+      <input pInputText [ngModel]="taskForm().admissionId" (ngModelChange)="taskForm.set({ ...taskForm(), admissionId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Task Type</label>
+      <input pInputText [ngModel]="taskForm().taskType" (ngModelChange)="taskForm.set({ ...taskForm(), taskType: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Description</label>
+      <input pInputText [ngModel]="taskForm().description" (ngModelChange)="taskForm.set({ ...taskForm(), description: $event })" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showTaskModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="taskSaving()"
+        (onClick)="submitTask()"
+        [disabled]="!taskForm().admissionId || !taskForm().taskType || !taskForm().description"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Schedule Medication Modal -->
+<p-dialog header="Schedule Medication" [(visible)]="showAdminModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (adminError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ adminError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Admission ID</label>
+      <input pInputText [ngModel]="adminForm().admissionId" (ngModelChange)="adminForm.set({ ...adminForm(), admissionId: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Drug Name</label>
+      <input pInputText [ngModel]="adminForm().drugName" (ngModelChange)="adminForm.set({ ...adminForm(), drugName: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Dose</label>
+      <input pInputText [ngModel]="adminForm().dose" (ngModelChange)="adminForm.set({ ...adminForm(), dose: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Route</label>
+      <input pInputText [ngModel]="adminForm().route" (ngModelChange)="adminForm.set({ ...adminForm(), route: $event })" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showAdminModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="adminSaving()"
+        (onClick)="submitAdmin()"
+        [disabled]="!adminForm().admissionId || !adminForm().drugName || !adminForm().dose"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

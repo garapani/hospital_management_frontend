@@ -85,6 +85,11 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.ACCOUNTING_READ)],
       },
       {
+        path: 'clinical/nursing',
+        loadComponent: () => import('./nursing/nursing-console.js').then((m) => m.NursingConsole),
+        canActivate: [permissionGuard(Permissions.NURSING_READ)],
+      },
+      {
         path: 'admin/users',
         loadComponent: () => import('./users/user-list.js').then((m) => m.UserList),
         canActivate: [permissionGuard(Permissions.IDENTITY_ACCOUNTS_MANAGE)],
