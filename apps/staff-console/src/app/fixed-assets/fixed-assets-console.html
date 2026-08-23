@@ -1,0 +1,186 @@
+<div class="h-full flex flex-col gap-6">
+  <div>
+    <h1 class="page-title">Fixed Assets</h1>
+    <p class="text-sm text-slate-500 mt-1">Asset register, categories, and straight-line depreciation valuation.</p>
+  </div>
+
+  <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white">
+    <p-tabs value="0">
+      <p-tablist>
+        <p-tab value="0">Assets</p-tab>
+        <p-tab value="1">Categories</p-tab>
+      </p-tablist>
+
+      <p-tabpanels styleClass="p-0">
+        <p-tabpanel value="0">
+          <div class="p-4 flex flex-col gap-4">
+            <div class="flex justify-end">
+              <p-button label="Register Asset" icon="pi pi-plus" size="small" (onClick)="openAssetModal()"></p-button>
+            </div>
+            <p-table [value]="assets()" [loading]="assetsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Asset Code</th>
+                  <th class="table-header-cell">Name</th>
+                  <th class="table-header-cell">Category</th>
+                  <th class="table-header-cell text-right">Purchase Cost</th>
+                  <th class="table-header-cell">Condition</th>
+                  <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell w-56">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-asset>
+                <tr>
+                  <td class="font-mono font-medium">{{ asset.assetCode }}</td>
+                  <td>{{ asset.name }}</td>
+                  <td>{{ categoryNameFor(asset.categoryId) }}</td>
+                  <td class="text-right font-mono">{{ asset.purchaseCost | number: '1.2-2' }}</td>
+                  <td>
+                    <p-tag
+                      [value]="asset.condition"
+                      [severity]="asset.condition === 'In Service' ? 'success' : asset.condition === 'Retired' ? 'danger' : 'warn'"
+                    ></p-tag>
+                  </td>
+                  <td>
+                    <p-tag [value]="asset.isActive ? 'Active' : 'Inactive'" [severity]="asset.isActive ? 'success' : 'secondary'"></p-tag>
+                  </td>
+                  <td class="flex gap-2">
+                    <p-button label="Valuation" [text]="true" size="small" (onClick)="viewValuation(asset)"></p-button>
+                    <p-button
+                      [label]="asset.isActive ? 'Deactivate' : 'Reactivate'"
+                      [text]="true"
+                      size="small"
+                      (onClick)="toggleAssetActive(asset)"
+                    ></p-button>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="7" class="py-8 text-center text-sm text-slate-500">No assets registered yet.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+
+        <p-tabpanel value="1">
+          <div class="p-4 flex flex-col gap-4">
+            <div class="flex items-end gap-3">
+              <label class="flex flex-col gap-2">
+                <span class="text-sm font-medium text-slate-700">New Category</span>
+                <input pInputText [ngModel]="newCategoryName()" (ngModelChange)="newCategoryName.set($event)" (keyup.enter)="addCategory()" class="w-64" />
+              </label>
+              <p-button label="Add" [loading]="categorySaving()" (onClick)="addCategory()" size="small"></p-button>
+            </div>
+            <p-table [value]="categories()" [loading]="categoriesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+              <ng-template pTemplate="header">
+                <tr>
+                  <th class="table-header-cell">Name</th>
+                  <th class="table-header-cell">Status</th>
+                  <th class="table-header-cell w-32">Actions</th>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="body" let-category>
+                <tr>
+                  <td>{{ category.name }}</td>
+                  <td>
+                    <p-tag [value]="category.isActive ? 'Active' : 'Inactive'" [severity]="category.isActive ? 'success' : 'warn'"></p-tag>
+                  </td>
+                  <td>
+                    <p-button
+                      [label]="category.isActive ? 'Deactivate' : 'Reactivate'"
+                      [text]="true"
+                      size="small"
+                      (onClick)="toggleCategoryActive(category)"
+                    ></p-button>
+                  </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="3" class="py-8 text-center text-sm text-slate-500">No categories yet.</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </div>
+</div>
+
+<!-- Register Asset Modal -->
+<p-dialog header="Register Asset" [(visible)]="showAssetModal" [modal]="true" [style]="{ width: '460px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (assetError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ assetError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Category</label>
+      <p-select [options]="categoryOptions" [ngModel]="assetForm().categoryId" (ngModelChange)="assetForm.set({ ...assetForm(), categoryId: $event })" styleClass="w-full"></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Name</label>
+      <input pInputText [ngModel]="assetForm().name" (ngModelChange)="assetForm.set({ ...assetForm(), name: $event })" class="w-full" />
+    </div>
+    <div class="flex gap-4">
+      <div class="flex flex-col gap-2 flex-1">
+        <label class="text-sm font-medium text-slate-700">Purchase Date</label>
+        <input pInputText type="date" [ngModel]="assetForm().purchaseDate" (ngModelChange)="assetForm.set({ ...assetForm(), purchaseDate: $event })" class="w-full" />
+      </div>
+      <div class="flex flex-col gap-2 flex-1">
+        <label class="text-sm font-medium text-slate-700">Purchase Cost</label>
+        <p-inputNumber [ngModel]="assetForm().purchaseCost" (ngModelChange)="assetForm.set({ ...assetForm(), purchaseCost: $event })" [min]="0" mode="decimal" [minFractionDigits]="2" styleClass="w-full" />
+      </div>
+    </div>
+    <div class="flex gap-4">
+      <div class="flex flex-col gap-2 flex-1">
+        <label class="text-sm font-medium text-slate-700">Useful Life (years)</label>
+        <p-inputNumber [ngModel]="assetForm().usefulLifeYears" (ngModelChange)="assetForm.set({ ...assetForm(), usefulLifeYears: $event })" [min]="0" styleClass="w-full" />
+      </div>
+      <div class="flex flex-col gap-2 flex-1">
+        <label class="text-sm font-medium text-slate-700">Salvage Value</label>
+        <p-inputNumber [ngModel]="assetForm().salvageValue" (ngModelChange)="assetForm.set({ ...assetForm(), salvageValue: $event })" [min]="0" mode="decimal" [minFractionDigits]="2" styleClass="w-full" />
+      </div>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showAssetModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="assetSaving()"
+        (onClick)="submitAsset()"
+        [disabled]="!assetForm().categoryId || !assetForm().name || !assetForm().purchaseDate || !assetForm().purchaseCost"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Valuation Dialog -->
+<p-dialog [header]="valuationAssetName() + ' — Valuation'" [(visible)]="showValuation" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  @if (valuationLoading()) {
+  <p class="text-sm text-slate-500 py-4">Loading…</p>
+  } @else if (valuation(); as v) {
+  <div class="grid grid-cols-2 gap-2 text-sm">
+    <span class="text-slate-500">Purchase Cost</span>
+    <span class="font-mono">{{ v.purchaseCost | number: '1.2-2' }}</span>
+    <span class="text-slate-500">Salvage Value</span>
+    <span class="font-mono">{{ v.salvageValue | number: '1.2-2' }}</span>
+    <span class="text-slate-500">Useful Life</span>
+    <span>{{ v.usefulLifeYears ?? '—' }} years</span>
+    <span class="text-slate-500">Months in Service</span>
+    <span>{{ v.monthsInService }}</span>
+    <span class="text-slate-500">Annual Depreciation</span>
+    <span class="font-mono">{{ v.annualDepreciation !== null ? (v.annualDepreciation | number: '1.2-2') : '—' }}</span>
+    <span class="text-slate-500">Accumulated Depreciation</span>
+    <span class="font-mono">{{ v.accumulatedDepreciation | number: '1.2-2' }}</span>
+    <span class="text-slate-500 font-semibold">Book Value</span>
+    <span class="font-mono font-semibold">{{ v.bookValue | number: '1.2-2' }}</span>
+  </div>
+  }
+</p-dialog>

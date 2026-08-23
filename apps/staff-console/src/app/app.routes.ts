@@ -115,6 +115,11 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.WARD_SUPPLY_READ)],
       },
       {
+        path: 'fixed-assets',
+        loadComponent: () => import('./fixed-assets/fixed-assets-console.js').then((m) => m.FixedAssetsConsole),
+        canActivate: [permissionGuard(Permissions.FIXED_ASSET_READ)],
+      },
+      {
         path: 'admin/users',
         loadComponent: () => import('./users/user-list.js').then((m) => m.UserList),
         canActivate: [permissionGuard(Permissions.IDENTITY_ACCOUNTS_MANAGE)],

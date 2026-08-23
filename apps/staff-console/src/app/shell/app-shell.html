@@ -176,7 +176,8 @@
     }
     }
     @if (auth.hasPermission('admission.read') || auth.hasPermission('inventory.read') ||
-    auth.hasPermission('cssd.read') || auth.hasPermission('ward-supply.read')) {
+    auth.hasPermission('cssd.read') || auth.hasPermission('ward-supply.read') ||
+    auth.hasPermission('fixed-asset.read')) {
     <div class="nav-section-label">
       Operations
     </div>
@@ -219,6 +220,16 @@
     >
       <i class="pi pi-truck text-base"></i>
       Ward Supply
+    </a>
+    } @if (auth.hasPermission('fixed-asset.read')) {
+    <a
+      routerLink="/fixed-assets"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-desktop text-base"></i>
+      Fixed Assets
     </a>
     }
     }

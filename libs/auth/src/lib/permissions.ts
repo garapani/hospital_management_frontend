@@ -103,6 +103,10 @@ export const Permissions = {
   // Ward Supply
   WARD_SUPPLY_READ: 'ward-supply.read' as const,
   WARD_SUPPLY_MANAGE: 'ward-supply.manage' as const,
+
+  // Fixed Assets
+  FIXED_ASSET_READ: 'fixed-asset.read' as const,
+  FIXED_ASSET_MANAGE: 'fixed-asset.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];
