@@ -233,10 +233,11 @@
     </a>
     }
     }
-    @if (auth.hasPermission('fraction.read')) {
+    @if (auth.hasPermission('fraction.read') || auth.hasPermission('helpdesk.read')) {
     <div class="nav-section-label">
       Back Office
     </div>
+    @if (auth.hasPermission('fraction.read')) {
     <a
       routerLink="/fraction"
       routerLinkActive="nav-item-active"
@@ -246,6 +247,17 @@
       <i class="pi pi-percentage text-base"></i>
       Doctor Revenue Share
     </a>
+    } @if (auth.hasPermission('helpdesk.read')) {
+    <a
+      routerLink="/helpdesk"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-ticket text-base"></i>
+      Helpdesk
+    </a>
+    }
     }
     @if (auth.hasPermission('employee.read') || auth.hasPermission('payroll.read')) {
     <div class="nav-section-label">

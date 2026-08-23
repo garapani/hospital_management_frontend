@@ -1,0 +1,123 @@
+<div class="flex flex-col gap-6">
+  <div class="surface-panel p-6 flex flex-col gap-6">
+    <div class="flex justify-between items-start">
+      <div>
+        <h1 class="page-title">Helpdesk</h1>
+        <p class="page-subtitle">Internal support tickets.</p>
+      </div>
+      <p-button label="New Ticket" icon="pi pi-plus" (onClick)="openCreateModal()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+    </div>
+
+    <div class="flex items-end gap-3">
+      <label class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-slate-700">Search</span>
+        <input
+          pInputText
+          [ngModel]="searchFilter()"
+          (ngModelChange)="searchFilter.set($event)"
+          (keyup.enter)="applyFilters()"
+          placeholder="Search title/description"
+          class="w-64"
+        />
+      </label>
+      <label class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-slate-700">Status</span>
+        <p-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); applyFilters()" styleClass="w-48"></p-select>
+      </label>
+      <p-button label="Filter" (onClick)="applyFilters()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+    </div>
+  </div>
+
+  <div class="surface-panel overflow-hidden">
+    <p-table
+      [value]="tickets()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      (onLazyLoad)="onLazyLoad($event)"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [first]="firstRecord()"
+      [totalRecords]="totalRecords()"
+      [loading]="loading()"
+      dataKey="id"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Ticket #</th>
+          <th class="table-header-cell">Title</th>
+          <th class="table-header-cell">Priority</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell w-56">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-ticket>
+        <tr class="hover:bg-slate-100 transition-colors">
+          <td class="font-mono font-semibold text-slate-700 border-b border-slate-200">{{ ticket.ticketNumber }}</td>
+          <td class="border-b border-slate-200">{{ ticket.title }}</td>
+          <td class="border-b border-slate-200">
+            <p-tag [value]="ticket.priority" [severity]="priorityColor(ticket.priority)" styleClass="rounded-full px-3"></p-tag>
+          </td>
+          <td class="border-b border-slate-200">
+            <p-tag
+              [value]="ticket.status"
+              [severity]="ticket.status === 'Resolved' || ticket.status === 'Closed' ? 'success' : ticket.status === 'InProgress' ? 'info' : 'secondary'"
+              styleClass="rounded-full px-3"
+            ></p-tag>
+          </td>
+          <td class="border-b border-slate-200 flex gap-2">
+            @if (ticket.status === 'Open') {
+            <p-button label="Start" [text]="true" size="small" [loading]="actionId() === ticket.id" (onClick)="start(ticket)"></p-button>
+            }
+            @if (ticket.status === 'InProgress') {
+            <p-button label="Resolve" [text]="true" size="small" [loading]="actionId() === ticket.id" (onClick)="resolve(ticket)"></p-button>
+            }
+            @if (ticket.status === 'Resolved') {
+            <p-button label="Close" [text]="true" size="small" [loading]="actionId() === ticket.id" (onClick)="close(ticket)"></p-button>
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="py-8 text-center text-sm text-slate-500">No tickets found.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- New Ticket Modal -->
+<p-dialog header="New Ticket" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '450px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (createError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ createError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Title</label>
+      <input pInputText [ngModel]="createForm().title" (ngModelChange)="createForm.set({ ...createForm(), title: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Description</label>
+      <input pInputText [ngModel]="createForm().description" (ngModelChange)="createForm.set({ ...createForm(), description: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Priority</label>
+      <p-select [options]="priorities" [ngModel]="createForm().priority" (ngModelChange)="createForm.set({ ...createForm(), priority: $event })" styleClass="w-full"></p-select>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCreateModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="createSaving()"
+        (onClick)="submitCreate()"
+        [disabled]="!createForm().title || !createForm().description"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

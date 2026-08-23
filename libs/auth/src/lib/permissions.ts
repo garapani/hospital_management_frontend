@@ -111,6 +111,10 @@ export const Permissions = {
   // Doctor Revenue Share (Fraction)
   FRACTION_READ: 'fraction.read' as const,
   FRACTION_MANAGE: 'fraction.manage' as const,
+
+  // Helpdesk
+  HELPDESK_READ: 'helpdesk.read' as const,
+  HELPDESK_MANAGE: 'helpdesk.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];
