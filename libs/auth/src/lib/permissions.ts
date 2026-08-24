@@ -115,6 +115,10 @@ export const Permissions = {
   // Helpdesk
   HELPDESK_READ: 'helpdesk.read' as const,
   HELPDESK_MANAGE: 'helpdesk.manage' as const,
+
+  // Social Service Unit (SSU)
+  SSU_READ: 'ssu.read' as const,
+  SSU_MANAGE: 'ssu.manage' as const,
 } as const;
 
 export type Permission = (typeof Permissions)[keyof typeof Permissions];

@@ -130,6 +130,11 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.HELPDESK_READ)],
       },
       {
+        path: 'ssu',
+        loadComponent: () => import('./ssu/ssu-list.js').then((m) => m.SsuList),
+        canActivate: [permissionGuard(Permissions.SSU_READ)],
+      },
+      {
         path: 'admin/users',
         loadComponent: () => import('./users/user-list.js').then((m) => m.UserList),
         canActivate: [permissionGuard(Permissions.IDENTITY_ACCOUNTS_MANAGE)],

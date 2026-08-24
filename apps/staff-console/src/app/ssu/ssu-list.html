@@ -1,0 +1,389 @@
+<div class="flex flex-col gap-6">
+  <!-- Header & Filters Panel -->
+  <div class="surface-panel p-6 flex flex-col gap-6">
+    <div class="flex justify-between items-start">
+      <div>
+        <h1 class="page-title">Social Service Unit (SSU)</h1>
+        <p class="page-subtitle">Manage patient subsidy applications, charity care, and eligibility decisions.</p>
+      </div>
+      @if (canManage) {
+      <p-button
+        label="New SSU Case"
+        icon="pi pi-plus"
+        (onClick)="openCreateModal()"
+        styleClass="accent-bg rounded-lg border-none shadow-md px-6"
+      ></p-button>
+      }
+    </div>
+
+    <div class="flex items-end gap-3 flex-wrap">
+      <label class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-slate-700">Patient ID</span>
+        <input
+          pInputText
+          [ngModel]="patientFilter()"
+          (ngModelChange)="patientFilter.set($event)"
+          (keyup.enter)="applyFilters()"
+          placeholder="Filter by Patient ID"
+          class="w-64"
+        />
+      </label>
+      <label class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-slate-700">Status</span>
+        <p-select
+          [options]="statusOptions"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event); applyFilters()"
+          styleClass="w-48"
+        ></p-select>
+      </label>
+      <p-button label="Filter" (onClick)="applyFilters()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+    </div>
+  </div>
+
+  <!-- Cases Data Table -->
+  <div class="surface-panel overflow-hidden">
+    <p-table
+      [value]="cases()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      (onLazyLoad)="onLazyLoad($event)"
+      [paginator]="true"
+      [rows]="pageSize()"
+      [first]="firstRecord()"
+      [totalRecords]="totalRecords()"
+      [loading]="loading()"
+      dataKey="id"
+      styleClass="p-datatable-sm"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Case #</th>
+          <th class="table-header-cell">Patient ID</th>
+          <th class="table-header-cell">Case Type</th>
+          <th class="table-header-cell">Subsidy</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell">Decision / Notes</th>
+          <th class="table-header-cell w-56">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-ssuCase>
+        <tr class="hover:bg-slate-100 transition-colors">
+          <td class="font-mono font-semibold text-slate-700 border-b border-slate-200">{{ ssuCase.caseNumber }}</td>
+          <td class="font-mono text-slate-600 border-b border-slate-200">{{ ssuCase.patientId }}</td>
+          <td class="border-b border-slate-200">{{ ssuCase.caseType }}</td>
+          <td class="border-b border-slate-200 font-semibold text-slate-700">{{ ssuCase.subsidyPercent }}%</td>
+          <td class="border-b border-slate-200">
+            <p-tag
+              [value]="ssuCase.status"
+              [severity]="ssuStatusSeverity(ssuCase.status)"
+              styleClass="rounded-full px-3"
+            ></p-tag>
+          </td>
+          <td class="border-b border-slate-200 text-sm text-slate-600">
+            @if (ssuCase.decisionNotes) {
+            <div>{{ ssuCase.decisionNotes }}</div>
+            } @else if (ssuCase.eligibilityNotes) {
+            <div class="italic text-slate-400">{{ ssuCase.eligibilityNotes }}</div>
+            } @else {
+            <span class="text-slate-400">—</span>
+            }
+          </td>
+          <td class="border-b border-slate-200 flex gap-2 items-center">
+            @if (canManage) {
+              @if (ssuCase.status === 'Open') {
+              <p-button
+                label="Approve"
+                [text]="true"
+                size="small"
+                severity="success"
+                (onClick)="openApproveModal(ssuCase)"
+              ></p-button>
+              <p-button
+                label="Reject"
+                [text]="true"
+                size="small"
+                severity="danger"
+                (onClick)="openRejectModal(ssuCase)"
+              ></p-button>
+              }
+              @if (ssuCase.status === 'Approved' || ssuCase.status === 'Rejected') {
+              <p-button
+                label="Close"
+                [text]="true"
+                size="small"
+                severity="secondary"
+                (onClick)="openCloseModal(ssuCase)"
+              ></p-button>
+              }
+              @if (ssuCase.status === 'Closed') {
+              <span class="text-xs text-slate-400 font-medium">Closed</span>
+              }
+            } @else {
+            <span class="text-xs text-slate-400">View only</span>
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="py-8 text-center text-sm text-slate-500">No SSU cases found.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Create SSU Case Modal -->
+<p-dialog
+  header="New SSU Case"
+  [(visible)]="showCreateModal"
+  [modal]="true"
+  [style]="{ width: '560px' }"
+  styleClass="surface-modal"
+>
+  <div class="flex flex-col gap-4 py-4">
+    @if (createError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ createError() }}
+    </div>
+    }
+
+    <!-- Patient Picker Section -->
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Patient <span class="text-red-500">*</span></label>
+      @if (selectedPatient()) {
+      <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+        <div>
+          <div class="font-medium text-slate-800">
+            {{ selectedPatient()?.firstName }} {{ selectedPatient()?.lastName }}
+          </div>
+          <div class="text-xs font-mono text-slate-500">
+            ID: {{ selectedPatient()?.patientNo }} ({{ selectedPatient()?.id }})
+          </div>
+        </div>
+        <p-button label="Change" [text]="true" size="small" (onClick)="clearSelectedPatient()"></p-button>
+      </div>
+      } @else {
+      <div class="flex gap-2">
+        <input
+          pInputText
+          [ngModel]="patientSearchQuery()"
+          (ngModelChange)="patientSearchQuery.set($event)"
+          (keyup.enter)="searchPatients()"
+          placeholder="Search by patient name, number or phone"
+          class="w-full"
+        />
+        <p-button
+          label="Search"
+          icon="pi pi-search"
+          [loading]="patientSearching()"
+          (onClick)="searchPatients()"
+          styleClass="px-4"
+        ></p-button>
+      </div>
+
+      @if (patientResults().length > 0) {
+      <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+        @for (pat of patientResults(); track pat.id) {
+        <div
+          class="p-2.5 hover:bg-slate-50 flex items-center justify-between cursor-pointer transition-colors"
+          (click)="selectPatient(pat)"
+        >
+          <div>
+            <span class="font-medium text-slate-800 text-sm">{{ pat.firstName }} {{ pat.lastName }}</span>
+            <span class="text-xs text-slate-500 ml-2 font-mono">({{ pat.patientNo }})</span>
+          </div>
+          <p-button label="Select" size="small" [text]="true" (onClick)="selectPatient(pat)"></p-button>
+        </div>
+        }
+      </div>
+      }
+
+      <div class="flex items-center gap-2 mt-1">
+        <span class="text-xs text-slate-500">Or enter Patient ID directly:</span>
+        <input
+          pInputText
+          [ngModel]="createForm().patientId"
+          (ngModelChange)="createForm.set({ ...createForm(), patientId: $event })"
+          placeholder="e.g. uuid"
+          class="flex-1 text-xs"
+        />
+      </div>
+      }
+    </div>
+
+    <!-- Case Type -->
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Case Type <span class="text-red-500">*</span></label>
+      <input
+        pInputText
+        [ngModel]="createForm().caseType"
+        (ngModelChange)="createForm.set({ ...createForm(), caseType: $event })"
+        placeholder="e.g. Charity Care, Elderly Subsidy"
+        class="w-full"
+      />
+      <div class="flex flex-wrap gap-1 mt-1">
+        @for (ctype of commonCaseTypes; track ctype) {
+        <button
+          type="button"
+          class="text-xs bg-slate-100 text-slate-600 hover:bg-slate-200 px-2 py-1 rounded transition-colors"
+          (click)="createForm.set({ ...createForm(), caseType: ctype })"
+        >
+          {{ ctype }}
+        </button>
+        }
+      </div>
+    </div>
+
+    <!-- Subsidy Percent -->
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Subsidy Percent (0 - 100%) <span class="text-red-500">*</span></label>
+      <p-inputNumber
+        [ngModel]="createForm().subsidyPercent"
+        (ngModelChange)="createForm.set({ ...createForm(), subsidyPercent: $event ?? 0 })"
+        [min]="0"
+        [max]="100"
+        suffix="%"
+        styleClass="w-full"
+      ></p-inputNumber>
+    </div>
+
+    <!-- Eligibility Notes -->
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Eligibility Notes</label>
+      <textarea
+        pTextarea
+        [ngModel]="createForm().eligibilityNotes"
+        (ngModelChange)="createForm.set({ ...createForm(), eligibilityNotes: $event })"
+        rows="3"
+        placeholder="Income verification notes, ration card details, socio-economic factors..."
+        class="w-full"
+      ></textarea>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCreateModal.set(false)"></p-button>
+      <p-button
+        label="Create Case"
+        [loading]="createSaving()"
+        (onClick)="submitCreate()"
+        [disabled]="!createForm().patientId || !createForm().caseType || createSaving()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Approve Modal -->
+<p-dialog
+  header="Approve SSU Case"
+  [(visible)]="showApproveModal"
+  [modal]="true"
+  [style]="{ width: '480px' }"
+  styleClass="surface-modal"
+>
+  <div class="flex flex-col gap-4 py-4">
+    <p class="text-sm text-slate-600">
+      You are approving case <span class="font-mono font-semibold text-slate-800">{{ targetCase()?.caseNumber }}</span>
+      with a <span class="font-semibold text-emerald-600">{{ targetCase()?.subsidyPercent }}%</span> subsidy for patient
+      <span class="font-mono text-slate-800">{{ targetCase()?.patientId }}</span>.
+    </p>
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Decision Notes (optional)</label>
+      <textarea
+        pTextarea
+        [ngModel]="approveNotes()"
+        (ngModelChange)="approveNotes.set($event)"
+        rows="3"
+        placeholder="Reason for approval, committee decision reference, etc."
+        class="w-full"
+      ></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showApproveModal.set(false)"></p-button>
+      <p-button
+        label="Approve Case"
+        severity="success"
+        [loading]="approveSaving()"
+        (onClick)="confirmApprove()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Reject Modal -->
+<p-dialog
+  header="Reject SSU Case"
+  [(visible)]="showRejectModal"
+  [modal]="true"
+  [style]="{ width: '480px' }"
+  styleClass="surface-modal"
+>
+  <div class="flex flex-col gap-4 py-4">
+    <p class="text-sm text-slate-600">
+      You are rejecting case <span class="font-mono font-semibold text-slate-800">{{ targetCase()?.caseNumber }}</span>
+      for patient <span class="font-mono text-slate-800">{{ targetCase()?.patientId }}</span>.
+    </p>
+    @if (rejectError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ rejectError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-medium text-slate-700">Rejection Reason / Notes <span class="text-red-500">*</span></label>
+      <textarea
+        pTextarea
+        [ngModel]="rejectNotes()"
+        (ngModelChange)="rejectNotes.set($event)"
+        rows="3"
+        placeholder="Reason for rejection (e.g. income above threshold, incomplete documents)..."
+        class="w-full"
+      ></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showRejectModal.set(false)"></p-button>
+      <p-button
+        label="Reject Case"
+        severity="danger"
+        [loading]="rejectSaving()"
+        [disabled]="!rejectNotes().trim() || rejectSaving()"
+        (onClick)="confirmReject()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Close Confirmation Dialog -->
+<p-dialog
+  header="Close SSU Case"
+  [(visible)]="showCloseModal"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+  styleClass="surface-modal"
+>
+  <div class="flex flex-col gap-4 py-4">
+    <p class="text-sm text-slate-600">
+      Are you sure you want to close SSU case <span class="font-mono font-semibold text-slate-800">{{ targetCase()?.caseNumber }}</span>?
+      This concludes the case lifecycle.
+    </p>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCloseModal.set(false)"></p-button>
+      <p-button
+        label="Close Case"
+        severity="danger"
+        [loading]="closeSaving()"
+        (onClick)="confirmClose()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

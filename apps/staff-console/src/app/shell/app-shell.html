@@ -233,7 +233,7 @@
     </a>
     }
     }
-    @if (auth.hasPermission('fraction.read') || auth.hasPermission('helpdesk.read')) {
+    @if (auth.hasPermission('fraction.read') || auth.hasPermission('helpdesk.read') || auth.hasPermission('ssu.read')) {
     <div class="nav-section-label">
       Back Office
     </div>
@@ -256,6 +256,16 @@
     >
       <i class="pi pi-ticket text-base"></i>
       Helpdesk
+    </a>
+    } @if (auth.hasPermission('ssu.read')) {
+    <a
+      routerLink="/ssu"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-heart text-base"></i>
+      Social Service (SSU)
     </a>
     }
     }

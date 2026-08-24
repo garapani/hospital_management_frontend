@@ -9,6 +9,8 @@ describe('Permissions', () => {
     expect(Permissions.REPORTING_READ).toBe('reporting.read');
     expect(Permissions.PATIENTS_READ).toBe('patients.read');
     expect(Permissions.TRIAGE_READ).toBe('triage.read');
+    expect(Permissions.SSU_READ).toBe('ssu.read');
+    expect(Permissions.SSU_MANAGE).toBe('ssu.manage');
   });
 
   it('exports a type-safe Permission type', () => {
