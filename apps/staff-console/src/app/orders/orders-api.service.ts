@@ -47,7 +47,7 @@ export interface CreateOrderDto {
 
 export interface OrderFilters {
   /** Required by the backend list endpoint — an order is always scoped to one patient. */
-  patientId: string;
+  patientId?: string;
   page?: number;
   limit?: number;
 }
@@ -73,7 +73,7 @@ export class OrdersApiService {
   list(filters: OrderFilters) {
     return this.apiClient.get<PaginatedResponse<Order>>('/orders', {
       params: {
-        patientId: filters.patientId,
+        ...(filters.patientId ? { patientId: filters.patientId } : {}),
         ...(filters.page !== undefined ? { page: filters.page } : {}),
         ...(filters.limit !== undefined ? { limit: filters.limit } : {}),
       },
