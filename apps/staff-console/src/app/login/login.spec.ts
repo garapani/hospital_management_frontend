@@ -24,6 +24,10 @@ describe('Login', () => {
       displayName: () => null,
       logoUrl: () => null,
       primaryColor: () => null,
+      tagline: () => null,
+      description: () => null,
+      footerText: () => null,
+      supportText: () => null,
     } as unknown as BrandingService;
 
     TestBed.configureTestingModule({
@@ -101,7 +105,7 @@ describe('Login', () => {
         { provide: Router, useValue: { navigateByUrl: jest.fn() } },
         {
           provide: BrandingService,
-          useValue: { displayName: () => null, logoUrl: () => null, primaryColor: () => null } as unknown as BrandingService,
+          useValue: { displayName: () => null, logoUrl: () => null, primaryColor: () => null, tagline: () => null, description: () => null, footerText: () => null, supportText: () => null } as unknown as BrandingService,
         },
       ],
     });
@@ -144,7 +148,7 @@ describe('Login redirect', () => {
         { provide: AuthService, useValue: authService },
         {
           provide: BrandingService,
-          useValue: { displayName: () => null, logoUrl: () => null, primaryColor: () => null } as unknown as BrandingService,
+          useValue: { displayName: () => null, logoUrl: () => null, primaryColor: () => null, tagline: () => null, description: () => null, footerText: () => null, supportText: () => null } as unknown as BrandingService,
         },
       ],
     });

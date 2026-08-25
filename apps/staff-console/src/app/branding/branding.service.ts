@@ -18,6 +18,10 @@ export class BrandingService {
   readonly displayName = signal<string | null>(null);
   readonly logoUrl = signal<string | null>(null);
   readonly primaryColor = signal<string | null>(null);
+  readonly tagline = signal<string | null>(null);
+  readonly description = signal<string | null>(null);
+  readonly footerText = signal<string | null>(null);
+  readonly supportText = signal<string | null>(null);
 
   /** Best-effort: a failed/slow branding fetch never blocks the app from rendering — the default
    *  Vaidya brand (this service's initial signal state) is a perfectly good fallback. */
@@ -40,6 +44,10 @@ export class BrandingService {
     this.displayName.set(branding.displayName);
     this.logoUrl.set(branding.logoUrl);
     this.primaryColor.set(branding.primaryColor);
+    this.tagline.set(branding.tagline);
+    this.description.set(branding.description);
+    this.footerText.set(branding.footerText);
+    this.supportText.set(branding.supportText);
     if (branding.primaryColor) {
       this.applyCssVariables(branding.primaryColor);
     }

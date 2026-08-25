@@ -354,8 +354,8 @@
     <div>
       <h3 class="font-bold text-lg text-slate-800">Branding</h3>
       <p class="text-sm text-slate-500 mt-1">
-        White-label look for this hospital's console and login page — display name, logo, and
-        primary color. Unconfigured fields fall back to the default Vaidya brand.
+        White-label look for this hospital's console and login page — display name, logo, primary
+        color, and login-page copy. Unconfigured fields fall back to the default Vaidya brand.
       </p>
     </div>
 
@@ -397,6 +397,50 @@
             class="flex-1"
           />
         </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+      <div class="flex flex-col gap-2">
+        <label for="brandingTagline" class="text-sm font-medium">Login page tagline</label>
+        <input
+          pInputText
+          id="brandingTagline"
+          [ngModel]="brandingForm().tagline"
+          (ngModelChange)="brandingForm.set({ ...brandingForm(), tagline: $event })"
+          placeholder="Hospital operations, one screen at a time."
+        />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="brandingSupportText" class="text-sm font-medium">Login page support text</label>
+        <input
+          pInputText
+          id="brandingSupportText"
+          [ngModel]="brandingForm().supportText"
+          (ngModelChange)="brandingForm.set({ ...brandingForm(), supportText: $event })"
+          placeholder="Trouble signing in? Contact your hospital administrator."
+        />
+      </div>
+      <div class="flex flex-col gap-2 md:col-span-2">
+        <label for="brandingDescription" class="text-sm font-medium">Login page description</label>
+        <textarea
+          pTextarea
+          id="brandingDescription"
+          rows="2"
+          [ngModel]="brandingForm().description"
+          (ngModelChange)="brandingForm.set({ ...brandingForm(), description: $event })"
+          placeholder="Patient records, scheduling, triage and billing — for the whole hospital, in a single place."
+        ></textarea>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="brandingFooterText" class="text-sm font-medium">Footer / copyright text</label>
+        <input
+          pInputText
+          id="brandingFooterText"
+          [ngModel]="brandingForm().footerText"
+          (ngModelChange)="brandingForm.set({ ...brandingForm(), footerText: $event })"
+          [placeholder]="brandingForm().displayName || 'Vaidya'"
+        />
       </div>
     </div>
 

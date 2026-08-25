@@ -5,12 +5,20 @@ export interface TenantBranding {
   displayName: string | null;
   primaryColor: string | null;
   logoUrl: string | null;
+  tagline: string | null;
+  description: string | null;
+  footerText: string | null;
+  supportText: string | null;
 }
 
 export const DEFAULT_BRANDING: TenantBranding = {
   displayName: null,
   primaryColor: null,
   logoUrl: null,
+  tagline: null,
+  description: null,
+  footerText: null,
+  supportText: null,
 };
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;

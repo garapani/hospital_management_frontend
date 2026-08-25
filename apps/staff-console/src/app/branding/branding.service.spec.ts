@@ -10,7 +10,15 @@ describe('BrandingService', () => {
   function setup(tenantId: string, overrides: Partial<Record<keyof BrandingApiService, jest.Mock>> = {}) {
     const brandingApi = {
       getPublicBranding: jest.fn().mockReturnValue(
-        of({ displayName: 'City Hospital', primaryColor: '#123456', logoUrl: 'https://minio.example/logo.png' } as TenantBranding),
+        of({
+          displayName: 'City Hospital',
+          primaryColor: '#123456',
+          logoUrl: 'https://minio.example/logo.png',
+          tagline: null,
+          description: null,
+          footerText: null,
+          supportText: null,
+        } as TenantBranding),
       ),
       ...overrides,
     } as unknown as BrandingApiService;
@@ -44,6 +52,27 @@ describe('BrandingService', () => {
     expect(service.displayName()).toBe('City Hospital');
     expect(service.logoUrl()).toBe('https://minio.example/logo.png');
     expect(service.primaryColor()).toBe('#123456');
+  });
+
+  it('applies the login-page text fields to their own signals', async () => {
+    const { service } = setup('demo', {
+      getPublicBranding: jest.fn().mockReturnValue(
+        of({
+          displayName: null,
+          primaryColor: null,
+          logoUrl: null,
+          tagline: 'Care, coordinated.',
+          description: 'Everything the front desk and wards need, in one place.',
+          footerText: 'City Hospital Pvt Ltd.',
+          supportText: 'Call extension 100.',
+        } as TenantBranding),
+      ),
+    });
+    await service.load();
+    expect(service.tagline()).toBe('Care, coordinated.');
+    expect(service.description()).toBe('Everything the front desk and wards need, in one place.');
+    expect(service.footerText()).toBe('City Hospital Pvt Ltd.');
+    expect(service.supportText()).toBe('Call extension 100.');
   });
 
   it('sets --p-primary-600 and --p-primary-color CSS variables to the fetched color', async () => {

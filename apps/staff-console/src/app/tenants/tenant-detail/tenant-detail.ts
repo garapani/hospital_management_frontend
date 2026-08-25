@@ -7,6 +7,7 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { SelectModule } from 'primeng/select';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
 import { FormsModule } from '@angular/forms';
 import { MessageModule } from 'primeng/message';
 import { MessageService } from 'primeng/api';
@@ -44,6 +45,7 @@ interface SelectOption {
     SelectModule,
     DialogModule,
     InputTextModule,
+    TextareaModule,
     FormsModule,
     MessageModule,
   ],
@@ -626,9 +628,20 @@ export class TenantDetail implements OnInit {
   // ---------- Branding ----------
   readonly branding = signal<TenantBranding | null>(null);
   readonly brandingLoading = signal(true);
-  readonly brandingForm = signal<{ displayName: string; primaryColor: string }>({
+  readonly brandingForm = signal<{
+    displayName: string;
+    primaryColor: string;
+    tagline: string;
+    description: string;
+    footerText: string;
+    supportText: string;
+  }>({
     displayName: '',
     primaryColor: '',
+    tagline: '',
+    description: '',
+    footerText: '',
+    supportText: '',
   });
   readonly brandingSaving = signal(false);
   readonly brandingError = signal<string | null>(null);
@@ -644,6 +657,10 @@ export class TenantDetail implements OnInit {
         this.brandingForm.set({
           displayName: branding.displayName ?? '',
           primaryColor: branding.primaryColor ?? '',
+          tagline: branding.tagline ?? '',
+          description: branding.description ?? '',
+          footerText: branding.footerText ?? '',
+          supportText: branding.supportText ?? '',
         });
         this.brandingLoading.set(false);
       },
@@ -667,6 +684,10 @@ export class TenantDetail implements OnInit {
       .upsert(current.hospitalId, {
         displayName: form.displayName.trim() || null,
         primaryColor: form.primaryColor || null,
+        tagline: form.tagline.trim() || null,
+        description: form.description.trim() || null,
+        footerText: form.footerText.trim() || null,
+        supportText: form.supportText.trim() || null,
       })
       .subscribe({
         next: (branding) => {
@@ -690,22 +711,38 @@ export class TenantDetail implements OnInit {
     if (!current) return;
     this.brandingSaving.set(true);
     this.brandingError.set(null);
-    this.brandingApi.upsert(current.hospitalId, { displayName: null, primaryColor: null }).subscribe({
-      next: (branding) => {
-        this.brandingSaving.set(false);
-        this.branding.set(branding);
-        this.brandingForm.set({ displayName: '', primaryColor: '' });
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Branding reset',
-          detail: `${current.hospitalName} now shows the default Vaidya brand.`,
-        });
-      },
-      error: (error: ApiError) => {
-        this.brandingSaving.set(false);
-        this.brandingError.set(error.message || 'Could not reset branding. Please try again.');
-      },
-    });
+    this.brandingApi
+      .upsert(current.hospitalId, {
+        displayName: null,
+        primaryColor: null,
+        tagline: null,
+        description: null,
+        footerText: null,
+        supportText: null,
+      })
+      .subscribe({
+        next: (branding) => {
+          this.brandingSaving.set(false);
+          this.branding.set(branding);
+          this.brandingForm.set({
+            displayName: '',
+            primaryColor: '',
+            tagline: '',
+            description: '',
+            footerText: '',
+            supportText: '',
+          });
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Branding reset',
+            detail: `${current.hospitalName} now shows the default Vaidya brand.`,
+          });
+        },
+        error: (error: ApiError) => {
+          this.brandingSaving.set(false);
+          this.brandingError.set(error.message || 'Could not reset branding. Please try again.');
+        },
+      });
   }
 
   onLogoFileSelected(event: Event): void {

@@ -6,6 +6,10 @@ import { TenantBranding } from './branding.model.js';
 export interface UpsertBrandingDto {
   displayName?: string | null;
   primaryColor?: string | null;
+  tagline?: string | null;
+  description?: string | null;
+  footerText?: string | null;
+  supportText?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

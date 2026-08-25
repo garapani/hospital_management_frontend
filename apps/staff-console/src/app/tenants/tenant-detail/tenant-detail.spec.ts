@@ -384,7 +384,14 @@ describe('TenantDetail package change', () => {
     await fixture.whenStable();
 
     expect(brandingApi.getForAdmin).toHaveBeenCalledWith('h1');
-    expect(fixture.componentInstance.brandingForm()).toEqual({ displayName: '', primaryColor: '' });
+    expect(fixture.componentInstance.brandingForm()).toEqual({
+      displayName: '',
+      primaryColor: '',
+      tagline: '',
+      description: '',
+      footerText: '',
+      supportText: '',
+    });
   });
 
   it('rejects saving a malformed primary color without calling the API', async () => {
@@ -392,7 +399,14 @@ describe('TenantDetail package change', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    fixture.componentInstance.brandingForm.set({ displayName: 'City Hospital', primaryColor: 'teal' });
+    fixture.componentInstance.brandingForm.set({
+      displayName: 'City Hospital',
+      primaryColor: 'teal',
+      tagline: '',
+      description: '',
+      footerText: '',
+      supportText: '',
+    });
     fixture.componentInstance.saveBranding();
 
     expect(brandingApi.upsert).not.toHaveBeenCalled();
@@ -404,28 +418,58 @@ describe('TenantDetail package change', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    fixture.componentInstance.brandingForm.set({ displayName: 'City Hospital', primaryColor: '#006D77' });
+    fixture.componentInstance.brandingForm.set({
+      displayName: 'City Hospital',
+      primaryColor: '#006D77',
+      tagline: 'Care, coordinated.',
+      description: '',
+      footerText: '',
+      supportText: '',
+    });
     fixture.componentInstance.saveBranding();
     await fixture.whenStable();
 
-    expect(brandingApi.upsert).toHaveBeenCalledWith('h1', { displayName: 'City Hospital', primaryColor: '#006D77' });
+    expect(brandingApi.upsert).toHaveBeenCalledWith('h1', {
+      displayName: 'City Hospital',
+      primaryColor: '#006D77',
+      tagline: 'Care, coordinated.',
+      description: null,
+      footerText: null,
+      supportText: null,
+    });
     expect(fixture.componentInstance.branding()?.displayName).toBe('City Hospital');
     expect(messageService.add).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success', summary: 'Branding saved' }),
     );
   });
 
-  it('resets branding to default by clearing both fields', async () => {
+  it('resets branding to default by clearing all fields', async () => {
     const { fixture, brandingApi, messageService } = setup();
-    (brandingApi.upsert as jest.Mock).mockReturnValue(of({ displayName: null, primaryColor: null, logoUrl: null }));
+    (brandingApi.upsert as jest.Mock).mockReturnValue(
+      of({ displayName: null, primaryColor: null, logoUrl: null, tagline: null, description: null, footerText: null, supportText: null }),
+    );
     fixture.detectChanges();
     await fixture.whenStable();
 
     fixture.componentInstance.resetBranding();
     await fixture.whenStable();
 
-    expect(brandingApi.upsert).toHaveBeenCalledWith('h1', { displayName: null, primaryColor: null });
-    expect(fixture.componentInstance.brandingForm()).toEqual({ displayName: '', primaryColor: '' });
+    expect(brandingApi.upsert).toHaveBeenCalledWith('h1', {
+      displayName: null,
+      primaryColor: null,
+      tagline: null,
+      description: null,
+      footerText: null,
+      supportText: null,
+    });
+    expect(fixture.componentInstance.brandingForm()).toEqual({
+      displayName: '',
+      primaryColor: '',
+      tagline: '',
+      description: '',
+      footerText: '',
+      supportText: '',
+    });
     expect(messageService.add).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success', summary: 'Branding reset' }),
     );

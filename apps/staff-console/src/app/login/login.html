@@ -27,11 +27,13 @@
 
     <div class="flex flex-col gap-5">
       <h1 class="text-4xl font-bold leading-[1.15] tracking-tight">
-        Hospital operations,<br />one screen at a time.
+        {{ branding.tagline() ?? 'Hospital operations, one screen at a time.' }}
       </h1>
       <p class="max-w-md text-base leading-relaxed text-primary-100">
-        Patient records, scheduling, triage and billing — for the whole hospital, in a single
-        place.
+        {{
+          branding.description() ??
+            'Patient records, scheduling, triage and billing — for the whole hospital, in a single place.'
+        }}
       </p>
 
       <ul class="mt-2 flex flex-col gap-3 text-sm text-primary-50">
@@ -51,7 +53,7 @@
     </div>
 
     <p class="text-xs text-primary-200">
-      &copy; {{ currentYear }} {{ branding.displayName() ?? 'Vaidya' }}
+      &copy; {{ currentYear }} {{ branding.footerText() ?? branding.displayName() ?? 'Vaidya' }}
     </p>
   </div>
 
@@ -139,7 +141,7 @@
       />
 
       <p class="text-center text-xs text-slate-400">
-        Trouble signing in? Contact your hospital administrator.
+        {{ branding.supportText() ?? 'Trouble signing in? Contact your hospital administrator.' }}
       </p>
     </form>
   </div>
