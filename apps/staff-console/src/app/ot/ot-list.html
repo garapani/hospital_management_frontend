@@ -1,6 +1,6 @@
 <div class="flex flex-col gap-6">
   <div class="surface-panel p-6 flex flex-col gap-6">
-    <div class="flex justify-between items-start">
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
       <div>
         <h1 class="page-title">Operation Theatre</h1>
         <p class="page-subtitle">Surgery scheduling and status.</p>
@@ -8,7 +8,7 @@
       <p-button label="Schedule Surgery" icon="pi pi-plus" (onClick)="openScheduleModal()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
     </div>
 
-    <div class="flex items-end gap-3">
+    <div class="flex items-end gap-3 flex-wrap">
       <label class="flex flex-col gap-2">
         <span class="text-sm font-medium text-slate-700">Patient ID</span>
         <input
@@ -128,7 +128,7 @@
   @if (detailLoading()) {
   <p class="text-sm text-slate-500 py-4">Loading…</p>
   } @else if (detail(); as d) {
-  <div class="grid grid-cols-2 gap-2 text-sm">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
     <span class="text-slate-500">Surgery #</span>
     <span class="font-mono">{{ d.surgeryNumber }}</span>
     <span class="text-slate-500">Procedure</span>

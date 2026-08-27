@@ -24,7 +24,7 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Details</h3>
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <div class="text-xs text-slate-500 mb-1">Contact Number</div>
           <div class="font-medium text-slate-900">{{ a.contactNumber }}</div>
@@ -46,7 +46,7 @@
           }
         </div>
         @if (a.cancelledRemarks) {
-        <div class="col-span-2">
+        <div class="col-span-1 sm:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Cancellation Remarks</div>
           <div class="font-medium text-slate-900">{{ a.cancelledRemarks }}</div>
         </div>
@@ -62,7 +62,7 @@
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Visit Information</h3>
 
       @if (auth.hasPermission('appointment.manage')) {
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="flex flex-col gap-2">
           <label for="apptEditType" class="text-sm font-medium text-slate-700">Appointment Type</label>
           <input id="apptEditType" pInputText [ngModel]="appointmentType()" (ngModelChange)="appointmentType.set($event)" class="w-full" />
@@ -71,7 +71,7 @@
           <label for="apptEditStatus" class="text-sm font-medium text-slate-700">Status</label>
           <p-select inputId="apptEditStatus" [options]="statuses" [ngModel]="status()" (ngModelChange)="status.set($event)" styleClass="w-full"></p-select>
         </div>
-        <div class="flex flex-col gap-2 col-span-2">
+        <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
           <label for="apptEditReason" class="text-sm font-medium text-slate-700">Reason</label>
           <textarea pTextarea id="apptEditReason" [ngModel]="reason()" (ngModelChange)="reason.set($event)" rows="3" class="w-full"></textarea>
         </div>
@@ -86,7 +86,7 @@
         ></p-button>
       </div>
       } @else {
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <div class="text-xs text-slate-500 mb-1">Appointment Type</div>
           <div class="font-medium text-slate-900">{{ a.appointmentType }}</div>

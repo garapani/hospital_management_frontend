@@ -43,6 +43,7 @@ export class ShellChrome implements OnInit, OnDestroy {
   readonly userMenuOpen = signal(false);
   readonly notificationsOpen = signal(false);
   readonly quickActionsOpen = signal(false);
+  readonly sidebarOpen = signal(false);
 
   readonly unreadCount = signal(0);
   readonly recentNotifications = signal<Notification[]>([]);
@@ -63,6 +64,14 @@ export class ShellChrome implements OnInit, OnDestroy {
 
   logout(): void {
     this.auth.logout().subscribe();
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen.update((open) => !open);
+  }
+
+  closeSidebar(): void {
+    this.sidebarOpen.set(false);
   }
 
   openPasswordModal(): void {

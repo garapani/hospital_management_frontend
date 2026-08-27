@@ -68,7 +68,7 @@
 
   @if (selectedPatient(); as patient) {
   <div class="surface-panel p-6 flex flex-col gap-4">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h2 class="text-lg font-bold text-slate-800">
           {{ patient.firstName }} {{ patient.lastName }}
@@ -150,7 +150,7 @@
   [modal]="true"
   [style]="{ width: '480px' }"
 >
-  <div class="grid grid-cols-2 gap-4 py-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2">
       <label class="text-sm font-medium">Temperature (°C)</label>
       <p-inputNumber
@@ -196,7 +196,7 @@
       <label class="text-sm font-medium">Pain Scale (0–10)</label>
       <p-inputNumber [ngModel]="createForm().painScale" (ngModelChange)="createForm.update(v => ({...v, painScale: $event}))" [min]="0" [max]="10" />
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label class="text-sm font-medium">Notes</label>
       <textarea
         pTextarea

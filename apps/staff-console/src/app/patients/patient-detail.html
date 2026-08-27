@@ -1,6 +1,6 @@
 <p-toast></p-toast>
 <div class="h-full flex flex-col gap-6">
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div class="flex items-center gap-4">
       <p-button
         icon="pi pi-arrow-left"
@@ -26,7 +26,7 @@
         </p>
       </div>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-2 flex-wrap">
       @if (auth.hasPermission('patients.update')) {
       <p-button label="Edit Profile" icon="pi pi-pencil" severity="secondary" (onClick)="openEditModal()"></p-button>
       }
@@ -46,7 +46,7 @@
     <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Demographics</h3>
       
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <div class="text-xs text-slate-500 mb-1">Gender</div>
           <div class="font-medium text-slate-900">{{ p.gender }}</div>
@@ -68,11 +68,11 @@
           <div class="text-xs text-slate-500 mb-1">Phone Number</div>
           <div class="font-medium text-slate-900">{{ p.phoneNumber || 'N/A' }}</div>
         </div>
-        <div class="col-span-2">
+        <div class="col-span-1 sm:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Email Address</div>
           <div class="font-medium text-slate-900">{{ p.email || 'N/A' }}</div>
         </div>
-        <div class="col-span-2">
+        <div class="col-span-1 sm:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Government ID ({{ p.governmentIdType || 'Type' }})</div>
           <div class="font-medium text-slate-900 font-mono">{{ p.governmentIdNumber || 'N/A' }}</div>
         </div>
@@ -298,7 +298,7 @@
 
 <!-- Edit Profile Modal -->
 <p-dialog header="Edit Profile" [(visible)]="showEditModal" [modal]="true" [style]="{ width: '600px' }" styleClass="surface-modal">
-  <div class="grid grid-cols-2 gap-4 py-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2">
       <label for="editFirstName" class="text-sm font-medium text-slate-700">First Name</label>
       <input id="editFirstName" pInputText [ngModel]="editForm().firstName" (ngModelChange)="editForm.set({ ...editForm(), firstName: $event })" class="w-full" />
@@ -315,7 +315,7 @@
       <label for="editPhone" class="text-sm font-medium text-slate-700">Phone Number</label>
       <input id="editPhone" pInputText [ngModel]="editForm().phoneNumber" (ngModelChange)="editForm.set({ ...editForm(), phoneNumber: $event })" class="w-full" />
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="editEmail" class="text-sm font-medium text-slate-700">Email Address</label>
       <input id="editEmail" pInputText [ngModel]="editForm().email" (ngModelChange)="editForm.set({ ...editForm(), email: $event })" class="w-full" />
     </div>
@@ -343,7 +343,7 @@
 
 <!-- Record Vitals Modal -->
 <p-dialog header="Record Vitals" [(visible)]="showVitalModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">
-  <div class="grid grid-cols-2 gap-4 py-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2">
       <label for="vitalHeight" class="text-sm font-medium text-slate-700">Height (cm)</label>
       <p-inputNumber inputId="vitalHeight" [ngModel]="vitalForm().height" (ngModelChange)="vitalForm.set({ ...vitalForm(), height: $event })" class="w-full"></p-inputNumber>
@@ -376,11 +376,11 @@
       <label for="vitalSpO2" class="text-sm font-medium text-slate-700">SpO2 (%)</label>
       <p-inputNumber inputId="vitalSpO2" [ngModel]="vitalForm().spO2" (ngModelChange)="vitalForm.set({ ...vitalForm(), spO2: $event })" class="w-full"></p-inputNumber>
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="vitalPain" class="text-sm font-medium text-slate-700">Pain Scale (0-10)</label>
       <p-inputNumber inputId="vitalPain" [ngModel]="vitalForm().painScale" (ngModelChange)="vitalForm.set({ ...vitalForm(), painScale: $event })" [min]="0" [max]="10" class="w-full"></p-inputNumber>
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="vitalNotes" class="text-sm font-medium text-slate-700">Notes</label>
       <textarea pTextarea id="vitalNotes" [ngModel]="vitalForm().triageNotes" (ngModelChange)="vitalForm.set({ ...vitalForm(), triageNotes: $event })" rows="2" class="w-full"></textarea>
     </div>
@@ -447,8 +447,8 @@
 
 <!-- Add Prescription Modal -->
 <p-dialog header="Add Prescription" [(visible)]="showPrescriptionModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">
-  <div class="grid grid-cols-2 gap-4 py-4">
-    <div class="flex flex-col gap-2 col-span-2">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="rxMed" class="text-sm font-medium text-slate-700">Medication Name</label>
       <input id="rxMed" pInputText [ngModel]="prescriptionForm().medicationName" (ngModelChange)="prescriptionForm.set({ ...prescriptionForm(), medicationName: $event })" class="w-full" />
     </div>
@@ -468,7 +468,7 @@
       <label for="rxDuration" class="text-sm font-medium text-slate-700">Duration (days)</label>
       <p-inputNumber inputId="rxDuration" [ngModel]="prescriptionForm().durationDays" (ngModelChange)="prescriptionForm.set({ ...prescriptionForm(), durationDays: $event })" [min]="1" class="w-full"></p-inputNumber>
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="rxNotes" class="text-sm font-medium text-slate-700">Notes</label>
       <textarea pTextarea id="rxNotes" [ngModel]="prescriptionForm().notes" (ngModelChange)="prescriptionForm.set({ ...prescriptionForm(), notes: $event })" rows="2" class="w-full"></textarea>
     </div>

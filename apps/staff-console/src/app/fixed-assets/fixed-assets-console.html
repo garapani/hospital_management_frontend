@@ -66,7 +66,7 @@
 
         <p-tabpanel value="1">
           <div class="p-4 flex flex-col gap-4">
-            <div class="flex items-end gap-3">
+            <div class="flex items-end gap-3 flex-wrap">
               <label class="flex flex-col gap-2">
                 <span class="text-sm font-medium text-slate-700">New Category</span>
                 <input pInputText [ngModel]="newCategoryName()" (ngModelChange)="newCategoryName.set($event)" (keyup.enter)="addCategory()" class="w-64" />
@@ -127,7 +127,7 @@
       <label class="text-sm font-medium text-slate-700">Name</label>
       <input pInputText [ngModel]="assetForm().name" (ngModelChange)="assetForm.set({ ...assetForm(), name: $event })" class="w-full" />
     </div>
-    <div class="flex gap-4">
+    <div class="flex flex-col sm:flex-row gap-4">
       <div class="flex flex-col gap-2 flex-1">
         <label class="text-sm font-medium text-slate-700">Purchase Date</label>
         <input pInputText type="date" [ngModel]="assetForm().purchaseDate" (ngModelChange)="assetForm.set({ ...assetForm(), purchaseDate: $event })" class="w-full" />
@@ -137,7 +137,7 @@
         <p-inputNumber [ngModel]="assetForm().purchaseCost" (ngModelChange)="assetForm.set({ ...assetForm(), purchaseCost: $event })" [min]="0" mode="decimal" [minFractionDigits]="2" styleClass="w-full" />
       </div>
     </div>
-    <div class="flex gap-4">
+    <div class="flex flex-col sm:flex-row gap-4">
       <div class="flex flex-col gap-2 flex-1">
         <label class="text-sm font-medium text-slate-700">Useful Life (years)</label>
         <p-inputNumber [ngModel]="assetForm().usefulLifeYears" (ngModelChange)="assetForm.set({ ...assetForm(), usefulLifeYears: $event })" [min]="0" styleClass="w-full" />
@@ -166,7 +166,7 @@
   @if (valuationLoading()) {
   <p class="text-sm text-slate-500 py-4">Loading…</p>
   } @else if (valuation(); as v) {
-  <div class="grid grid-cols-2 gap-2 text-sm">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
     <span class="text-slate-500">Purchase Cost</span>
     <span class="font-mono">{{ v.purchaseCost | number: '1.2-2' }}</span>
     <span class="text-slate-500">Salvage Value</span>

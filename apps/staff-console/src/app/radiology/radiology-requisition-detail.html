@@ -24,7 +24,7 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Requisition Details</h3>
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <div class="text-xs text-slate-500 mb-1">Order Item</div>
           <div class="font-medium text-slate-900">{{ r.orderItem?.itemDescription ?? r.orderItemId }}</div>
@@ -83,7 +83,7 @@
         <div class="text-xs text-slate-500 mb-1">Report Text</div>
         <div class="font-medium text-slate-900 whitespace-pre-wrap">{{ r.reportText }}</div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <div class="text-xs text-slate-500 mb-1">Indication</div>
           <div class="font-medium text-slate-900">{{ r.indication || 'N/A' }}</div>

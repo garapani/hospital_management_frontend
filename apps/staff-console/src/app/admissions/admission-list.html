@@ -1,5 +1,5 @@
 <div class="h-full flex flex-col gap-6">
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h1 class="page-title">Admissions</h1>
       <p class="text-sm text-slate-500 mt-1">Admit, transfer and discharge inpatients.</p>
@@ -95,12 +95,12 @@
 
 <!-- New Admission Modal -->
 <p-dialog header="New Admission" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">
-  <div class="grid grid-cols-2 gap-4 py-4">
-    <div class="flex flex-col gap-2 col-span-2">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="admPatientId" class="text-sm font-medium text-slate-700">Patient ID</label>
       <input id="admPatientId" pInputText [ngModel]="createForm().patientId" (ngModelChange)="createForm.set({ ...createForm(), patientId: $event })" class="w-full" />
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="admSource" class="text-sm font-medium text-slate-700">Admission Source</label>
       <p-select
         inputId="admSource"
@@ -111,11 +111,11 @@
         styleClass="w-full"
       ></p-select>
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="admDoctor" class="text-sm font-medium text-slate-700">Admitting Doctor ID</label>
       <input id="admDoctor" pInputText [ngModel]="createForm().admittingDoctorId" (ngModelChange)="createForm.set({ ...createForm(), admittingDoctorId: $event })" class="w-full" />
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="admBed" class="text-sm font-medium text-slate-700">Bed ID</label>
       <input id="admBed" pInputText [ngModel]="createForm().bedId" (ngModelChange)="createForm.set({ ...createForm(), bedId: $event })" class="w-full" />
     </div>

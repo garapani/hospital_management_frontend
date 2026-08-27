@@ -154,6 +154,22 @@
            text-xs font-semibold uppercase tracking-wider;
   }
 
+  /*
+   * Responsive safety nets, applied globally rather than per-screen:
+   *  - Every p-table scrolls horizontally within its own panel instead of overflowing the page
+   *    or (worse) being clipped by a `surface-panel overflow-hidden` ancestor.
+   *  - Every p-dialog caps at the viewport width so a fixed pixel `[style]` (e.g. 600px) never
+   *    exceeds a phone screen.
+   */
+  .p-datatable-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .p-dialog {
+    max-width: calc(100vw - 2rem);
+  }
+
   .page-title {
     @apply font-display text-2xl font-bold text-slate-900 tracking-tight;
   }

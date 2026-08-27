@@ -1,5 +1,5 @@
 <div class="h-full flex flex-col gap-6">
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h1 class="page-title">Triage / ER Intake</h1>
       <p class="text-sm text-slate-500 mt-1">Active triage queue.</p>
@@ -71,7 +71,7 @@
 
 <!-- New Triage Entry Modal -->
 <p-dialog header="New Triage Entry" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">
-  <div class="grid grid-cols-2 gap-4 py-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2">
       <label for="triageFirstName" class="text-sm font-medium text-slate-700">First Name</label>
       <input id="triageFirstName" pInputText [ngModel]="createForm().firstName" (ngModelChange)="createForm.set({ ...createForm(), firstName: $event })" class="w-full" />
@@ -104,11 +104,11 @@
       <label for="triageBroughtBy" class="text-sm font-medium text-slate-700">Brought By</label>
       <input id="triageBroughtBy" pInputText [ngModel]="createForm().broughtBy" (ngModelChange)="createForm.set({ ...createForm(), broughtBy: $event })" class="w-full" />
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="triageChiefComplaint" class="text-sm font-medium text-slate-700">Chief Complaint</label>
       <input id="triageChiefComplaint" pInputText [ngModel]="createForm().chiefComplaint" (ngModelChange)="createForm.set({ ...createForm(), chiefComplaint: $event })" class="w-full" />
     </div>
-    <div class="flex items-center gap-2 col-span-2">
+    <div class="flex items-center gap-2 col-span-1 sm:col-span-2">
       <p-checkbox
         [binary]="true"
         inputId="isPoliceCase"

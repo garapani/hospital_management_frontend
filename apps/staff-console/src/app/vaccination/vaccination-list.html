@@ -1,6 +1,6 @@
 <div class="flex flex-col gap-6">
   <div class="surface-panel p-6 flex flex-col gap-6">
-    <div class="flex justify-between items-start">
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start">
       <div>
         <h1 class="page-title">Vaccination</h1>
         <p class="page-subtitle">Patient vaccination records.</p>
@@ -8,7 +8,7 @@
       <p-button label="Record Vaccination" icon="pi pi-plus" (onClick)="openModal()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
     </div>
 
-    <div class="flex items-end gap-3">
+    <div class="flex items-end gap-3 flex-wrap">
       <label class="flex flex-col gap-2">
         <span class="text-sm font-medium text-slate-700">Patient ID</span>
         <input
@@ -82,7 +82,7 @@
       <label class="text-sm font-medium text-slate-700">Vaccine</label>
       <input pInputText [ngModel]="form().vaccine" (ngModelChange)="form.set({ ...form(), vaccine: $event })" class="w-full" />
     </div>
-    <div class="flex gap-4">
+    <div class="flex flex-col sm:flex-row gap-4">
       <div class="flex flex-col gap-2 flex-1">
         <label class="text-sm font-medium text-slate-700">Dose #</label>
         <p-inputNumber [ngModel]="form().doseNumber" (ngModelChange)="form.set({ ...form(), doseNumber: $event })" [min]="1" styleClass="w-full" />

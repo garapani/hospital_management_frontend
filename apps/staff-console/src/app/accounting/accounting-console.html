@@ -59,7 +59,7 @@
         <!-- JOURNAL ENTRIES -->
         <p-tabpanel value="1">
           <div class="p-4 flex flex-col gap-4">
-            <div class="flex justify-between items-end">
+            <div class="flex flex-wrap justify-between items-end gap-3">
               <div class="flex flex-col gap-2">
                 <label class="text-sm font-medium text-slate-700">Status</label>
                 <p-select
@@ -360,7 +360,7 @@
   <p class="text-sm text-slate-500 py-4">Loading…</p>
   } @else if (journalDetail(); as detail) {
   <div class="flex flex-col gap-4">
-    <div class="grid grid-cols-2 gap-2 text-sm">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
       <span class="text-slate-500">Journal #</span>
       <span class="font-mono">{{ detail.journalNumber }}</span>
       <span class="text-slate-500">Date</span>

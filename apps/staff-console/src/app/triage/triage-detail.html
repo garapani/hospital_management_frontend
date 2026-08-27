@@ -26,7 +26,7 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Arrival Details</h3>
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <div class="text-xs text-slate-500 mb-1">Gender</div>
           <div class="font-medium text-slate-900">{{ e.gender || 'N/A' }}</div>
@@ -43,12 +43,12 @@
           <div class="text-xs text-slate-500 mb-1">Brought By</div>
           <div class="font-medium text-slate-900">{{ e.broughtBy || 'N/A' }}</div>
         </div>
-        <div class="col-span-2">
+        <div class="col-span-1 sm:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Chief Complaint</div>
           <div class="font-medium text-slate-900">{{ e.chiefComplaint || 'N/A' }}</div>
         </div>
         @if (e.isPoliceCase) {
-        <div class="col-span-2">
+        <div class="col-span-1 sm:col-span-2">
           <p-tag value="Police Case" severity="danger" [rounded]="true"></p-tag>
         </div>
         }
@@ -79,7 +79,7 @@
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Triage Assessment</h3>
 
       @if (auth.hasPermission('triage.manage')) {
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="flex flex-col gap-2">
           <label for="triageAcuity" class="text-sm font-medium text-slate-700">Acuity Level (1-5)</label>
           <input
@@ -109,7 +109,7 @@
           <label for="triageStatus" class="text-sm font-medium text-slate-700">Status</label>
           <p-select inputId="triageStatus" [options]="statuses" [ngModel]="status()" (ngModelChange)="status.set($event)" styleClass="w-full"></p-select>
         </div>
-        <div class="flex flex-col gap-2 col-span-2">
+        <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
           <label for="triageRemarks" class="text-sm font-medium text-slate-700">Discharge Remarks</label>
           <textarea pTextarea id="triageRemarks" [ngModel]="dischargeRemarks()" (ngModelChange)="dischargeRemarks.set($event)" rows="3" class="w-full"></textarea>
         </div>
@@ -118,7 +118,7 @@
         <p-button label="Save Assessment" icon="pi pi-check" [loading]="saving()" (onClick)="saveAssessment()"></p-button>
       </div>
       } @else {
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <div class="text-xs text-slate-500 mb-1">Acuity Level</div>
           <div class="font-medium text-slate-900">{{ e.acuityLevel ?? 'Not assessed' }}</div>

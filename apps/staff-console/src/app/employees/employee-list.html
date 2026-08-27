@@ -1,5 +1,5 @@
 <div class="flex flex-col gap-6">
-  <div class="flex items-center justify-between surface-panel p-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between surface-panel p-6">
     <div>
       <h1 class="page-title">Employees</h1>
       <p class="page-subtitle">
@@ -113,7 +113,7 @@
   [modal]="true"
   [style]="{ width: '520px' }"
 >
-  <div class="grid grid-cols-2 gap-4 py-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2">
       <label class="text-sm font-medium">First Name</label>
       <input
@@ -187,7 +187,7 @@
         (ngModelChange)="editForm.update(v => ({...v, email: $event}))"
       />
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label class="text-sm font-medium">Monthly Basic Salary (₹)</label>
       <p-inputNumber
         [ngModel]="editForm().monthlyBasicSalary"
@@ -199,7 +199,7 @@
       />
     </div>
     @if (saveError(); as message) {
-    <p class="col-span-2 text-sm text-red-600">{{ message }}</p>
+    <p class="col-span-1 sm:col-span-2 text-sm text-red-600">{{ message }}</p>
     }
   </div>
   <ng-template pTemplate="footer">

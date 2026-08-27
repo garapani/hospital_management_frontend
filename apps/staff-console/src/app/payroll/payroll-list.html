@@ -1,5 +1,5 @@
 <div class="flex flex-col gap-6">
-  <div class="flex items-center justify-between surface-panel p-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between surface-panel p-6">
     <div>
       <h1 class="page-title">Payroll</h1>
       <p class="page-subtitle">
@@ -112,7 +112,7 @@
   [style]="{ width: '440px' }"
 >
   <div class="flex flex-col gap-4 py-4">
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
         <label class="text-sm font-medium">Month</label>
         <p-select
@@ -132,7 +132,7 @@
         />
       </div>
     </div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
         <label class="text-sm font-medium">Allowance (%)</label>
         <p-inputNumber

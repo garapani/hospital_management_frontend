@@ -24,8 +24,8 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Requisition Details</h3>
-      <div class="grid grid-cols-2 gap-4">
-        <div class="col-span-2">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="col-span-1 sm:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Department</div>
           <div class="font-medium text-slate-900">{{ departmentName(r.departmentId) }}</div>
         </div>
@@ -38,13 +38,13 @@
           <p-tag [value]="r.status" [severity]="statusSeverity(r.status)" [rounded]="true"></p-tag>
         </div>
         @if (r.notes) {
-        <div class="col-span-2">
+        <div class="col-span-1 sm:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Notes</div>
           <div class="font-medium text-slate-900">{{ r.notes }}</div>
         </div>
         }
         @if (r.cancelReason) {
-        <div class="col-span-2">
+        <div class="col-span-1 sm:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Cancellation Reason</div>
           <div class="font-medium text-slate-900">{{ r.cancelReason }}</div>
         </div>
@@ -111,7 +111,7 @@
       <label for="fulfillItem" class="text-sm font-medium text-slate-700">Item</label>
       <input id="fulfillItem" pInputText [ngModel]="line.itemId" disabled class="w-full font-mono text-xs" />
     </div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
         <label class="text-sm font-medium text-slate-700">Requested</label>
         <div class="font-medium text-slate-900">{{ line.requestedQuantity }}</div>

@@ -1,5 +1,5 @@
 <div class="h-full flex flex-col gap-6">
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h1 class="page-title">Appointments</h1>
       <p class="text-sm text-slate-500 mt-1">Schedule and manage patient appointments.</p>
@@ -84,7 +84,7 @@
 
 <!-- New Appointment Modal -->
 <p-dialog header="New Appointment" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">
-  <div class="grid grid-cols-2 gap-4 py-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2">
       <label for="apptFirstName" class="text-sm font-medium text-slate-700">First Name</label>
       <input id="apptFirstName" pInputText [ngModel]="createForm().firstName" (ngModelChange)="createForm.set({ ...createForm(), firstName: $event })" class="w-full" />
@@ -93,7 +93,7 @@
       <label for="apptLastName" class="text-sm font-medium text-slate-700">Last Name</label>
       <input id="apptLastName" pInputText [ngModel]="createForm().lastName" (ngModelChange)="createForm.set({ ...createForm(), lastName: $event })" class="w-full" />
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="apptContact" class="text-sm font-medium text-slate-700">Contact Number</label>
       <input id="apptContact" pInputText [ngModel]="createForm().contactNumber" (ngModelChange)="createForm.set({ ...createForm(), contactNumber: $event })" class="w-full" />
     </div>
@@ -113,11 +113,11 @@
       <label for="apptDept" class="text-sm font-medium text-slate-700">Department ID</label>
       <input id="apptDept" pInputText [ngModel]="createForm().departmentId" (ngModelChange)="createForm.set({ ...createForm(), departmentId: $event })" placeholder="Optional" class="w-full" />
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="apptType" class="text-sm font-medium text-slate-700">Appointment Type</label>
       <input id="apptType" pInputText [ngModel]="createForm().appointmentType" (ngModelChange)="createForm.set({ ...createForm(), appointmentType: $event })" placeholder="e.g. New Visit, Follow-up" class="w-full" />
     </div>
-    <div class="flex flex-col gap-2 col-span-2">
+    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="apptReason" class="text-sm font-medium text-slate-700">Reason</label>
       <input id="apptReason" pInputText [ngModel]="createForm().reason" (ngModelChange)="createForm.set({ ...createForm(), reason: $event })" class="w-full" />
     </div>

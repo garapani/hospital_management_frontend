@@ -366,7 +366,7 @@
       <label for="policyInsuredName" class="text-sm font-medium">Insured name</label>
       <input pInputText id="policyInsuredName" [ngModel]="policyForm().insuredName" (ngModelChange)="policyForm.set({ ...policyForm(), insuredName: $event })" />
     </div>
-    <div class="grid grid-cols-2 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div class="flex flex-col gap-2">
         <label for="policyStart" class="text-sm font-medium">Coverage start</label>
         <input pInputText type="date" id="policyStart" [ngModel]="policyForm().coverageStartDate" (ngModelChange)="policyForm.set({ ...policyForm(), coverageStartDate: $event })" />
@@ -376,7 +376,7 @@
         <input pInputText type="date" id="policyEnd" [ngModel]="policyForm().coverageEndDate" (ngModelChange)="policyForm.set({ ...policyForm(), coverageEndDate: $event })" />
       </div>
     </div>
-    <div class="grid grid-cols-2 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div class="flex flex-col gap-2">
         <label for="policySumInsured" class="text-sm font-medium">Sum insured (₹)</label>
         <p-inputNumber inputId="policySumInsured" [ngModel]="policyForm().sumInsured" (ngModelChange)="policyForm.set({ ...policyForm(), sumInsured: $event })" [min]="0"></p-inputNumber>
@@ -403,7 +403,7 @@
     @if (!result.eligible && result.reason) {
     <p class="text-sm text-slate-600">Reason: {{ result.reason === 'policy-inactive' ? 'Policy is inactive' : 'Outside the coverage window' }}</p>
     }
-    <div class="grid grid-cols-2 gap-3 text-sm">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
       <div><span class="text-slate-500">Payer</span><p class="font-medium">{{ result.payerName }}</p></div>
       <div><span class="text-slate-500">Sum Insured</span><p class="font-medium">₹{{ result.sumInsured | number }}</p></div>
       <div><span class="text-slate-500">Copay</span><p class="font-medium">{{ result.copayPercent }}%</p></div>

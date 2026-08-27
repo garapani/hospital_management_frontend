@@ -5,7 +5,7 @@
 } @else if (accountData(); as data) {
 <div class="h-full flex flex-col gap-6 max-w-5xl mx-auto">
   <!-- Header -->
-  <div class="flex items-start justify-between gap-4">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
     <div class="flex gap-4 items-center">
       <p-button
         icon="pi pi-arrow-left"
@@ -29,7 +29,7 @@
       </div>
     </div>
 
-    <div class="flex gap-2">
+    <div class="flex gap-2 flex-wrap">
       @if (data.account.lockedUntil) {
       <p-button
         label="Unlock Account"
@@ -62,10 +62,10 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-3 gap-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Info Panel -->
     <div
-      class="col-span-1 surface-panel rounded-xl p-6 shadow-sm border border-slate-200 bg-white flex flex-col gap-4 self-start"
+      class="lg:col-span-1 surface-panel rounded-xl p-6 shadow-sm border border-slate-200 bg-white flex flex-col gap-4 self-start"
     >
       <h2 class="text-lg font-semibold text-slate-800">Account Info</h2>
       <div class="flex flex-col gap-3 text-sm">
@@ -100,7 +100,7 @@
 
     <!-- Roles Panel -->
     <div
-      class="col-span-2 surface-panel rounded-xl p-6 shadow-sm border border-slate-200 bg-white flex flex-col gap-4"
+      class="lg:col-span-2 surface-panel rounded-xl p-6 shadow-sm border border-slate-200 bg-white flex flex-col gap-4"
     >
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold text-slate-800">Role Assignments</h2>

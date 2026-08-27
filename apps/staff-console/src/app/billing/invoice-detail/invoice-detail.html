@@ -10,7 +10,7 @@
   @if (invoice(); as inv) {
   <div class="flex flex-col gap-6">
     <div class="surface-panel p-8">
-      <div class="flex items-start justify-between">
+      <div class="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <div class="text-sm font-medium text-slate-500">Invoice</div>
           <!-- Not .page-title: this heading's content is an invoice reference, not a title, so it takes the mono
@@ -26,7 +26,7 @@
         />
       </div>
       <div
-        class="mt-8 grid grid-cols-3 gap-6 bg-white border border-slate-200 p-6 rounded-xl"
+        class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6 bg-white border border-slate-200 p-6 rounded-xl"
       >
         <div>
           <div class="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -58,7 +58,7 @@
     <div class="surface-panel p-8">
       <h2 class="mb-6 text-lg font-bold text-slate-800">Details</h2>
       <dl
-        class="grid grid-cols-2 gap-x-8 gap-y-4 text-sm bg-white border border-slate-200 p-6 rounded-xl"
+        class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm bg-white border border-slate-200 p-6 rounded-xl"
       >
         <dt class="font-medium text-slate-500">Invoice ID</dt>
         <dd class="font-semibold text-slate-800">{{ inv.id }}</dd>
