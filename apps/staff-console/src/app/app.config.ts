@@ -61,23 +61,35 @@ const VaidyaTealPreset = definePreset(Aura, {
  * Resolves the tenant ID from the subdomain with fallback mechanism for invalid tenant IDs.
  * - Extracts subdomain from hostname (e.g., 'cityhospital.localhost' -> 'cityhospital')
  * - Returns PLATFORM_TENANT_ID for 'admin' subdomain
- * - Falls back to environment default for localhost, IP addresses, or www
+ * - Falls back to environment default for localhost, IP addresses, or base domains (without subdomains)
  * - Invalid/non-existent tenant IDs will be handled by backend authentication
  */
 export function resolveTenantId(): string {
   if (typeof window === 'undefined') return environment.tenantId;
 
   const hostname = window.location.hostname;
-  const parts = hostname.split('.');
-
-  // Fallback to environment default if no subdomain (e.g. localhost, 127.0.0.1)
-  if (parts.length === 1 || (parts.length === 4 && !isNaN(Number(parts[0])))) {
+  
+  // Base domains where we should fallback to the environment default if accessed directly without a subdomain
+  const baseDomains = ['vaidya.newgenworks.in', 'viadya.newgenworks.in', 'newgenworks.in', 'localhost'];
+  
+  // Fallback for raw IP addresses (e.g. 127.0.0.1)
+  const isIpAddress = hostname.split('.').length === 4 && !isNaN(Number(hostname.split('.')[0]));
+  if (isIpAddress || baseDomains.includes(hostname)) {
     return environment.tenantId;
   }
 
-  const subdomain = parts[0];
+  // Find if hostname ends with one of our base domains to extract the subdomain correctly
+  let subdomain = hostname.split('.')[0];
+  for (const base of baseDomains) {
+    if (hostname.endsWith(`.${base}`)) {
+      // E.g., 'apollo.vaidya.newgenworks.in' ends with '.vaidya.newgenworks.in'
+      // The subdomain is everything before that.
+      subdomain = hostname.substring(0, hostname.length - base.length - 1);
+      break;
+    }
+  }
 
-  // If the subdomain is 'www', fallback or handle it
+  // If the subdomain is 'www', fallback to default
   if (subdomain === 'www') {
     return environment.tenantId;
   }
@@ -88,10 +100,11 @@ export function resolveTenantId(): string {
     return PLATFORM_TENANT_ID;
   }
 
-  // E.g., 'cityhospital.localhost' -> 'cityhospital'
+  // E.g., 'cityhospital'
   // Note: Invalid tenant IDs will be rejected by backend during authentication
   return subdomain;
 }
+
 
 export const appConfig: ApplicationConfig = {
   providers: [
