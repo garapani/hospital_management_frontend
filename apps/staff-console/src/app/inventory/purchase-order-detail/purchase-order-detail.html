@@ -20,14 +20,20 @@
   <div class="flex-1 flex items-center justify-center">
     <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
   </div>
+  } @else if (notFound()) {
+  <div class="flex-1 flex flex-col items-center justify-center gap-3 text-slate-500">
+    <i class="pi pi-exclamation-circle text-4xl"></i>
+    <p>Could not load this purchase order. It may not exist, or you may not have access.</p>
+    <p-button label="Back to Purchase Orders" severity="secondary" (onClick)="goBack()"></p-button>
+  </div>
   } @else if (purchaseOrder(); as po) {
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Order Details</h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="col-span-1 sm:col-span-2">
-          <div class="text-xs text-slate-500 mb-1">Vendor ID</div>
-          <div class="font-medium text-slate-900 font-mono text-xs">{{ po.vendorId }}</div>
+          <div class="text-xs text-slate-500 mb-1">Vendor</div>
+          <div class="font-medium text-slate-900">{{ vendorName(po.vendorId) }}</div>
         </div>
         <div>
           <div class="text-xs text-slate-500 mb-1">Ordered By</div>
@@ -50,6 +56,11 @@
         </div>
         }
       </div>
+      @if (auth.hasPermission('inventory.purchase-order.create') && (po.status === 'Ordered' || po.status === 'PartiallyReceived')) {
+      <div class="border-t border-slate-200 pt-4">
+        <p-button label="Cancel Order" severity="danger" [text]="true" size="small" (onClick)="openCancelModal()"></p-button>
+      </div>
+      }
     </div>
 
     <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 flex flex-col gap-4">
@@ -66,6 +77,9 @@
             <th class="table-header-cell">Received Qty</th>
             <th class="table-header-cell">Unit Cost</th>
             <th class="table-header-cell">Line Total</th>
+            @if (auth.hasPermission('inventory.goods-receipt.enter') && (po.status === 'Ordered' || po.status === 'PartiallyReceived')) {
+            <th class="table-header-cell w-32">Actions</th>
+            }
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-line>
@@ -75,11 +89,18 @@
             <td>{{ line.receivedQuantity }}</td>
             <td class="font-mono">{{ line.unitCost | number: '1.2-2' }}</td>
             <td class="font-mono">{{ lineTotal(line) | number: '1.2-2' }}</td>
+            @if (auth.hasPermission('inventory.goods-receipt.enter') && (po.status === 'Ordered' || po.status === 'PartiallyReceived')) {
+            <td>
+              @if (!lineFullyReceived(line)) {
+              <p-button label="Receive" size="small" icon="pi pi-inbox" (onClick)="openReceiveModal(line)"></p-button>
+              }
+            </td>
+            }
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="5" class="text-center p-6 text-slate-500">No line items on this order.</td>
+            <td colspan="6" class="text-center p-6 text-slate-500">No line items on this order.</td>
           </tr>
         </ng-template>
       </p-table>
@@ -87,3 +108,50 @@
   </div>
   }
 </div>
+
+<!-- Cancel Order Modal -->
+<p-dialog header="Cancel Purchase Order" [(visible)]="showCancelModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-2 py-2">
+    <label for="poCancelReason" class="text-sm font-medium text-slate-700">Cancellation Reason</label>
+    <textarea pTextarea id="poCancelReason" rows="3" [ngModel]="cancelReason()" (ngModelChange)="cancelReason.set($event)" class="w-full"></textarea>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Back" severity="secondary" [text]="true" (onClick)="showCancelModal.set(false)"></p-button>
+    <p-button label="Confirm Cancel" severity="danger" [loading]="cancelSaving()" (onClick)="confirmCancel()"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Goods Receipt Modal -->
+<p-dialog header="Record Goods Receipt" [(visible)]="showReceiveModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  @if (receiveLine(); as line) {
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="receiveItem" class="text-sm font-medium text-slate-700">Item</label>
+      <input id="receiveItem" pInputText [ngModel]="line.itemId" disabled class="w-full font-mono text-xs" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="receiveQuantity" class="text-sm font-medium text-slate-700">Quantity Received</label>
+      <p-inputNumber inputId="receiveQuantity" [ngModel]="receiveQuantity()" (ngModelChange)="receiveQuantity.set($event)" [min]="0" styleClass="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="receiveBatchNumber" class="text-sm font-medium text-slate-700">Batch Number</label>
+      <input id="receiveBatchNumber" pInputText [ngModel]="receiveBatchNumber()" (ngModelChange)="receiveBatchNumber.set($event)" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="receiveExpiryDate" class="text-sm font-medium text-slate-700">Expiry Date</label>
+      <input id="receiveExpiryDate" pInputText type="date" [ngModel]="receiveExpiryDate()" (ngModelChange)="receiveExpiryDate.set($event)" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="receiveUnitCost" class="text-sm font-medium text-slate-700">Unit Cost</label>
+      <p-inputNumber inputId="receiveUnitCost" [ngModel]="receiveUnitCost()" (ngModelChange)="receiveUnitCost.set($event)" [min]="0" mode="decimal" [minFractionDigits]="2" styleClass="w-full" />
+    </div>
+    @if (receiveError()) {
+    <p class="text-sm text-red-600">{{ receiveError() }}</p>
+    }
+  </div>
+  }
+  <ng-template pTemplate="footer">
+    <p-button label="Back" severity="secondary" [text]="true" (onClick)="showReceiveModal.set(false)"></p-button>
+    <p-button label="Confirm Receipt" icon="pi pi-check" [loading]="receiving()" [disabled]="!canReceive()" (onClick)="confirmReceive()"></p-button>
+  </ng-template>
+</p-dialog>

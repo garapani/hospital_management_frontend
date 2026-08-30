@@ -21,10 +21,10 @@ export interface ListTransactionsParams {
 export class WardSupplyApiService {
   private readonly apiClient = inject(ApiClientService);
 
-  listBalances(departmentId?: string): Observable<WardStockBalance[]> {
+  listBalances(departmentId?: string): Observable<PaginatedResult<WardStockBalance>> {
     const query: Record<string, string> = {};
     if (departmentId) query['departmentId'] = departmentId;
-    return this.apiClient.get<WardStockBalance[]>('/ward-supply/stock', { params: query });
+    return this.apiClient.get<PaginatedResult<WardStockBalance>>('/ward-supply/stock', { params: query });
   }
 
   listTransactions(params: ListTransactionsParams = {}): Observable<PaginatedResult<WardStockTransaction>> {

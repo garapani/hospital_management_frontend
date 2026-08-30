@@ -12,6 +12,10 @@ describe('StockRequisitionList', () => {
       listRequisitions: jest
         .fn()
         .mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+      listCategories: jest.fn().mockReturnValue(of([])),
+      listSubCategories: jest.fn().mockReturnValue(of([])),
+      listItemsBySubCategory: jest.fn().mockReturnValue(of([])),
+      createRequisition: jest.fn().mockReturnValue(of({ id: 'req-1' })),
     } as unknown as InventoryApiService;
     const masterDataApi = {
       listDepartments: jest.fn().mockReturnValue(of([])),
@@ -83,6 +87,17 @@ describe('StockRequisitionList', () => {
     expect(inventoryApi.listRequisitions).toHaveBeenCalledTimes(1);
   });
 
+  it('does not throw when the p-select clear icon emits null', async () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.onDepartmentFilterChange('dept-1');
+
+    expect(() => fixture.componentInstance.onDepartmentFilterChange(null)).not.toThrow();
+    expect(fixture.componentInstance.hasSearched()).toBe(false);
+    expect(fixture.componentInstance.departmentFilter()).toBe('');
+  });
+
   it('resolves a department name from the loaded department catalog', () => {
     const { fixture, masterDataApi } = setup();
     (masterDataApi.listDepartments as jest.Mock).mockReturnValue(
@@ -95,6 +110,58 @@ describe('StockRequisitionList', () => {
 
     expect(fixture.componentInstance.departmentName('dept-1')).toBe('Pharmacy');
     expect(fixture.componentInstance.departmentName('missing')).toBe('missing');
+  });
+
+  it('adds a draft line and submits the create form with the expected payload', async () => {
+    const { fixture, inventoryApi } = setup();
+    (inventoryApi.listCategories as jest.Mock).mockReturnValue(
+      of([{ id: 'cat-1', name: 'Medicines', displaySequence: 1 }]),
+    );
+    (inventoryApi.listSubCategories as jest.Mock).mockReturnValue(
+      of([{ id: 'sub-1', categoryId: 'cat-1', name: 'Tablets', isConsumable: true }]),
+    );
+    (inventoryApi.listItemsBySubCategory as jest.Mock).mockReturnValue(
+      of([{ id: 'item-1', subCategoryId: 'sub-1', name: 'Paracetamol', code: 'PCM-001', unitOfMeasure: 'Tab', salePrice: 5 }]),
+    );
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.departmentFilter.set('dept-1');
+    fixture.componentInstance.openCreateModal();
+    expect(fixture.componentInstance.createDepartmentId()).toBe('dept-1');
+
+    fixture.componentInstance.onLineCategoryChange('cat-1');
+    fixture.componentInstance.onLineSubCategoryChange('sub-1');
+    await fixture.whenStable();
+
+    fixture.componentInstance.onLineItemChange('item-1');
+    fixture.componentInstance.setLineQuantity('10');
+    fixture.componentInstance.addLine();
+
+    expect(fixture.componentInstance.createLines()).toEqual([
+      expect.objectContaining({ itemId: 'item-1', itemName: 'Paracetamol', requestedQuantity: 10 }),
+    ]);
+    expect(fixture.componentInstance.isCreateValid()).toBe(true);
+
+    fixture.componentInstance.submitCreate();
+
+    expect(inventoryApi.createRequisition).toHaveBeenCalledWith({
+      departmentId: 'dept-1',
+      notes: undefined,
+      items: [{ itemId: 'item-1', requestedQuantity: 10 }],
+    });
+    expect(fixture.componentInstance.showCreateModal()).toBe(false);
+  });
+
+  it('does not submit the create form with no lines', async () => {
+    const { fixture, inventoryApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.createDepartmentId.set('dept-1');
+    fixture.componentInstance.submitCreate();
+
+    expect(inventoryApi.createRequisition).not.toHaveBeenCalled();
   });
 
   it('clears the loading flag when the list request errors', async () => {

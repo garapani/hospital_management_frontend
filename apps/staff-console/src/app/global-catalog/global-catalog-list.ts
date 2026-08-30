@@ -7,8 +7,9 @@ import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { TabsModule } from 'primeng/tabs';
 import { CheckboxModule } from 'primeng/checkbox';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 import {
   CreateRoleDto,
@@ -47,12 +48,17 @@ interface RoleFormState {
 export class GlobalCatalogList {
   private readonly mdApi = inject(MasterDataApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  readonly auth = inject(AuthService);
+  readonly canManage = this.auth.hasPermission('rbac.manage');
 
   readonly departments = signal<DepartmentCatalog[]>([]);
   readonly deptLoading = signal(false);
+  readonly togglingDeptId = signal<string | null>(null);
 
   readonly roles = signal<Role[]>([]);
   readonly roleLoading = signal(false);
+  readonly togglingRoleId = signal<string | null>(null);
 
   // Department Modal
   readonly showDeptModal = signal(false);
@@ -253,25 +259,42 @@ export class GlobalCatalogList {
   }
 
   toggleRoleActive(role: Role): void {
-    const action = role.isActive
-      ? this.mdApi.deactivateRole(role.id)
-      : this.mdApi.reactivateRole(role.id);
-    action.subscribe({
-      next: () => {
-        this.loadRoles();
-        this.messageService.add({
-          severity: 'success',
-          summary: role.isActive ? 'Role deactivated' : 'Role reactivated',
-          detail: `${role.name} is ${role.isActive ? 'no longer offered' : 'available again'} to tenants.`,
-        });
-      },
-      error: (err: ApiError) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: role.isActive ? 'Deactivate failed' : 'Reactivate failed',
-          detail: err.message || 'Please try again.',
-        });
-      },
+    if (this.togglingRoleId() !== null) return;
+    const doToggle = () => {
+      this.togglingRoleId.set(role.id);
+      const action = role.isActive ? this.mdApi.deactivateRole(role.id) : this.mdApi.reactivateRole(role.id);
+      action.subscribe({
+        next: () => {
+          this.togglingRoleId.set(null);
+          this.loadRoles();
+          this.messageService.add({
+            severity: 'success',
+            summary: role.isActive ? 'Role deactivated' : 'Role reactivated',
+            detail: `${role.name} is ${role.isActive ? 'no longer offered' : 'available again'} to tenants.`,
+          });
+        },
+        error: (err: ApiError) => {
+          this.togglingRoleId.set(null);
+          this.messageService.add({
+            severity: 'error',
+            summary: role.isActive ? 'Deactivate failed' : 'Reactivate failed',
+            detail: err.message || 'Please try again.',
+          });
+        },
+      });
+    };
+
+    if (!role.isActive) {
+      doToggle();
+      return;
+    }
+    this.confirmationService.confirm({
+      header: 'Deactivate Role',
+      message: `Deactivate "${role.name}"? It will no longer be offered to tenants.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Deactivate', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: doToggle,
     });
   }
 
@@ -318,25 +341,44 @@ export class GlobalCatalogList {
   }
 
   toggleDeptActive(dept: DepartmentCatalog): void {
-    const action = dept.isActive
-      ? this.mdApi.deactivateDepartmentCatalog(dept.id)
-      : this.mdApi.reactivateDepartmentCatalog(dept.id);
-    action.subscribe({
-      next: () => {
-        this.loadDepartments();
-        this.messageService.add({
-          severity: 'success',
-          summary: dept.isActive ? 'Department deactivated' : 'Department reactivated',
-          detail: `${dept.departmentName} is ${dept.isActive ? 'no longer available' : 'available again'} to tenants.`,
-        });
-      },
-      error: (err: ApiError) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: dept.isActive ? 'Deactivate failed' : 'Reactivate failed',
-          detail: err.message || 'Please try again.',
-        });
-      },
+    if (this.togglingDeptId() !== null) return;
+    const doToggle = () => {
+      this.togglingDeptId.set(dept.id);
+      const action = dept.isActive
+        ? this.mdApi.deactivateDepartmentCatalog(dept.id)
+        : this.mdApi.reactivateDepartmentCatalog(dept.id);
+      action.subscribe({
+        next: () => {
+          this.togglingDeptId.set(null);
+          this.loadDepartments();
+          this.messageService.add({
+            severity: 'success',
+            summary: dept.isActive ? 'Department deactivated' : 'Department reactivated',
+            detail: `${dept.departmentName} is ${dept.isActive ? 'no longer available' : 'available again'} to tenants.`,
+          });
+        },
+        error: (err: ApiError) => {
+          this.togglingDeptId.set(null);
+          this.messageService.add({
+            severity: 'error',
+            summary: dept.isActive ? 'Deactivate failed' : 'Reactivate failed',
+            detail: err.message || 'Please try again.',
+          });
+        },
+      });
+    };
+
+    if (!dept.isActive) {
+      doToggle();
+      return;
+    }
+    this.confirmationService.confirm({
+      header: 'Deactivate Department',
+      message: `Deactivate "${dept.departmentName}"? It will no longer be available to tenants.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Deactivate', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: doToggle,
     });
   }
 }

@@ -1,12 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService, Confirmation } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { GlobalCatalogList } from './global-catalog-list.js';
 import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 
 describe('GlobalCatalogList', () => {
-  function setup() {
+  function setup(overrides: Partial<Record<keyof MasterDataApiService, jest.Mock>> = {}, canManage = true) {
     const mdApi = {
       listDepartmentCatalogs: jest.fn().mockReturnValue(of([])),
       createDepartmentCatalog: jest.fn().mockReturnValue(of({})),
@@ -18,19 +19,26 @@ describe('GlobalCatalogList', () => {
       updateRole: jest.fn().mockReturnValue(of({})),
       deactivateRole: jest.fn().mockReturnValue(of({})),
       reactivateRole: jest.fn().mockReturnValue(of({})),
+      ...overrides,
     } as unknown as MasterDataApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
+    const confirmationService = {
+      confirm: jest.fn((c: Confirmation) => c.accept?.()),
+    } as unknown as ConfirmationService;
+    const auth = { hasPermission: () => canManage } as unknown as AuthService;
 
     TestBed.configureTestingModule({
       imports: [GlobalCatalogList],
       providers: [
         { provide: MasterDataApiService, useValue: mdApi },
         { provide: MessageService, useValue: messageService },
+        { provide: ConfirmationService, useValue: confirmationService },
+        { provide: AuthService, useValue: auth },
       ],
     });
 
     const fixture = TestBed.createComponent(GlobalCatalogList);
-    return { fixture, mdApi, messageService };
+    return { fixture, mdApi, messageService, confirmationService };
   }
 
   it('creates a role with the catalog DTO only (no bypass flag) and toasts success', async () => {
@@ -119,8 +127,8 @@ describe('GlobalCatalogList', () => {
     );
   });
 
-  it('deactivates a department with a toast', async () => {
-    const { fixture, mdApi, messageService } = setup();
+  it('confirms before deactivating a department, but not before reactivating one, and toasts success', async () => {
+    const { fixture, mdApi, confirmationService, messageService } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -134,36 +142,33 @@ describe('GlobalCatalogList', () => {
       createdAt: '',
     });
 
+    expect(confirmationService.confirm).toHaveBeenCalled();
     expect(mdApi.deactivateDepartmentCatalog).toHaveBeenCalledWith('dept-1');
     expect(messageService.add).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'success', summary: 'Department deactivated' }),
     );
+
+    fixture.componentInstance.toggleDeptActive({
+      id: 'dept-2',
+      departmentCode: 'CAR',
+      departmentName: 'Cardiology',
+      description: null,
+      isAppointmentApplicable: true,
+      isActive: false,
+      createdAt: '',
+    });
+    expect(mdApi.reactivateDepartmentCatalog).toHaveBeenCalledWith('dept-2');
   });
 
   it('surfaces the backend message when role deactivation is blocked (e.g. platform role)', async () => {
-    const mdApi = {
-      listDepartmentCatalogs: jest.fn().mockReturnValue(of([])),
-      createDepartmentCatalog: jest.fn().mockReturnValue(of({})),
-      getRoles: jest.fn().mockReturnValue(of([])),
-      createRole: jest.fn().mockReturnValue(of({})),
-      deactivateRole: jest
-        .fn()
-        .mockReturnValue(
-          throwError(() => ({
-            status: 400,
-            message: 'Role Super Admin is a platform role and cannot be deactivated',
-          } as ApiError)),
-        ),
-    } as unknown as MasterDataApiService;
-    const messageService = { add: jest.fn() } as unknown as MessageService;
-    TestBed.configureTestingModule({
-      imports: [GlobalCatalogList],
-      providers: [
-        { provide: MasterDataApiService, useValue: mdApi },
-        { provide: MessageService, useValue: messageService },
-      ],
+    const { fixture, messageService } = setup({
+      deactivateRole: jest.fn().mockReturnValue(
+        throwError(() => ({
+          status: 400,
+          message: 'Role Super Admin is a platform role and cannot be deactivated',
+        } as ApiError)),
+      ),
     });
-    const fixture = TestBed.createComponent(GlobalCatalogList);
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -183,5 +188,13 @@ describe('GlobalCatalogList', () => {
         detail: 'Role Super Admin is a platform role and cannot be deactivated',
       }),
     );
+  });
+
+  it('hides mutating actions for a read-only user', async () => {
+    const { fixture } = setup({}, false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.canManage).toBe(false);
   });
 });

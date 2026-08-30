@@ -128,9 +128,9 @@ export class PurchaseOrderList {
     this.load(event.first || 0);
   }
 
-  onVendorFilterChange(vendorId: string): void {
-    this.vendorFilter.set(vendorId);
-    this.hasSearched.set(vendorId.length > 0);
+  onVendorFilterChange(vendorId: string | null): void {
+    this.vendorFilter.set(vendorId ?? '');
+    this.hasSearched.set(!!vendorId);
     this.firstRecord.set(0);
     this.load(0);
   }
@@ -157,8 +157,8 @@ export class PurchaseOrderList {
     });
   }
 
-  onLineCategoryChange(categoryId: string): void {
-    this.lineCategoryId.set(categoryId);
+  onLineCategoryChange(categoryId: string | null): void {
+    this.lineCategoryId.set(categoryId ?? '');
     this.lineSubCategoryId.set('');
     this.lineItemId.set('');
     this.dialogSubCategories.set([]);
@@ -172,8 +172,8 @@ export class PurchaseOrderList {
     });
   }
 
-  onLineSubCategoryChange(subCategoryId: string): void {
-    this.lineSubCategoryId.set(subCategoryId);
+  onLineSubCategoryChange(subCategoryId: string | null): void {
+    this.lineSubCategoryId.set(subCategoryId ?? '');
     this.lineItemId.set('');
     this.dialogItems.set([]);
     if (!subCategoryId) {
@@ -187,6 +187,10 @@ export class PurchaseOrderList {
       },
       error: () => this.dialogItemsLoading.set(false),
     });
+  }
+
+  onLineItemChange(itemId: string | null): void {
+    this.lineItemId.set(itemId ?? '');
   }
 
   setLineQuantity(value: string): void {

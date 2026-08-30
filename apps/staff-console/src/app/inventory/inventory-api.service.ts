@@ -122,6 +122,25 @@ export interface FulfillRequisitionItemDto {
   quantity: number;
 }
 
+export interface CreateStockRequisitionItemDto {
+  itemId: string;
+  requestedQuantity: number;
+}
+
+export interface CreateStockRequisitionDto {
+  departmentId: string;
+  notes?: string;
+  items: CreateStockRequisitionItemDto[];
+}
+
+export interface RecordGoodsReceiptDto {
+  batchNumber: string;
+  expiryDate?: string;
+  unitCost: number;
+  mrp?: number;
+  receivedQuantity: number;
+}
+
 export interface PurchaseOrderFilters {
   vendorId?: string;
   page?: number;
@@ -186,7 +205,29 @@ export class InventoryApiService {
     return this.api.post<PurchaseOrderDetail>('/inventory/purchase-orders', data);
   }
 
+  cancelPurchaseOrder(id: string, cancelReason?: string): Observable<PurchaseOrderDetail> {
+    return this.api.patch<PurchaseOrderDetail>(`/inventory/purchase-orders/${id}/cancel`, { cancelReason });
+  }
+
+  recordGoodsReceipt(
+    purchaseOrderItemId: string,
+    data: RecordGoodsReceiptDto,
+  ): Observable<PurchaseOrderItem> {
+    return this.api.post<PurchaseOrderItem>(
+      `/inventory/purchase-orders/items/${purchaseOrderItemId}/goods-receipt`,
+      data,
+    );
+  }
+
   // ---- Requisitions (dispatch) ----
+
+  createRequisition(data: CreateStockRequisitionDto): Observable<StockRequisitionDetail> {
+    return this.api.post<StockRequisitionDetail>('/inventory/requisitions', data);
+  }
+
+  cancelRequisition(id: string, cancelReason?: string): Observable<StockRequisitionDetail> {
+    return this.api.patch<StockRequisitionDetail>(`/inventory/requisitions/${id}/cancel`, { cancelReason });
+  }
 
   listRequisitions(filters: StockRequisitionFilters) {
     return this.api.get<PaginatedResponse<StockRequisition>>('/inventory/requisitions', {

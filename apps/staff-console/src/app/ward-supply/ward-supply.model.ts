@@ -27,9 +27,16 @@ export interface StockMovementDto {
   patientId?: string;
   admissionId?: string;
   remarks?: string;
+  batchNumber?: string;
+  expiryDate?: string;
 }
 
 export interface PaginatedResult<T> {
   data: T[];
-  total: number;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

@@ -20,6 +20,12 @@
   <div class="flex-1 flex items-center justify-center">
     <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
   </div>
+  } @else if (notFound()) {
+  <div class="flex-1 flex flex-col items-center justify-center gap-3 text-slate-500">
+    <i class="pi pi-exclamation-circle text-4xl"></i>
+    <p>Could not load this requisition. It may not exist, or you may not have access.</p>
+    <p-button label="Back to Requisitions" severity="secondary" (onClick)="goBack()"></p-button>
+  </div>
   } @else if (requisition(); as r) {
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
@@ -50,6 +56,11 @@
         </div>
         }
       </div>
+      @if (auth.hasPermission('inventory.requisition.create') && isFulfillable(r.status)) {
+      <div class="border-t border-slate-200 pt-4">
+        <p-button label="Cancel Requisition" severity="danger" [text]="true" size="small" (onClick)="openCancelModal()"></p-button>
+      </div>
+      }
     </div>
 
     <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 flex flex-col gap-4">
@@ -71,7 +82,7 @@
             <td>{{ line.fulfilledQuantity }}</td>
             <td>{{ remaining(line) }}</td>
             <td>
-              @if (auth.hasPermission('inventory.dispatch.fulfill') && r.status === 'Pending' && remaining(line) > 0) {
+              @if (auth.hasPermission('inventory.dispatch.fulfill') && isFulfillable(r.status) && remaining(line) > 0) {
               <p-button label="Fulfill" size="small" icon="pi pi-box" (onClick)="openFulfillDialog(line)"></p-button>
               }
             </td>
@@ -135,5 +146,17 @@
       <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showFulfillDialog.set(false)"></p-button>
       <p-button label="Confirm Fulfill" icon="pi pi-check" [loading]="fulfilling()" [disabled]="!canFulfill()" (onClick)="confirmFulfill()"></p-button>
     </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Cancel Requisition Modal -->
+<p-dialog header="Cancel Requisition" [(visible)]="showCancelModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-2 py-2">
+    <label for="requisitionCancelReason" class="text-sm font-medium text-slate-700">Cancellation Reason</label>
+    <textarea pTextarea id="requisitionCancelReason" rows="3" [ngModel]="cancelReason()" (ngModelChange)="cancelReason.set($event)" class="w-full"></textarea>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Back" severity="secondary" [text]="true" (onClick)="showCancelModal.set(false)"></p-button>
+    <p-button label="Confirm Cancel" severity="danger" [loading]="cancelSaving()" (onClick)="confirmCancel()"></p-button>
   </ng-template>
 </p-dialog>

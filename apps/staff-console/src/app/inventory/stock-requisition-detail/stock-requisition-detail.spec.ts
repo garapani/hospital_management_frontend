@@ -35,6 +35,7 @@ describe('StockRequisitionDetail', () => {
     const inventoryApi = {
       getRequisition: jest.fn().mockReturnValue(of(requisition)),
       fulfillRequisitionItem: jest.fn().mockReturnValue(of({ id: 'rqi-1' })),
+      cancelRequisition: jest.fn().mockReturnValue(of({ ...requisition, status: 'Cancelled' })),
     } as unknown as InventoryApiService;
     const masterDataApi = {
       listDepartments: jest.fn().mockReturnValue(of([{ id: 'dept-1', departmentName: 'Pharmacy' } as Department])),
@@ -117,7 +118,7 @@ describe('StockRequisitionDetail', () => {
     expect(inventoryApi.fulfillRequisitionItem).not.toHaveBeenCalled();
   });
 
-  it('clears the loading flag when the request errors', async () => {
+  it('shows a not-found state and clears the loading flag when the request errors', async () => {
     const { fixture, inventoryApi } = setup();
     (inventoryApi.getRequisition as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));
 
@@ -125,6 +126,31 @@ describe('StockRequisitionDetail', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.loading()).toBe(false);
+    expect(fixture.componentInstance.notFound()).toBe(true);
+  });
+
+  it('allows fulfilling a PartiallyFulfilled requisition, not just a Pending one', () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.isFulfillable('Pending')).toBe(true);
+    expect(fixture.componentInstance.isFulfillable('PartiallyFulfilled')).toBe(true);
+    expect(fixture.componentInstance.isFulfillable('Fulfilled')).toBe(false);
+    expect(fixture.componentInstance.isFulfillable('Cancelled')).toBe(false);
+  });
+
+  it('cancels the requisition and reloads', async () => {
+    const { fixture, inventoryApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openCancelModal();
+    fixture.componentInstance.cancelReason.set('Department no longer needs the item');
+    fixture.componentInstance.confirmCancel();
+    await fixture.whenStable();
+
+    expect(inventoryApi.cancelRequisition).toHaveBeenCalledWith('req-1', 'Department no longer needs the item');
+    expect(fixture.componentInstance.showCancelModal()).toBe(false);
   });
 
   it('shows an error and keeps the dialog open when fulfill fails', async () => {

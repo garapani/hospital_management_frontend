@@ -82,6 +82,22 @@ describe('PurchaseOrderList', () => {
     expect(inventoryApi.listPurchaseOrders).toHaveBeenCalledTimes(1);
   });
 
+  it('does not throw when the p-select clear icon emits null, and canAddLine requires a real item', async () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.onVendorFilterChange('vendor-1');
+
+    expect(() => fixture.componentInstance.onVendorFilterChange(null)).not.toThrow();
+    expect(fixture.componentInstance.hasSearched()).toBe(false);
+    expect(fixture.componentInstance.vendorFilter()).toBe('');
+
+    fixture.componentInstance.openCreateModal();
+    fixture.componentInstance.lineSubCategoryId.set('sub-1');
+    fixture.componentInstance.onLineItemChange(null);
+    expect(fixture.componentInstance.canAddLine()).toBe(false);
+  });
+
   it('clears the loading flag when the list request errors', async () => {
     const { fixture, inventoryApi } = setup();
     (inventoryApi.listPurchaseOrders as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));

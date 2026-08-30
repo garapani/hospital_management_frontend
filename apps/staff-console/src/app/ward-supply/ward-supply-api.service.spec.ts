@@ -35,7 +35,7 @@ describe('WardSupplyApiService', () => {
       (r: HttpRequest<unknown>) => r.url === 'https://gateway.example/api/ward-supply/stock',
     );
     expect(req.request.params.get('departmentId')).toBe('d1');
-    req.flush([]);
+    req.flush({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } });
   });
 
   it('lists transactions filtered by department/item/type', () => {
@@ -47,7 +47,7 @@ describe('WardSupplyApiService', () => {
     expect(req.request.params.get('departmentId')).toBe('d1');
     expect(req.request.params.get('itemId')).toBe('i1');
     expect(req.request.params.get('transactionType')).toBe('Receive');
-    req.flush({ data: [], total: 0 });
+    req.flush({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } });
   });
 
   it('receives and consumes stock', () => {

@@ -8,8 +8,10 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TabsModule } from 'primeng/tabs';
 import { CheckboxModule } from 'primeng/checkbox';
 import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
+import { TooltipModule } from 'primeng/tooltip';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { MasterDataApiService } from './master-data-api.service.js';
 import { Department, Ward, Bed } from './master-data.model.js';
 
@@ -24,6 +26,7 @@ import { Department, Ward, Bed } from './master-data.model.js';
     TabsModule,
     CheckboxModule,
     SelectModule,
+    TooltipModule,
   ],
   selector: 'hms-master-data-list',
   templateUrl: './master-data-list.html',
@@ -31,12 +34,18 @@ import { Department, Ward, Bed } from './master-data.model.js';
 export class MasterDataList {
   private readonly mdApi = inject(MasterDataApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  readonly auth = inject(AuthService);
+  readonly canManage = this.auth.hasPermission('master-data.manage');
 
   readonly departments = signal<Department[]>([]);
   readonly deptLoading = signal(false);
+  readonly togglingDeptId = signal<string | null>(null);
 
   readonly wards = signal<Ward[]>([]);
   readonly wardLoading = signal(false);
+  readonly togglingWardId = signal<string | null>(null);
+  readonly togglingBedId = signal<string | null>(null);
 
   // Department Modal
   readonly showDeptModal = signal(false);
@@ -160,84 +169,85 @@ export class MasterDataList {
   }
 
   toggleDept(dept: Department): void {
-    const id = dept.id;
-    if (dept.isActive) {
-      this.mdApi.deactivateDepartment(id).subscribe({
+    if (this.togglingDeptId() !== null) return;
+    const doToggle = () => {
+      this.togglingDeptId.set(dept.id);
+      const action = dept.isActive
+        ? this.mdApi.deactivateDepartment(dept.id)
+        : this.mdApi.reactivateDepartment(dept.id);
+      action.subscribe({
         next: () => {
+          this.togglingDeptId.set(null);
           this.loadDepartments();
           this.messageService.add({
             severity: 'success',
-            summary: 'Department deactivated',
-            detail: `${dept.departmentName} is no longer active.`,
+            summary: dept.isActive ? 'Department deactivated' : 'Department reactivated',
+            detail: `${dept.departmentName} is ${dept.isActive ? 'no longer active' : 'active again'}.`,
           });
         },
         error: (err: ApiError) => {
+          this.togglingDeptId.set(null);
           this.messageService.add({
             severity: 'error',
-            summary: 'Deactivate failed',
-            detail: err.message || 'Failed to deactivate.',
+            summary: dept.isActive ? 'Deactivate failed' : 'Reactivate failed',
+            detail: err.message || 'Please try again.',
           });
         },
       });
-    } else {
-      this.mdApi.reactivateDepartment(id).subscribe({
-        next: () => {
-          this.loadDepartments();
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Department reactivated',
-            detail: `${dept.departmentName} is active again.`,
-          });
-        },
-        error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Reactivate failed',
-            detail: 'Failed to reactivate.',
-          });
-        },
-      });
+    };
+
+    if (!dept.isActive) {
+      doToggle();
+      return;
     }
+    this.confirmationService.confirm({
+      header: 'Deactivate Department',
+      message: `Deactivate "${dept.departmentName}"? It will no longer be selectable for new records.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Deactivate', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: doToggle,
+    });
   }
 
   toggleWard(ward: Ward): void {
-    if (ward.isActive) {
-      this.mdApi.deactivateWard(ward.id).subscribe({
+    if (this.togglingWardId() !== null) return;
+    const doToggle = () => {
+      this.togglingWardId.set(ward.id);
+      const action = ward.isActive ? this.mdApi.deactivateWard(ward.id) : this.mdApi.reactivateWard(ward.id);
+      action.subscribe({
         next: () => {
+          this.togglingWardId.set(null);
           this.loadWards();
           this.messageService.add({
             severity: 'success',
-            summary: 'Ward deactivated',
-            detail: `${ward.wardName} is no longer active.`,
+            summary: ward.isActive ? 'Ward deactivated' : 'Ward reactivated',
+            detail: `${ward.wardName} is ${ward.isActive ? 'no longer active' : 'active again'}.`,
           });
         },
-        error: () => {
+        error: (err: ApiError) => {
+          this.togglingWardId.set(null);
           this.messageService.add({
             severity: 'error',
-            summary: 'Deactivate failed',
-            detail: 'Failed to deactivate ward.',
+            summary: ward.isActive ? 'Deactivate failed' : 'Reactivate failed',
+            detail: err.message || 'Failed to update the ward.',
           });
         },
       });
-    } else {
-      this.mdApi.reactivateWard(ward.id).subscribe({
-        next: () => {
-          this.loadWards();
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Ward reactivated',
-            detail: `${ward.wardName} is active again.`,
-          });
-        },
-        error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Reactivate failed',
-            detail: 'Failed to reactivate ward.',
-          });
-        },
-      });
+    };
+
+    if (!ward.isActive) {
+      doToggle();
+      return;
     }
+    this.confirmationService.confirm({
+      header: 'Deactivate Ward',
+      message: `Deactivate "${ward.wardName}"? It will no longer be selectable for new admissions.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Deactivate', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: doToggle,
+    });
   }
 
   // Circular reference guard helper for parent dropdown
@@ -247,6 +257,11 @@ export class MasterDataList {
     return this.departments()
       .filter((d) => d.isActive)
       .map((d) => ({ label: d.departmentName, value: d.id }));
+  }
+
+  parentDepartmentName(parentDepartmentId: string | null | undefined): string {
+    if (!parentDepartmentId) return '-';
+    return this.departments().find((d) => d.id === parentDepartmentId)?.departmentName ?? parentDepartmentId;
   }
 
   openBedsModal(ward: Ward): void {
@@ -298,16 +313,33 @@ export class MasterDataList {
   }
 
   toggleBed(bed: Bed): void {
-    if (bed.isActive) {
-      this.mdApi.deactivateBed(bed.id).subscribe({
-        next: () => this.loadBeds(bed.wardId),
-        error: () => this.loadError('Could not deactivate bed'),
+    if (this.togglingBedId() !== null) return;
+    const doToggle = () => {
+      this.togglingBedId.set(bed.id);
+      const action = bed.isActive ? this.mdApi.deactivateBed(bed.id) : this.mdApi.reactivateBed(bed.id);
+      action.subscribe({
+        next: () => {
+          this.togglingBedId.set(null);
+          this.loadBeds(bed.wardId);
+        },
+        error: () => {
+          this.togglingBedId.set(null);
+          this.loadError(bed.isActive ? 'Could not deactivate bed' : 'Could not reactivate bed');
+        },
       });
-    } else {
-      this.mdApi.reactivateBed(bed.id).subscribe({
-        next: () => this.loadBeds(bed.wardId),
-        error: () => this.loadError('Could not reactivate bed'),
-      });
+    };
+
+    if (!bed.isActive) {
+      doToggle();
+      return;
     }
+    this.confirmationService.confirm({
+      header: 'Deactivate Bed',
+      message: `Deactivate bed "${bed.bedNumber}"?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Deactivate', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: doToggle,
+    });
   }
 }

@@ -21,6 +21,7 @@
         <!-- DEPARTMENTS TAB -->
         <p-tabpanel value="0">
           <div class="p-4 flex flex-col gap-4">
+            @if (canManage) {
             <div class="flex justify-end">
               <p-button
                 label="Add Department"
@@ -29,6 +30,7 @@
                 (onClick)="openDeptModal()"
               ></p-button>
             </div>
+            }
             <p-table
               [value]="departments()"
               [loading]="deptLoading()"
@@ -42,7 +44,9 @@
                   <th class="table-header-cell">Parent Dept</th>
                   <th class="table-header-cell">Appt. Applicable</th>
                   <th class="table-header-cell">Status</th>
+                  @if (canManage) {
                   <th class="table-header-cell w-32">Actions</th>
+                  }
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-dept>
@@ -50,7 +54,7 @@
                   <td class="font-medium">{{ dept.departmentCode }}</td>
                   <td>{{ dept.departmentName }}</td>
                   <td class="text-slate-500">
-                    {{ dept.parentDepartmentId || '-' }}
+                    {{ parentDepartmentName(dept.parentDepartmentId) }}
                   </td>
                   <td>
                     <i
@@ -76,15 +80,24 @@
                     ></p-tag>
                     }
                   </td>
+                  @if (canManage) {
                   <td>
                     <p-button
                       [icon]="dept.isActive ? 'pi pi-ban' : 'pi pi-check'"
                       [severity]="dept.isActive ? 'danger' : 'success'"
                       [text]="true"
                       size="small"
+                      [disabled]="togglingDeptId() !== null"
+                      [ariaLabel]="dept.isActive ? 'Deactivate department' : 'Reactivate department'"
                       (onClick)="toggleDept(dept)"
                     ></p-button>
                   </td>
+                  }
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6" class="text-center p-6 text-slate-500">No departments configured yet.</td>
                 </tr>
               </ng-template>
             </p-table>
@@ -94,6 +107,7 @@
         <!-- WARDS TAB -->
         <p-tabpanel value="1">
           <div class="p-4 flex flex-col gap-4">
+            @if (canManage) {
             <div class="flex justify-end">
               <p-button
                 label="Add Ward"
@@ -102,6 +116,7 @@
                 (onClick)="openWardModal()"
               ></p-button>
             </div>
+            }
             <p-table
               [value]="wards()"
               [loading]="wardLoading()"
@@ -148,15 +163,24 @@
                         [text]="true"
                         (onClick)="openBedsModal(ward)"
                       ></p-button>
+                      @if (canManage) {
                       <p-button
                         [icon]="ward.isActive ? 'pi pi-ban' : 'pi pi-check'"
                         [severity]="ward.isActive ? 'danger' : 'success'"
                         [text]="true"
                         size="small"
+                        [disabled]="togglingWardId() !== null"
+                        [ariaLabel]="ward.isActive ? 'Deactivate ward' : 'Reactivate ward'"
                         (onClick)="toggleWard(ward)"
                       ></p-button>
+                      }
                     </div>
                   </td>
+                </tr>
+              </ng-template>
+              <ng-template pTemplate="emptymessage">
+                <tr>
+                  <td colspan="6" class="text-center p-6 text-slate-500">No wards configured yet.</td>
                 </tr>
               </ng-template>
             </p-table>
@@ -352,6 +376,7 @@
 >
   <div class="flex flex-col gap-6 py-2">
     <!-- Add Bed Form -->
+    @if (canManage) {
     <div class="flex items-end gap-3 flex-wrap bg-slate-50 p-4 rounded-xl border border-slate-200">
       <div class="flex-1 flex flex-col gap-2">
         <label for="bedNo" class="text-xs font-semibold text-slate-600">Bed Number</label>
@@ -381,6 +406,7 @@
         [disabled]="!bedForm().bedNumber"
       ></p-button>
     </div>
+    }
 
     <!-- Beds Table -->
     <p-table
@@ -409,14 +435,18 @@
             ></p-tag>
           </td>
           <td>
+            @if (canManage) {
             <p-button
               [icon]="bed.isActive ? 'pi pi-ban' : 'pi pi-check'"
               [severity]="bed.isActive ? 'danger' : 'success'"
               [text]="true"
               size="small"
+              [disabled]="togglingBedId() !== null"
+              [ariaLabel]="bed.isActive ? 'Deactivate bed' : 'Reactivate bed'"
               (onClick)="toggleBed(bed)"
               pTooltip="Toggle Active Status"
             ></p-button>
+            }
           </td>
         </tr>
       </ng-template>

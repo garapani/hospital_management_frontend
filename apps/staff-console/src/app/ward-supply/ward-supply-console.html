@@ -4,25 +4,29 @@
       <h1 class="page-title">Ward Supply</h1>
       <p class="text-sm text-slate-500 mt-1">Department sub-store stock balances and receive/consume transactions.</p>
     </div>
+    @if (canManage) {
     <div class="flex gap-2 flex-wrap">
       <p-button label="Receive Stock" icon="pi pi-arrow-down" size="small" (onClick)="openReceiveModal()"></p-button>
       <p-button label="Consume Stock" icon="pi pi-arrow-up" severity="secondary" size="small" (onClick)="openConsumeModal()"></p-button>
     </div>
+    }
   </div>
 
   <div class="surface-panel p-4 flex items-end gap-3 flex-wrap">
-    <label class="flex flex-col gap-2">
-      <span class="text-sm font-medium text-slate-700">Department ID</span>
-      <input
-        pInputText
+    <div class="flex flex-col gap-2">
+      <label for="departmentFilter" class="text-sm font-medium text-slate-700">Department</label>
+      <p-select
+        inputId="departmentFilter"
+        [options]="departments()"
+        optionLabel="departmentName"
+        optionValue="id"
         [ngModel]="departmentIdFilter()"
-        (ngModelChange)="departmentIdFilter.set($event)"
-        (keyup.enter)="applyFilter()"
-        placeholder="Filter by department ID"
-        class="w-64"
-      />
-    </label>
-    <p-button label="Filter" (onClick)="applyFilter()" size="small"></p-button>
+        (ngModelChange)="departmentIdFilter.set($event ?? ''); applyFilter()"
+        placeholder="All departments"
+        [showClear]="true"
+        styleClass="w-72"
+      ></p-select>
+    </div>
   </div>
 
   <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white">
@@ -38,14 +42,14 @@
             <p-table [value]="balances()" [loading]="balancesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
               <ng-template pTemplate="header">
                 <tr>
-                  <th class="table-header-cell">Department ID</th>
+                  <th class="table-header-cell">Department</th>
                   <th class="table-header-cell">Item ID</th>
                   <th class="table-header-cell text-right">Available Quantity</th>
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-balance>
                 <tr>
-                  <td class="font-mono">{{ balance.departmentId }}</td>
+                  <td>{{ departmentName(balance.departmentId) }}</td>
                   <td class="font-mono">{{ balance.itemId }}</td>
                   <td class="text-right font-mono">{{ balance.availableQuantity | number: '1.2-2' }}</td>
                 </tr>
@@ -61,10 +65,22 @@
 
         <p-tabpanel value="1">
           <div class="p-4">
-            <p-table [value]="transactions()" [loading]="transactionsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+            <p-table
+              [value]="transactions()"
+              [lazy]="true"
+              [lazyLoadOnInit]="false"
+              (onLazyLoad)="onTransactionsLazyLoad($event)"
+              [loading]="transactionsLoading()"
+              [paginator]="true"
+              [rows]="transactionsPageSize()"
+              [first]="transactionsFirstRecord()"
+              [totalRecords]="transactionsTotalRecords()"
+              [rowHover]="true"
+              styleClass="p-datatable-sm p-datatable-gridlines"
+            >
               <ng-template pTemplate="header">
                 <tr>
-                  <th class="table-header-cell">Department ID</th>
+                  <th class="table-header-cell">Department</th>
                   <th class="table-header-cell">Item ID</th>
                   <th class="table-header-cell">Type</th>
                   <th class="table-header-cell text-right">Quantity</th>
@@ -74,7 +90,7 @@
               </ng-template>
               <ng-template pTemplate="body" let-txn>
                 <tr>
-                  <td class="font-mono">{{ txn.departmentId }}</td>
+                  <td>{{ departmentName(txn.departmentId) }}</td>
                   <td class="font-mono">{{ txn.itemId }}</td>
                   <td>
                     <p-tag [value]="txn.transactionType" [severity]="txn.transactionType === 'Receive' ? 'success' : 'warn'"></p-tag>
@@ -98,7 +114,7 @@
 </div>
 
 <!-- Receive Stock Modal -->
-<p-dialog header="Receive Stock" [(visible)]="showReceiveModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+<p-dialog header="Receive Stock" [(visible)]="showReceiveModal" [modal]="true" [style]="{ width: '460px' }" styleClass="surface-modal">
   <div class="flex flex-col gap-4 py-4">
     @if (receiveError()) {
     <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
@@ -107,20 +123,81 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Department ID</label>
-      <input pInputText [ngModel]="receiveForm().departmentId" (ngModelChange)="receiveForm.set({ ...receiveForm(), departmentId: $event })" class="w-full" />
+      <label for="receiveDepartment" class="text-sm font-medium text-slate-700">Department</label>
+      <p-select
+        inputId="receiveDepartment"
+        [options]="departments()"
+        optionLabel="departmentName"
+        optionValue="id"
+        [ngModel]="receiveForm().departmentId"
+        (ngModelChange)="receiveForm.set({ ...receiveForm(), departmentId: $event ?? '' })"
+        placeholder="Select a department"
+        styleClass="w-full"
+      ></p-select>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div class="flex flex-col gap-2">
+        <label for="receiveCategory" class="text-xs font-semibold text-slate-600">Category</label>
+        <p-select
+          inputId="receiveCategory"
+          [options]="dialogCategories()"
+          optionLabel="name"
+          optionValue="id"
+          [ngModel]="lineCategoryId()"
+          (ngModelChange)="onLineCategoryChange($event)"
+          placeholder="Category"
+          [showClear]="true"
+          styleClass="w-full"
+        ></p-select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="receiveSubCategory" class="text-xs font-semibold text-slate-600">Sub-category</label>
+        <p-select
+          inputId="receiveSubCategory"
+          [options]="dialogSubCategories()"
+          optionLabel="name"
+          optionValue="id"
+          [ngModel]="lineSubCategoryId()"
+          (ngModelChange)="onLineSubCategoryChange($event)"
+          placeholder="Sub-category"
+          [showClear]="true"
+          [disabled]="!lineCategoryId()"
+          styleClass="w-full"
+        ></p-select>
+      </div>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Item ID</label>
-      <input pInputText [ngModel]="receiveForm().itemId" (ngModelChange)="receiveForm.set({ ...receiveForm(), itemId: $event })" class="w-full" />
+      <label for="receiveItem" class="text-sm font-medium text-slate-700">Item</label>
+      <p-select
+        inputId="receiveItem"
+        [options]="dialogItems()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="receiveForm().itemId"
+        (ngModelChange)="receiveForm.set({ ...receiveForm(), itemId: $event ?? '' })"
+        placeholder="Select an item"
+        [loading]="dialogItemsLoading()"
+        [disabled]="!lineSubCategoryId()"
+        styleClass="w-full"
+      ></p-select>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Quantity</label>
-      <p-inputNumber [ngModel]="receiveForm().quantity" (ngModelChange)="receiveForm.set({ ...receiveForm(), quantity: $event })" [min]="0" styleClass="w-full" />
+      <label for="receiveQuantity" class="text-sm font-medium text-slate-700">Quantity</label>
+      <p-inputNumber inputId="receiveQuantity" [ngModel]="receiveForm().quantity" (ngModelChange)="receiveForm.set({ ...receiveForm(), quantity: $event })" [min]="0" styleClass="w-full" />
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div class="flex flex-col gap-2">
+        <label for="receiveBatchNumber" class="text-sm font-medium text-slate-700">Batch Number</label>
+        <input pInputText id="receiveBatchNumber" [ngModel]="receiveForm().batchNumber" (ngModelChange)="receiveForm.set({ ...receiveForm(), batchNumber: $event })" class="w-full" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="receiveExpiryDate" class="text-sm font-medium text-slate-700">Expiry Date</label>
+        <input pInputText id="receiveExpiryDate" type="date" [ngModel]="receiveForm().expiryDate" (ngModelChange)="receiveForm.set({ ...receiveForm(), expiryDate: $event })" class="w-full" />
+      </div>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Remarks</label>
-      <input pInputText [ngModel]="receiveForm().remarks" (ngModelChange)="receiveForm.set({ ...receiveForm(), remarks: $event })" class="w-full" />
+      <label for="receiveRemarks" class="text-sm font-medium text-slate-700">Remarks</label>
+      <input pInputText id="receiveRemarks" [ngModel]="receiveForm().remarks" (ngModelChange)="receiveForm.set({ ...receiveForm(), remarks: $event })" class="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -137,7 +214,7 @@
 </p-dialog>
 
 <!-- Consume Stock Modal -->
-<p-dialog header="Consume Stock" [(visible)]="showConsumeModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+<p-dialog header="Consume Stock" [(visible)]="showConsumeModal" [modal]="true" [style]="{ width: '460px' }" styleClass="surface-modal">
   <div class="flex flex-col gap-4 py-4">
     @if (consumeError()) {
     <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
@@ -146,24 +223,75 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Department ID</label>
-      <input pInputText [ngModel]="consumeForm().departmentId" (ngModelChange)="consumeForm.set({ ...consumeForm(), departmentId: $event })" class="w-full" />
+      <label for="consumeDepartment" class="text-sm font-medium text-slate-700">Department</label>
+      <p-select
+        inputId="consumeDepartment"
+        [options]="departments()"
+        optionLabel="departmentName"
+        optionValue="id"
+        [ngModel]="consumeForm().departmentId"
+        (ngModelChange)="consumeForm.set({ ...consumeForm(), departmentId: $event ?? '' })"
+        placeholder="Select a department"
+        styleClass="w-full"
+      ></p-select>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div class="flex flex-col gap-2">
+        <label for="consumeCategory" class="text-xs font-semibold text-slate-600">Category</label>
+        <p-select
+          inputId="consumeCategory"
+          [options]="dialogCategories()"
+          optionLabel="name"
+          optionValue="id"
+          [ngModel]="lineCategoryId()"
+          (ngModelChange)="onLineCategoryChange($event)"
+          placeholder="Category"
+          [showClear]="true"
+          styleClass="w-full"
+        ></p-select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="consumeSubCategory" class="text-xs font-semibold text-slate-600">Sub-category</label>
+        <p-select
+          inputId="consumeSubCategory"
+          [options]="dialogSubCategories()"
+          optionLabel="name"
+          optionValue="id"
+          [ngModel]="lineSubCategoryId()"
+          (ngModelChange)="onLineSubCategoryChange($event)"
+          placeholder="Sub-category"
+          [showClear]="true"
+          [disabled]="!lineCategoryId()"
+          styleClass="w-full"
+        ></p-select>
+      </div>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Item ID</label>
-      <input pInputText [ngModel]="consumeForm().itemId" (ngModelChange)="consumeForm.set({ ...consumeForm(), itemId: $event })" class="w-full" />
+      <label for="consumeItem" class="text-sm font-medium text-slate-700">Item</label>
+      <p-select
+        inputId="consumeItem"
+        [options]="dialogItems()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="consumeForm().itemId"
+        (ngModelChange)="consumeForm.set({ ...consumeForm(), itemId: $event ?? '' })"
+        placeholder="Select an item"
+        [loading]="dialogItemsLoading()"
+        [disabled]="!lineSubCategoryId()"
+        styleClass="w-full"
+      ></p-select>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Quantity</label>
-      <p-inputNumber [ngModel]="consumeForm().quantity" (ngModelChange)="consumeForm.set({ ...consumeForm(), quantity: $event })" [min]="0" styleClass="w-full" />
+      <label for="consumeQuantity" class="text-sm font-medium text-slate-700">Quantity</label>
+      <p-inputNumber inputId="consumeQuantity" [ngModel]="consumeForm().quantity" (ngModelChange)="consumeForm.set({ ...consumeForm(), quantity: $event })" [min]="0" styleClass="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Patient ID</label>
-      <input pInputText [ngModel]="consumeForm().patientId" (ngModelChange)="consumeForm.set({ ...consumeForm(), patientId: $event })" class="w-full" />
+      <label for="consumePatientId" class="text-sm font-medium text-slate-700">Patient ID <span class="text-slate-400 font-normal">(optional)</span></label>
+      <input pInputText id="consumePatientId" [ngModel]="consumeForm().patientId" (ngModelChange)="consumeForm.set({ ...consumeForm(), patientId: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Remarks</label>
-      <input pInputText [ngModel]="consumeForm().remarks" (ngModelChange)="consumeForm.set({ ...consumeForm(), remarks: $event })" class="w-full" />
+      <label for="consumeRemarks" class="text-sm font-medium text-slate-700">Remarks</label>
+      <input pInputText id="consumeRemarks" [ngModel]="consumeForm().remarks" (ngModelChange)="consumeForm.set({ ...consumeForm(), remarks: $event })" class="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">

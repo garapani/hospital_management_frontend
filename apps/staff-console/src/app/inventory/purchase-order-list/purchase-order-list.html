@@ -145,7 +145,7 @@
             optionLabel="name"
             optionValue="id"
             [ngModel]="lineItemId()"
-            (ngModelChange)="lineItemId.set($event)"
+            (ngModelChange)="onLineItemChange($event)"
             placeholder="Select an item"
             [showClear]="true"
             [loading]="dialogItemsLoading()"

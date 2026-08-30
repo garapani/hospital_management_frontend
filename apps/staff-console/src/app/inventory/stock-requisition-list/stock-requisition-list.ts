@@ -5,19 +5,33 @@ import { FormsModule } from '@angular/forms';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
+import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { AuthService } from '@org/auth';
 
-import { InventoryApiService, StockRequisition } from '../inventory-api.service.js';
+import {
+  InventoryApiService,
+  InventoryItem,
+  InventoryItemCategory,
+  InventoryItemSubCategory,
+  StockRequisition,
+} from '../inventory-api.service.js';
 import { requisitionStatusSeverity } from '../inventory.model.js';
 import { MasterDataApiService } from '../../master-data/master-data-api.service.js';
 import { Department } from '../../master-data/master-data.model.js';
 
+/** A draft requisition line in the create dialog (itemName only for display). */
+interface CreateLine {
+  itemId: string;
+  itemName: string;
+  requestedQuantity: number;
+}
+
 @Component({
   selector: 'hms-stock-requisition-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TableModule, ButtonModule, TagModule, InputTextModule, SelectModule],
+  imports: [CommonModule, RouterModule, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, SelectModule],
   templateUrl: './stock-requisition-list.html',
 })
 export class StockRequisitionList {
@@ -36,6 +50,21 @@ export class StockRequisitionList {
   readonly hasSearched = signal(false);
 
   readonly statusSeverity = requisitionStatusSeverity;
+
+  // Create dialog state.
+  readonly showCreateModal = signal(false);
+  readonly saving = signal(false);
+  readonly createDepartmentId = signal('');
+  readonly createNotes = signal('');
+  readonly dialogCategories = signal<InventoryItemCategory[]>([]);
+  readonly dialogSubCategories = signal<InventoryItemSubCategory[]>([]);
+  readonly dialogItems = signal<InventoryItem[]>([]);
+  readonly dialogItemsLoading = signal(false);
+  readonly lineCategoryId = signal('');
+  readonly lineSubCategoryId = signal('');
+  readonly lineItemId = signal('');
+  readonly lineQuantity = signal(1);
+  readonly createLines = signal<CreateLine[]>([]);
 
   constructor() {
     this.loadDepartments();
@@ -84,10 +113,126 @@ export class StockRequisitionList {
     this.load(event.first || 0);
   }
 
-  onDepartmentFilterChange(departmentId: string): void {
-    this.departmentFilter.set(departmentId);
-    this.hasSearched.set(departmentId.length > 0);
+  onDepartmentFilterChange(departmentId: string | null): void {
+    this.departmentFilter.set(departmentId ?? '');
+    this.hasSearched.set(!!departmentId);
     this.firstRecord.set(0);
     this.load(0);
+  }
+
+  openCreateModal(): void {
+    this.createDepartmentId.set(this.departmentFilter());
+    this.createNotes.set('');
+    this.createLines.set([]);
+    this.lineCategoryId.set('');
+    this.lineSubCategoryId.set('');
+    this.lineItemId.set('');
+    this.lineQuantity.set(1);
+    this.dialogSubCategories.set([]);
+    this.dialogItems.set([]);
+    this.showCreateModal.set(true);
+    this.loadDialogCategories();
+  }
+
+  private loadDialogCategories(): void {
+    this.inventoryApi.listCategories().subscribe({
+      next: (categories) => this.dialogCategories.set(categories),
+      error: () => this.dialogCategories.set([]),
+    });
+  }
+
+  onLineCategoryChange(categoryId: string | null): void {
+    this.lineCategoryId.set(categoryId ?? '');
+    this.lineSubCategoryId.set('');
+    this.lineItemId.set('');
+    this.dialogSubCategories.set([]);
+    this.dialogItems.set([]);
+    if (!categoryId) {
+      return;
+    }
+    this.inventoryApi.listSubCategories(categoryId).subscribe({
+      next: (subCategories) => this.dialogSubCategories.set(subCategories),
+      error: () => this.dialogSubCategories.set([]),
+    });
+  }
+
+  onLineSubCategoryChange(subCategoryId: string | null): void {
+    this.lineSubCategoryId.set(subCategoryId ?? '');
+    this.lineItemId.set('');
+    this.dialogItems.set([]);
+    if (!subCategoryId) {
+      return;
+    }
+    this.dialogItemsLoading.set(true);
+    this.inventoryApi.listItemsBySubCategory(subCategoryId).subscribe({
+      next: (items) => {
+        this.dialogItems.set(items);
+        this.dialogItemsLoading.set(false);
+      },
+      error: () => this.dialogItemsLoading.set(false),
+    });
+  }
+
+  onLineItemChange(itemId: string | null): void {
+    this.lineItemId.set(itemId ?? '');
+  }
+
+  setLineQuantity(value: string): void {
+    const quantity = Number(value);
+    this.lineQuantity.set(Number.isFinite(quantity) ? quantity : 0);
+  }
+
+  addLine(): void {
+    const item = this.dialogItems().find((i) => i.id === this.lineItemId());
+    if (!item || this.lineQuantity() <= 0) {
+      return;
+    }
+    this.createLines.set([
+      ...this.createLines(),
+      { itemId: item.id, itemName: item.name, requestedQuantity: this.lineQuantity() },
+    ]);
+    this.lineSubCategoryId.set('');
+    this.lineItemId.set('');
+    this.lineQuantity.set(1);
+    this.dialogSubCategories.set([]);
+    this.dialogItems.set([]);
+  }
+
+  removeLine(index: number): void {
+    this.createLines.set(this.createLines().filter((_, i) => i !== index));
+  }
+
+  canAddLine(): boolean {
+    return this.lineItemId() !== '' && this.lineQuantity() > 0;
+  }
+
+  isCreateValid(): boolean {
+    return (
+      this.createDepartmentId() !== '' &&
+      this.createLines().length > 0 &&
+      this.createLines().every((l) => l.itemId !== '' && l.requestedQuantity > 0)
+    );
+  }
+
+  submitCreate(): void {
+    if (!this.isCreateValid()) {
+      return;
+    }
+    this.saving.set(true);
+    this.inventoryApi
+      .createRequisition({
+        departmentId: this.createDepartmentId(),
+        notes: this.createNotes().trim() || undefined,
+        items: this.createLines().map((l) => ({ itemId: l.itemId, requestedQuantity: l.requestedQuantity })),
+      })
+      .subscribe({
+        next: () => {
+          this.saving.set(false);
+          this.showCreateModal.set(false);
+          this.firstRecord.set(0);
+          this.load(0);
+        },
+        error: () => this.saving.set(false),
+      });
   }
 }
