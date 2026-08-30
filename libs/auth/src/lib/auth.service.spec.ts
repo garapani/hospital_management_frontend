@@ -291,7 +291,7 @@ describe('AuthService', () => {
   });
 
   describe('logout', () => {
-    it('clears tokens and navigates to /login', () => {
+    it('clears tokens and navigates to /login without any server call', () => {
       const router = TestBed.inject(Router);
       const navigateSpy = jest
         .spyOn(router, 'navigateByUrl')
@@ -303,8 +303,10 @@ describe('AuthService', () => {
         refreshToken: 'refresh-token-1',
       });
 
+      // No POST /auth/logout expectation: the backend has no such endpoint and stateless JWT
+      // rotation cannot be invalidated server-side (new-features.md #22) — logout is local-only.
       service.logout().subscribe();
-      httpMock.expectOne('https://gateway.example/api/auth/logout').flush(null);
+      httpMock.verify();
 
       expect(service.isAuthenticated()).toBe(false);
       expect(service.getAccessToken()).toBeNull();

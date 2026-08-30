@@ -150,18 +150,17 @@ export class AuthService {
     return this.refreshInFlight;
   }
 
+  /**
+   * Ends the local session: clears the refresh token (sessionStorage) and access token (memory)
+   * and navigates to /login. Deliberately NO server-side call: the backend has no /auth/logout
+   * endpoint, and this codebase's stateless JWT rotation has no revocation store — a round-trip
+   * could not invalidate anything, and calling a nonexistent endpoint would 404 on every logout
+   * while pretending otherwise. Real server-side revocation lands with new-features.md #22
+   * (Redis/blacklist token store).
+   */
   logout(): Observable<void> {
-    const refreshToken = this.tokens.getRefreshToken();
-    if (!refreshToken) {
-      // No refresh token to invalidate, just clear local session
-      this.clearSession();
-      return of(undefined);
-    }
-
-    // Call server-side logout to invalidate refresh token
-    return this.apiClient.post<void>('/auth/logout', { refreshToken }).pipe(
-      finalize(() => this.clearSession()),
-    );
+    this.clearSession();
+    return of(undefined);
   }
 
   /** Clears stored tokens AND navigates to /login — called on logout and on unrecoverable
