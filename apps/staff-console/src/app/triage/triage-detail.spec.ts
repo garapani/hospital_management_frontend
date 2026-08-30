@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { AuthService } from '@org/auth';
 import { TriageDetail } from './triage-detail.js';
 import { TriageApiService, TriageEntry } from './triage-api.service.js';
@@ -125,5 +125,29 @@ describe('TriageDetail', () => {
     expect(triageApi.linkPatient).toHaveBeenCalledWith('entry-1', 'patient-1');
     expect(fixture.componentInstance.entry()?.patientId).toBe('patient-1');
     expect(fixture.componentInstance.patientIdInput()).toBe('');
+  });
+
+  it('shows a not-found state on a 404', async () => {
+    const triageApi = {
+      findOne: jest.fn().mockReturnValue(throwError(() => ({ status: 404 }))),
+    } as unknown as TriageApiService;
+    const auth = { hasPermission: () => true, currentUser: () => ({ sub: 'account-1' }) } as unknown as AuthService;
+    const activatedRoute = { paramMap: of(convertToParamMap({ id: 'missing' })) } as unknown as ActivatedRoute;
+    TestBed.configureTestingModule({
+      imports: [TriageDetail],
+      providers: [
+        provideRouter([]),
+        { provide: TriageApiService, useValue: triageApi },
+        { provide: AuthService, useValue: auth },
+        { provide: ActivatedRoute, useValue: activatedRoute },
+      ],
+    });
+    const fixture = TestBed.createComponent(TriageDetail);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.notFound()).toBe(true);
+    expect(fixture.componentInstance.loading()).toBe(false);
   });
 });

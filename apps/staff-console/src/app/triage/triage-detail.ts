@@ -8,6 +8,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { AuthService } from '@org/auth';
+import { ApiError } from '@org/api-client';
 
 import { TriageApiService, TriageEntry } from './triage-api.service.js';
 import { triageDisplayName, colorCodeSeverity, COLOR_CODES, TRIAGE_STATUSES } from './triage.model.js';
@@ -26,6 +27,7 @@ export class TriageDetail implements OnInit {
 
   readonly entry = signal<TriageEntry | null>(null);
   readonly loading = signal(true);
+  readonly notFound = signal(false);
   readonly saving = signal(false);
   readonly linkingPatient = signal(false);
   readonly patientIdInput = signal('');
@@ -51,6 +53,7 @@ export class TriageDetail implements OnInit {
 
   load(id: string) {
     this.loading.set(true);
+    this.notFound.set(false);
     this.triageApi.findOne(id).subscribe({
       next: (data) => {
         this.entry.set(data);
@@ -60,7 +63,12 @@ export class TriageDetail implements OnInit {
         this.dischargeRemarks.set(data.dischargeRemarks ?? '');
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: (err: ApiError) => {
+        this.loading.set(false);
+        if (err.status === 404) {
+          this.notFound.set(true);
+        }
+      },
     });
   }
 
