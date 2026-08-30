@@ -6,6 +6,10 @@ import { PatientDetail } from './patient-detail.js';
 import { PatientsApiService, Patient } from './patients-api.service.js';
 import { VitalsApiService, Vital } from './vitals-api.service.js';
 import { EncountersApiService, ClinicalNote } from './encounters-api.service.js';
+import { AppointmentsApiService } from '../appointments/appointments-api.service.js';
+import { AdmissionsApiService } from '../admissions/admissions-api.service.js';
+import { OrdersApiService } from '../orders/orders-api.service.js';
+import { InvoicesApiService } from '../billing/invoices-api.service.js';
 
 describe('PatientDetail', () => {
   const patient: Patient = {
@@ -38,6 +42,18 @@ describe('PatientDetail', () => {
       getDiagnosesByPatient: jest.fn().mockReturnValue(of([])),
       getPrescriptionsByPatient: jest.fn().mockReturnValue(of([])),
     } as unknown as EncountersApiService;
+    const appointmentsApi = {
+      list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+    } as unknown as AppointmentsApiService;
+    const admissionsApi = {
+      list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+    } as unknown as AdmissionsApiService;
+    const ordersApi = {
+      list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+    } as unknown as OrdersApiService;
+    const invoicesApi = {
+      list: jest.fn().mockReturnValue(of({ data: [], total: 0, page: 1, limit: 10 })),
+    } as unknown as InvoicesApiService;
     const auth = { hasPermission: (p: string) => permissions.includes(p), currentUser: () => null } as unknown as AuthService;
     const activatedRoute = {
       paramMap: of(convertToParamMap({ id: 'patient-1' })),
@@ -50,13 +66,17 @@ describe('PatientDetail', () => {
         { provide: PatientsApiService, useValue: patientsApi },
         { provide: VitalsApiService, useValue: vitalsApi },
         { provide: EncountersApiService, useValue: encountersApi },
+        { provide: AppointmentsApiService, useValue: appointmentsApi },
+        { provide: AdmissionsApiService, useValue: admissionsApi },
+        { provide: OrdersApiService, useValue: ordersApi },
+        { provide: InvoicesApiService, useValue: invoicesApi },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
       ],
     });
 
     const fixture = TestBed.createComponent(PatientDetail);
-    return { fixture, vitalsApi, encountersApi, patientsApi };
+    return { fixture, vitalsApi, encountersApi, patientsApi, appointmentsApi, admissionsApi, ordersApi, invoicesApi };
   }
 
   it('loads vitals and encounter data when the user holds read permission', async () => {
@@ -77,6 +97,33 @@ describe('PatientDetail', () => {
 
     expect(vitalsApi.listByPatient).not.toHaveBeenCalled();
     expect(encountersApi.getNotesByPatient).not.toHaveBeenCalled();
+  });
+
+  it('loads appointments, admissions, orders and invoices when the user holds read permission', async () => {
+    const { fixture, appointmentsApi, admissionsApi, ordersApi, invoicesApi } = setup([
+      'appointment.read',
+      'admission.read',
+      'order.read',
+      'billing.manage',
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(appointmentsApi.list).toHaveBeenCalledWith({ patientId: 'patient-1' });
+    expect(admissionsApi.list).toHaveBeenCalledWith({ patientId: 'patient-1' });
+    expect(ordersApi.list).toHaveBeenCalledWith({ patientId: 'patient-1' });
+    expect(invoicesApi.list).toHaveBeenCalledWith({ patientId: 'patient-1' });
+  });
+
+  it('skips appointments/admissions/orders/invoices loads when the user lacks read permission', async () => {
+    const { fixture, appointmentsApi, admissionsApi, ordersApi, invoicesApi } = setup([]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(appointmentsApi.list).not.toHaveBeenCalled();
+    expect(admissionsApi.list).not.toHaveBeenCalled();
+    expect(ordersApi.list).not.toHaveBeenCalled();
+    expect(invoicesApi.list).not.toHaveBeenCalled();
   });
 
   it('navigates to Appointments with the patient pre-filled when booking', async () => {
@@ -166,6 +213,19 @@ describe('PatientDetail', () => {
         { provide: PatientsApiService, useValue: { getById: jest.fn().mockReturnValue(of(patient)) } },
         { provide: VitalsApiService, useValue: { listByPatient: jest.fn().mockReturnValue(of([])) } },
         { provide: EncountersApiService, useValue: encountersApi },
+        {
+          provide: AppointmentsApiService,
+          useValue: { list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })) },
+        },
+        {
+          provide: AdmissionsApiService,
+          useValue: { list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })) },
+        },
+        {
+          provide: OrdersApiService,
+          useValue: { list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })) },
+        },
+        { provide: InvoicesApiService, useValue: { list: jest.fn().mockReturnValue(of({ data: [], total: 0, page: 1, limit: 10 })) } },
         { provide: AuthService, useValue: { hasPermission: (p: string) => p === 'encounter.read', currentUser: () => null } },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'patient-1' })) } },
       ],

@@ -1,6 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -20,6 +20,7 @@ import { calculateAge } from './patient.model.js';
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     FormsModule,
     TableModule,
     ButtonModule,

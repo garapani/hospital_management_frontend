@@ -28,6 +28,13 @@ import {
   CreateDiagnosisDto,
   CreatePrescriptionDto,
 } from './encounters-api.service.js';
+import { AppointmentsApiService, Appointment } from '../appointments/appointments-api.service.js';
+import { appointmentStatusSeverity } from '../appointments/appointment.model.js';
+import { AdmissionsApiService, Admission } from '../admissions/admissions-api.service.js';
+import { admissionStatusSeverity, admissionSourceSeverity } from '../admissions/admission.model.js';
+import { OrdersApiService, Order } from '../orders/orders-api.service.js';
+import { InvoicesApiService } from '../billing/invoices-api.service.js';
+import { Invoice, invoiceReference, statusSeverity as invoiceStatusSeverity } from '../billing/invoice.model.js';
 
 type EditFormState = Partial<CreatePatientDto>;
 type VitalFormState = Omit<CreateVitalDto, 'patientId'>;
@@ -60,10 +67,19 @@ export class PatientDetail implements OnInit {
   private api = inject(PatientsApiService);
   private vitalsApi = inject(VitalsApiService);
   private encountersApi = inject(EncountersApiService);
+  private appointmentsApi = inject(AppointmentsApiService);
+  private admissionsApi = inject(AdmissionsApiService);
+  private ordersApi = inject(OrdersApiService);
+  private invoicesApi = inject(InvoicesApiService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private messageService = inject(MessageService);
   readonly auth = inject(AuthService);
+  readonly appointmentStatusSeverity = appointmentStatusSeverity;
+  readonly admissionStatusSeverity = admissionStatusSeverity;
+  readonly admissionSourceSeverity = admissionSourceSeverity;
+  readonly invoiceReference = invoiceReference;
+  readonly invoiceStatusSeverity = invoiceStatusSeverity;
 
   readonly patient = signal<Patient | null>(null);
   readonly loading = signal(true);
@@ -107,6 +123,18 @@ export class PatientDetail implements OnInit {
   });
   readonly prescriptionSaving = signal(false);
 
+  readonly appointments = signal<Appointment[]>([]);
+  readonly appointmentsLoading = signal(false);
+
+  readonly admissions = signal<Admission[]>([]);
+  readonly admissionsLoading = signal(false);
+
+  readonly orders = signal<Order[]>([]);
+  readonly ordersLoading = signal(false);
+
+  readonly invoices = signal<Invoice[]>([]);
+  readonly invoicesLoading = signal(false);
+
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
@@ -119,6 +147,18 @@ export class PatientDetail implements OnInit {
           this.loadNotes(id);
           this.loadDiagnoses(id);
           this.loadPrescriptions(id);
+        }
+        if (this.auth.hasPermission('appointment.read')) {
+          this.loadAppointments(id);
+        }
+        if (this.auth.hasPermission('admission.read')) {
+          this.loadAdmissions(id);
+        }
+        if (this.auth.hasPermission('order.read')) {
+          this.loadOrders(id);
+        }
+        if (this.auth.hasPermission('billing.manage')) {
+          this.loadInvoices(id);
         }
       }
     });
@@ -380,5 +420,69 @@ export class PatientDetail implements OnInit {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete prescription' });
       },
     });
+  }
+
+  // --- Appointments ---
+  loadAppointments(patientId: string) {
+    this.appointmentsLoading.set(true);
+    this.appointmentsApi.list({ patientId }).subscribe({
+      next: (result) => {
+        this.appointments.set(result.data);
+        this.appointmentsLoading.set(false);
+      },
+      error: () => this.appointmentsLoading.set(false),
+    });
+  }
+
+  viewAppointment(appointment: Appointment) {
+    this.router.navigate(['/clinical/appointments', appointment.id]);
+  }
+
+  // --- Admissions ---
+  loadAdmissions(patientId: string) {
+    this.admissionsLoading.set(true);
+    this.admissionsApi.list({ patientId }).subscribe({
+      next: (result) => {
+        this.admissions.set(result.data);
+        this.admissionsLoading.set(false);
+      },
+      error: () => this.admissionsLoading.set(false),
+    });
+  }
+
+  viewAdmission(admission: Admission) {
+    this.router.navigate(['/admissions', admission.id]);
+  }
+
+  // --- Orders ---
+  loadOrders(patientId: string) {
+    this.ordersLoading.set(true);
+    this.ordersApi.list({ patientId }).subscribe({
+      next: (result) => {
+        this.orders.set(result.data);
+        this.ordersLoading.set(false);
+      },
+      error: () => this.ordersLoading.set(false),
+    });
+  }
+
+  viewOrder(order: Order) {
+    this.router.navigate(['/clinical/orders', order.id]);
+  }
+
+  // --- Invoices ---
+  loadInvoices(patientId: string) {
+    this.invoicesLoading.set(true);
+    this.invoicesApi.list({ patientId }).subscribe({
+      next: (result) => {
+        this.invoices.set(result.data);
+        this.invoicesLoading.set(false);
+      },
+      error: () => this.invoicesLoading.set(false),
+    });
+  }
+
+  viewInvoice(invoice: Invoice) {
+    this.router.navigate(['/billing/invoices', invoice.id]);
   }
 }

@@ -83,8 +83,12 @@
     <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 overflow-hidden flex flex-col">
       <p-tabs [(value)]="activeTab" styleClass="w-full h-full flex flex-col">
         <p-tablist>
+          @if (auth.hasPermission('appointment.read')) {
           <p-tab value="appointments"><i class="pi pi-calendar mr-2"></i> Appointments</p-tab>
+          }
+          @if (auth.hasPermission('admission.read')) {
           <p-tab value="admissions"><i class="pi pi-bed mr-2"></i> Admissions (ADT)</p-tab>
+          }
           @if (auth.hasPermission('vitals.read')) {
           <p-tab value="vitals"><i class="pi pi-heart mr-2"></i> Vitals</p-tab>
           }
@@ -93,25 +97,85 @@
           <p-tab value="diagnoses"><i class="pi pi-info-circle mr-2"></i> Diagnoses</p-tab>
           <p-tab value="prescriptions"><i class="pi pi-list mr-2"></i> Prescriptions</p-tab>
           }
+          @if (auth.hasPermission('order.read') || auth.hasPermission('billing.manage')) {
+          <p-tab value="billing"><i class="pi pi-wallet mr-2"></i> Billing &amp; Orders</p-tab>
+          }
         </p-tablist>
 
         <p-tabpanels class="flex-1 bg-white p-6 overflow-y-auto">
+          @if (auth.hasPermission('appointment.read')) {
           <p-tabpanel value="appointments">
-            <div class="text-center text-slate-500 py-12">
-              <i class="pi pi-calendar text-4xl mb-3 opacity-50"></i>
-              <p>View or book this patient's appointments in the Appointments screen.</p>
+            <div class="flex flex-col gap-4">
               @if (auth.hasPermission('appointment.manage')) {
-              <p-button label="Book Appointment" [text]="true" size="small" class="mt-2" (onClick)="bookAppointment(p)"></p-button>
+              <div class="flex justify-end">
+                <p-button label="Book Appointment" icon="pi pi-plus" size="small" (onClick)="bookAppointment(p)"></p-button>
+              </div>
               }
+              <p-table [value]="appointments()" [loading]="appointmentsLoading()" [rowHover]="true" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-gridlines">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th class="table-header-cell">Date</th>
+                    <th class="table-header-cell">Time</th>
+                    <th class="table-header-cell">Type</th>
+                    <th class="table-header-cell">Reason</th>
+                    <th class="table-header-cell">Status</th>
+                    <th class="table-header-cell w-16">Actions</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-a>
+                  <tr>
+                    <td>{{ a.appointmentDate | date }}</td>
+                    <td>{{ a.appointmentTime }}</td>
+                    <td>{{ a.appointmentType }}</td>
+                    <td>{{ a.reason || '-' }}</td>
+                    <td><p-tag [value]="a.status" [severity]="appointmentStatusSeverity(a.status)" [rounded]="true"></p-tag></td>
+                    <td>
+                      <p-button icon="pi pi-arrow-right" [text]="true" size="small" (onClick)="viewAppointment(a)"></p-button>
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                  <tr>
+                    <td colspan="6" class="text-center p-6 text-slate-500">No appointments recorded yet.</td>
+                  </tr>
+                </ng-template>
+              </p-table>
             </div>
           </p-tabpanel>
+          }
+          @if (auth.hasPermission('admission.read')) {
           <p-tabpanel value="admissions">
-            <div class="text-center text-slate-500 py-12">
-              <i class="pi pi-bed text-4xl mb-3 opacity-50"></i>
-              <p>Patient is not currently admitted.</p>
-              <p-button label="Admit to Ward" [text]="true" size="small" class="mt-2"></p-button>
+            <div class="flex flex-col gap-4">
+              <p-table [value]="admissions()" [loading]="admissionsLoading()" [rowHover]="true" [paginator]="true" [rows]="10" styleClass="p-datatable-sm p-datatable-gridlines">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th class="table-header-cell">Admitted</th>
+                    <th class="table-header-cell">Source</th>
+                    <th class="table-header-cell">Status</th>
+                    <th class="table-header-cell">Discharged</th>
+                    <th class="table-header-cell w-16">Actions</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-adm>
+                  <tr>
+                    <td>{{ adm.admissionDate | date: 'medium' }}</td>
+                    <td><p-tag [value]="adm.admissionSource" [severity]="admissionSourceSeverity(adm.admissionSource)" [rounded]="true"></p-tag></td>
+                    <td><p-tag [value]="adm.status" [severity]="admissionStatusSeverity(adm.status)" [rounded]="true"></p-tag></td>
+                    <td>{{ adm.dischargeDate ? (adm.dischargeDate | date: 'medium') : '-' }}</td>
+                    <td>
+                      <p-button icon="pi pi-arrow-right" [text]="true" size="small" (onClick)="viewAdmission(adm)"></p-button>
+                    </td>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="emptymessage">
+                  <tr>
+                    <td colspan="5" class="text-center p-6 text-slate-500">Patient has no admission history.</td>
+                  </tr>
+                </ng-template>
+              </p-table>
             </div>
           </p-tabpanel>
+          }
 
           @if (auth.hasPermission('vitals.read')) {
           <p-tabpanel value="vitals">
@@ -286,6 +350,74 @@
                   </tr>
                 </ng-template>
               </p-table>
+            </div>
+          </p-tabpanel>
+          }
+
+          @if (auth.hasPermission('order.read') || auth.hasPermission('billing.manage')) {
+          <p-tabpanel value="billing">
+            <div class="flex flex-col gap-8">
+              @if (auth.hasPermission('order.read')) {
+              <div class="flex flex-col gap-3">
+                <h4 class="font-semibold text-slate-700">Orders</h4>
+                <p-table [value]="orders()" [loading]="ordersLoading()" [rowHover]="true" [paginator]="true" [rows]="5" styleClass="p-datatable-sm p-datatable-gridlines">
+                  <ng-template pTemplate="header">
+                    <tr>
+                      <th class="table-header-cell">Ordered</th>
+                      <th class="table-header-cell">Notes</th>
+                      <th class="table-header-cell w-16">Actions</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-o>
+                    <tr>
+                      <td>{{ o.orderedAt | date: 'medium' }}</td>
+                      <td>{{ o.notes || '-' }}</td>
+                      <td>
+                        <p-button icon="pi pi-arrow-right" [text]="true" size="small" (onClick)="viewOrder(o)"></p-button>
+                      </td>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="emptymessage">
+                    <tr>
+                      <td colspan="3" class="text-center p-6 text-slate-500">No orders placed yet.</td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+              </div>
+              }
+
+              @if (auth.hasPermission('billing.manage')) {
+              <div class="flex flex-col gap-3">
+                <h4 class="font-semibold text-slate-700">Invoices</h4>
+                <p-table [value]="invoices()" [loading]="invoicesLoading()" [rowHover]="true" [paginator]="true" [rows]="5" styleClass="p-datatable-sm p-datatable-gridlines">
+                  <ng-template pTemplate="header">
+                    <tr>
+                      <th class="table-header-cell">Reference</th>
+                      <th class="table-header-cell">Total</th>
+                      <th class="table-header-cell">Paid</th>
+                      <th class="table-header-cell">Status</th>
+                      <th class="table-header-cell w-16">Actions</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-inv>
+                    <tr>
+                      <td class="font-mono">{{ invoiceReference(inv) }}</td>
+                      <td>{{ inv.totalAmount | number: '1.2-2' }}</td>
+                      <td>{{ inv.paidAmount | number: '1.2-2' }}</td>
+                      <td><p-tag [value]="inv.status" [severity]="invoiceStatusSeverity(inv.status)" [rounded]="true"></p-tag></td>
+                      <td>
+                        <p-button icon="pi pi-arrow-right" [text]="true" size="small" (onClick)="viewInvoice(inv)"></p-button>
+                      </td>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="emptymessage">
+                    <tr>
+                      <td colspan="5" class="text-center p-6 text-slate-500">No invoices raised yet.</td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+              </div>
+              }
             </div>
           </p-tabpanel>
           }

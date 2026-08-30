@@ -50,6 +50,7 @@ export interface AppointmentFilters {
   date?: string;
   doctorId?: string;
   departmentId?: string;
+  patientId?: string;
   status?: string;
   page?: number;
   limit?: number;
@@ -79,6 +80,7 @@ export class AppointmentsApiService {
         ...(filters.date ? { date: filters.date } : {}),
         ...(filters.doctorId ? { doctorId: filters.doctorId } : {}),
         ...(filters.departmentId ? { departmentId: filters.departmentId } : {}),
+        ...(filters.patientId ? { patientId: filters.patientId } : {}),
         ...(filters.status ? { status: filters.status } : {}),
         ...(filters.page !== undefined ? { page: filters.page } : {}),
         ...(filters.limit !== undefined ? { limit: filters.limit } : {}),
