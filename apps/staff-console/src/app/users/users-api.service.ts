@@ -15,8 +15,12 @@ import {
 export class UsersApiService {
   private readonly api = inject(ApiClientService);
 
-  list(): Observable<User[]> {
-    return this.api.get<User[]>('/accounts');
+  /** Server-side pagination: the backend returns { items, total } so lists beyond the first page
+   *  are reachable (hospitals with >50 staff used to be silently capped at the default page). */
+  list(limit = 50, offset = 0): Observable<{ items: User[]; total: number }> {
+    return this.api.get<{ items: User[]; total: number }>('/accounts', {
+      params: { limit, offset },
+    });
   }
 
   getOne(id: string): Observable<UserWithRoles> {

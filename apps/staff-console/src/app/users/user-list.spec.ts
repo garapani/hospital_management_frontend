@@ -8,7 +8,7 @@ import { UsersApiService } from './users-api.service.js';
 describe('UserList', () => {
   function setup(createResult: 'ok' | 'error' | 'generated') {
     const usersApi = {
-      list: jest.fn().mockReturnValue(of([])),
+      list: jest.fn().mockReturnValue(of({ items: [], total: 0 })),
       getRoles: jest
         .fn()
         .mockReturnValue(of([{ name: 'Doctor', description: 'Treats patients' }])),
@@ -118,7 +118,7 @@ describe('UserList', () => {
 
   it('shows an inline conflict message on a 409', async () => {
     const usersApi = {
-      list: jest.fn().mockReturnValue(of([])),
+      list: jest.fn().mockReturnValue(of({ items: [], total: 0 })),
       getRoles: jest.fn().mockReturnValue(of([])),
       create: jest
         .fn()

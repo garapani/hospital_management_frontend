@@ -33,6 +33,8 @@ export class UserList {
   private readonly messageService = inject(MessageService);
 
   readonly users = signal<User[]>([]);
+  readonly total = signal(0);
+  readonly pageSize = 50;
   readonly loading = signal(false);
   readonly roles = signal<RoleDto[]>([]);
   readonly userStatusLabel = userStatusLabel;
@@ -74,10 +76,17 @@ export class UserList {
   }
 
   private load(): void {
+    this.loadPage({ first: 0, rows: this.pageSize });
+  }
+
+  /** Server-side page fetch, wired to PrimeNG's lazy p-table (lazyLoadOnInit=false; the first
+   *  page is loaded explicitly from the constructor — see the frontend CLAUDE.md convention). */
+  loadPage(event: { first: number; rows: number }): void {
     this.loading.set(true);
-    this.usersApi.list().subscribe({
-      next: (users) => {
-        this.users.set(users);
+    this.usersApi.list(event.rows, event.first).subscribe({
+      next: ({ items, total }) => {
+        this.users.set(items);
+        this.total.set(total);
         this.loading.set(false);
       },
       error: () => {

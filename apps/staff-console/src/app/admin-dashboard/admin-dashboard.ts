@@ -64,7 +64,9 @@ export class AdminDashboard {
     ])
       .then(([tenants, users, audits]) => {
         const tenantCount = tenants?.length || 0;
-        const userCount = users?.length || 0;
+        // The list endpoint now paginates ({ items, total }) — the dashboard wants the true
+        // count of operator accounts, which is `total` (the count query is unbounded).
+        const userCount = users?.total ?? 0;
         const activeTenants =
           tenants?.filter((t) => t.status === 'active').length || 0;
 

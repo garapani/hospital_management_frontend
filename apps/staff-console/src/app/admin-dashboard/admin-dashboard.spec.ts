@@ -21,7 +21,9 @@ describe('AdminDashboard (platform overview)', () => {
         ),
     } as unknown as TenantsApiService;
     const usersApi = {
-      list: jest.fn().mockReturnValue(of([{ id: 'a1', username: 'op1' }])),
+      list: jest
+        .fn()
+        .mockReturnValue(of({ items: [{ id: 'a1', username: 'op1' }], total: 1 })),
     } as unknown as UsersApiService;
     const auditApi = {
       list:

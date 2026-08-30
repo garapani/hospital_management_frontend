@@ -22,6 +22,12 @@
       [value]="users()"
       [loading]="loading()"
       [rowHover]="true"
+      [paginator]="true"
+      [rows]="pageSize"
+      [totalRecords]="total()"
+      [lazy]="true"
+      [lazyLoadOnInit]="false"
+      (onLazyLoad)="loadPage($event)"
       styleClass="p-datatable-sm p-datatable-gridlines border-none"
       [tableStyle]="{ 'min-width': '50rem' }"
     >
