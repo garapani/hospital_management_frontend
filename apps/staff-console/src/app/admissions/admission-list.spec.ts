@@ -76,6 +76,27 @@ describe('AdmissionList', () => {
     expect(admissionsApi.list).toHaveBeenCalledTimes(1);
   });
 
+  it('pages the Active view client-side over the already-fetched list, without refetching', async () => {
+    const allActive = Array.from({ length: 35 }, (_, i) => ({ id: `admission-${i}` }));
+    const { fixture, admissionsApi } = setup();
+    (admissionsApi.listActive as jest.Mock).mockReturnValue(of(allActive));
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.onViewChange('Active');
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.admissions()).toHaveLength(10);
+    expect(fixture.componentInstance.admissions()[0].id).toBe('admission-0');
+    expect(fixture.componentInstance.totalRecords()).toBe(35);
+
+    fixture.componentInstance.onLazyLoad({ first: 20 });
+
+    expect(admissionsApi.listActive).toHaveBeenCalledTimes(1);
+    expect(fixture.componentInstance.admissions()).toHaveLength(10);
+    expect(fixture.componentInstance.admissions()[0].id).toBe('admission-20');
+  });
+
   it('creates an admission via the API when the create form is submitted', async () => {
     const { fixture, admissionsApi } = setup();
     fixture.detectChanges();

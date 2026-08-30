@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -37,7 +37,17 @@ export class AdmissionList {
   private readonly admissionsApi = inject(AdmissionsApiService);
   readonly auth = inject(AuthService);
 
-  readonly admissions = signal<Admission[]>([]);
+  // GET /admissions/active returns the full list with no server-side pagination, unlike the "All"
+  // view's paginated GET /admissions — so the Active view pages client-side over this full array.
+  private readonly activeAdmissionsAll = signal<Admission[]>([]);
+  private readonly allAdmissionsPage = signal<Admission[]>([]);
+  readonly admissions = computed(() => {
+    if (this.view() === 'Active') {
+      const start = this.firstRecord();
+      return this.activeAdmissionsAll().slice(start, start + this.pageSize());
+    }
+    return this.allAdmissionsPage();
+  });
   readonly loading = signal(false);
   readonly totalRecords = signal(0);
   readonly pageSize = signal(10);
@@ -73,12 +83,10 @@ export class AdmissionList {
   load(first: number): void {
     this.loading.set(true);
 
-    // The active view hits GET /admissions/active, which returns the full list
-    // (no server-side pagination), so pagination is client-side over that array.
     if (this.view() === 'Active') {
       this.admissionsApi.listActive(this.wardIdFilter() || undefined).subscribe({
         next: (data) => {
-          this.admissions.set(data);
+          this.activeAdmissionsAll.set(data);
           this.totalRecords.set(data.length);
           this.loading.set(false);
         },
@@ -98,7 +106,7 @@ export class AdmissionList {
       })
       .subscribe({
         next: (res) => {
-          this.admissions.set(res.data);
+          this.allAdmissionsPage.set(res.data);
           this.totalRecords.set(res.meta.total);
           this.loading.set(false);
         },
@@ -108,7 +116,11 @@ export class AdmissionList {
 
   onLazyLoad(event: TableLazyLoadEvent): void {
     this.firstRecord.set(event.first || 0);
-    this.load(event.first || 0);
+    // Active view already has every row client-side (see `load`/`admissions` above) — a page
+    // change there is a pure slice, not a new fetch.
+    if (this.view() !== 'Active') {
+      this.load(event.first || 0);
+    }
   }
 
   applyFilters(): void {

@@ -152,8 +152,9 @@
 >
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Temperature (°C)</label>
+      <label for="vitalTemperature" class="text-sm font-medium">Temperature (°C)</label>
       <p-inputNumber
+        inputId="vitalTemperature"
         [ngModel]="createForm().temperature"
         (ngModelChange)="createForm.update(v => ({...v, temperature: $event}))"
         [min]="0"
@@ -165,41 +166,42 @@
       />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Pulse (bpm)</label>
-      <p-inputNumber [ngModel]="createForm().pulse" (ngModelChange)="createForm.update(v => ({...v, pulse: $event}))" [min]="0" />
+      <label for="vitalPulse" class="text-sm font-medium">Pulse (bpm)</label>
+      <p-inputNumber inputId="vitalPulse" [ngModel]="createForm().pulse" (ngModelChange)="createForm.update(v => ({...v, pulse: $event}))" [min]="0" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">BP Systolic</label>
-      <p-inputNumber [ngModel]="createForm().bpSystolic" (ngModelChange)="createForm.update(v => ({...v, bpSystolic: $event}))" [min]="0" />
+      <label for="vitalBpSystolic" class="text-sm font-medium">BP Systolic</label>
+      <p-inputNumber inputId="vitalBpSystolic" [ngModel]="createForm().bpSystolic" (ngModelChange)="createForm.update(v => ({...v, bpSystolic: $event}))" [min]="0" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">BP Diastolic</label>
-      <p-inputNumber [ngModel]="createForm().bpDiastolic" (ngModelChange)="createForm.update(v => ({...v, bpDiastolic: $event}))" [min]="0" />
+      <label for="vitalBpDiastolic" class="text-sm font-medium">BP Diastolic</label>
+      <p-inputNumber inputId="vitalBpDiastolic" [ngModel]="createForm().bpDiastolic" (ngModelChange)="createForm.update(v => ({...v, bpDiastolic: $event}))" [min]="0" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Respiratory Rate</label>
-      <p-inputNumber [ngModel]="createForm().respiratoryRate" (ngModelChange)="createForm.update(v => ({...v, respiratoryRate: $event}))" [min]="0" />
+      <label for="vitalRespiratoryRate" class="text-sm font-medium">Respiratory Rate</label>
+      <p-inputNumber inputId="vitalRespiratoryRate" [ngModel]="createForm().respiratoryRate" (ngModelChange)="createForm.update(v => ({...v, respiratoryRate: $event}))" [min]="0" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">SpO₂ (%)</label>
-      <p-inputNumber [ngModel]="createForm().spO2" (ngModelChange)="createForm.update(v => ({...v, spO2: $event}))" [min]="0" [max]="100" />
+      <label for="vitalSpO2" class="text-sm font-medium">SpO₂ (%)</label>
+      <p-inputNumber inputId="vitalSpO2" [ngModel]="createForm().spO2" (ngModelChange)="createForm.update(v => ({...v, spO2: $event}))" [min]="0" [max]="100" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Height (cm)</label>
-      <p-inputNumber [ngModel]="createForm().height" (ngModelChange)="createForm.update(v => ({...v, height: $event}))" [min]="0" />
+      <label for="vitalHeight" class="text-sm font-medium">Height (cm)</label>
+      <p-inputNumber inputId="vitalHeight" [ngModel]="createForm().height" (ngModelChange)="createForm.update(v => ({...v, height: $event}))" [min]="0" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Weight (kg)</label>
-      <p-inputNumber [ngModel]="createForm().weight" (ngModelChange)="createForm.update(v => ({...v, weight: $event}))" [min]="0" />
+      <label for="vitalWeight" class="text-sm font-medium">Weight (kg)</label>
+      <p-inputNumber inputId="vitalWeight" [ngModel]="createForm().weight" (ngModelChange)="createForm.update(v => ({...v, weight: $event}))" [min]="0" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Pain Scale (0–10)</label>
-      <p-inputNumber [ngModel]="createForm().painScale" (ngModelChange)="createForm.update(v => ({...v, painScale: $event}))" [min]="0" [max]="10" />
+      <label for="vitalPainScale" class="text-sm font-medium">Pain Scale (0–10)</label>
+      <p-inputNumber inputId="vitalPainScale" [ngModel]="createForm().painScale" (ngModelChange)="createForm.update(v => ({...v, painScale: $event}))" [min]="0" [max]="10" />
     </div>
     <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
-      <label class="text-sm font-medium">Notes</label>
+      <label for="vitalNotes" class="text-sm font-medium">Notes</label>
       <textarea
         pTextarea
+        id="vitalNotes"
         rows="3"
         class="w-full"
         [ngModel]="createForm().triageNotes"

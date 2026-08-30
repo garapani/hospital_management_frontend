@@ -1,4 +1,5 @@
 <p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
 <div class="h-full flex flex-col gap-6">
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div class="flex items-center gap-4">
@@ -130,7 +131,7 @@
                     <td>{{ a.reason || '-' }}</td>
                     <td><p-tag [value]="a.status" [severity]="appointmentStatusSeverity(a.status)" [rounded]="true"></p-tag></td>
                     <td>
-                      <p-button icon="pi pi-arrow-right" [text]="true" size="small" (onClick)="viewAppointment(a)"></p-button>
+                      <p-button icon="pi pi-arrow-right" [text]="true" size="small" ariaLabel="View appointment" (onClick)="viewAppointment(a)"></p-button>
                     </td>
                   </tr>
                 </ng-template>
@@ -163,7 +164,7 @@
                     <td><p-tag [value]="adm.status" [severity]="admissionStatusSeverity(adm.status)" [rounded]="true"></p-tag></td>
                     <td>{{ adm.dischargeDate ? (adm.dischargeDate | date: 'medium') : '-' }}</td>
                     <td>
-                      <p-button icon="pi pi-arrow-right" [text]="true" size="small" (onClick)="viewAdmission(adm)"></p-button>
+                      <p-button icon="pi pi-arrow-right" [text]="true" size="small" ariaLabel="View admission" (onClick)="viewAdmission(adm)"></p-button>
                     </td>
                   </tr>
                 </ng-template>
@@ -294,7 +295,7 @@
                     <td>{{ d.createdAt | date: 'medium' }}</td>
                     @if (auth.hasPermission('encounter.manage')) {
                     <td>
-                      <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="removeDiagnosis(d)"></p-button>
+                      <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" ariaLabel="Delete diagnosis" (onClick)="removeDiagnosis(d)"></p-button>
                     </td>
                     }
                   </tr>
@@ -339,7 +340,7 @@
                     <td><p-tag [value]="p.status" severity="info" [rounded]="true"></p-tag></td>
                     @if (auth.hasPermission('encounter.manage')) {
                     <td>
-                      <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" (onClick)="removePrescription(p)"></p-button>
+                      <p-button icon="pi pi-trash" severity="danger" [text]="true" size="small" ariaLabel="Delete prescription" (onClick)="removePrescription(p)"></p-button>
                     </td>
                     }
                   </tr>
@@ -373,7 +374,7 @@
                       <td>{{ o.orderedAt | date: 'medium' }}</td>
                       <td>{{ o.notes || '-' }}</td>
                       <td>
-                        <p-button icon="pi pi-arrow-right" [text]="true" size="small" (onClick)="viewOrder(o)"></p-button>
+                        <p-button icon="pi pi-arrow-right" [text]="true" size="small" ariaLabel="View order" (onClick)="viewOrder(o)"></p-button>
                       </td>
                     </tr>
                   </ng-template>
@@ -406,7 +407,7 @@
                       <td>{{ inv.paidAmount | number: '1.2-2' }}</td>
                       <td><p-tag [value]="inv.status" [severity]="invoiceStatusSeverity(inv.status)" [rounded]="true"></p-tag></td>
                       <td>
-                        <p-button icon="pi pi-arrow-right" [text]="true" size="small" (onClick)="viewInvoice(inv)"></p-button>
+                        <p-button icon="pi pi-arrow-right" [text]="true" size="small" ariaLabel="View invoice" (onClick)="viewInvoice(inv)"></p-button>
                       </td>
                     </tr>
                   </ng-template>

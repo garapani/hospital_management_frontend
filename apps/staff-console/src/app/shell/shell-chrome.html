@@ -1,6 +1,8 @@
 <div class="flex min-h-screen relative overflow-hidden">
   <!-- Global toast surface for every routed page (MessageService provided in app.config). -->
   <p-toast position="top-right"></p-toast>
+  <!-- Global confirm surface for every routed page (ConfirmationService provided in app.config). -->
+  <p-confirmDialog></p-confirmDialog>
   <!-- Sidebar backdrop (mobile/tablet drawer only) -->
   @if (sidebarOpen()) {
   <div

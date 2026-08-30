@@ -5,7 +5,7 @@ import {
 import { provideRouter } from '@angular/router';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { providePrimeNG } from 'primeng/config';
 import { definePreset } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
@@ -135,5 +135,8 @@ export const appConfig: ApplicationConfig = {
     // the shell's <p-toast> (shell-chrome). Pages that predate this (patient list/detail) keep
     // their own component-scoped provider + <p-toast>, which shadow the global one for them.
     MessageService,
+    // Global confirm service: any routed page can inject ConfirmationService and call .confirm()
+    // — the dialog renders in the shell's <p-confirmDialog>, same pattern as MessageService above.
+    ConfirmationService,
   ],
 };

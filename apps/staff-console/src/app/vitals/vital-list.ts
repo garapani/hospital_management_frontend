@@ -7,6 +7,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TextareaModule } from 'primeng/textarea';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { PatientsApiService, Patient, PaginatedResponse } from '../patients/patients-api.service.js';
 import { CreateVitalDto, Vital, VitalsApiService } from './vitals-api.service.js';
@@ -29,6 +30,8 @@ import { CreateVitalDto, Vital, VitalsApiService } from './vitals-api.service.js
 export class VitalList {
   private readonly vitalsApi = inject(VitalsApiService);
   private readonly patientsApi = inject(PatientsApiService);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
 
   // Patient search (vitals are patient-scoped on the backend — GET /vitals/patient/:patientId).
@@ -112,9 +115,19 @@ export class VitalList {
   }
 
   voidVital(vital: Vital): void {
-    this.vitalsApi.voidVital(vital.id).subscribe({
-      next: () => this.loadVitals(vital.patientId),
-      error: () => undefined,
+    this.confirmationService.confirm({
+      header: 'Void Vitals',
+      message: `Void this vitals reading from ${vital.recordedAt}? This cannot be undone.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Void', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.vitalsApi.voidVital(vital.id).subscribe({
+          next: () => this.loadVitals(vital.patientId),
+          error: () =>
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to void vitals' }),
+        });
+      },
     });
   }
 }

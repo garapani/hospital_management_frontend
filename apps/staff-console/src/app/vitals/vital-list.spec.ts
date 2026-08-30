@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { MessageService, ConfirmationService, Confirmation } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { VitalList } from './vital-list.js';
 import { VitalsApiService, Vital } from './vitals-api.service.js';
@@ -16,6 +17,11 @@ describe('VitalList', () => {
       search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0 } })),
     } as unknown as PatientsApiService;
     const auth = { hasPermission: () => true } as unknown as AuthService;
+    // No <p-confirmDialog> is rendered in these component tests, so simulate the user accepting
+    // every confirmation immediately rather than asserting against the dialog UI.
+    const confirmationService = {
+      confirm: jest.fn((c: Confirmation) => c.accept?.()),
+    } as unknown as ConfirmationService;
 
     TestBed.configureTestingModule({
       imports: [VitalList],
@@ -23,6 +29,8 @@ describe('VitalList', () => {
         { provide: VitalsApiService, useValue: vitalsApi },
         { provide: PatientsApiService, useValue: patientsApi },
         { provide: AuthService, useValue: auth },
+        MessageService,
+        { provide: ConfirmationService, useValue: confirmationService },
       ],
     });
 

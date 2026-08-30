@@ -9,6 +9,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TabsModule } from 'primeng/tabs';
 import { CheckboxModule } from 'primeng/checkbox';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { PatientsApiService, Patient, PaginatedResponse } from '../patients/patients-api.service.js';
 import {
@@ -43,6 +44,8 @@ type ActiveTab = 'notes' | 'diagnoses' | 'prescriptions';
 export class EncounterList {
   private readonly encountersApi = inject(EncountersApiService);
   private readonly patientsApi = inject(PatientsApiService);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
 
   // Patient search (encounter data is patient-scoped on the backend).
@@ -222,14 +225,24 @@ export class EncounterList {
   }
 
   deleteDiagnosis(diagnosis: Diagnosis): void {
-    this.encountersApi.deleteDiagnosis(diagnosis.id).subscribe({
-      next: () => {
-        const patientId = this.selectedPatient()?.id;
-        if (patientId) {
-          this.reloadAll(patientId);
-        }
+    this.confirmationService.confirm({
+      header: 'Delete Diagnosis',
+      message: `Delete the diagnosis "${diagnosis.description}"? This cannot be undone.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Delete', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.encountersApi.deleteDiagnosis(diagnosis.id).subscribe({
+          next: () => {
+            const patientId = this.selectedPatient()?.id;
+            if (patientId) {
+              this.reloadAll(patientId);
+            }
+          },
+          error: () =>
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete diagnosis' }),
+        });
       },
-      error: () => undefined,
     });
   }
 
@@ -267,14 +280,24 @@ export class EncounterList {
   }
 
   deletePrescription(prescription: Prescription): void {
-    this.encountersApi.deletePrescription(prescription.id).subscribe({
-      next: () => {
-        const patientId = this.selectedPatient()?.id;
-        if (patientId) {
-          this.reloadAll(patientId);
-        }
+    this.confirmationService.confirm({
+      header: 'Delete Prescription',
+      message: `Delete the prescription for "${prescription.medicationName}"? This cannot be undone.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Delete', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.encountersApi.deletePrescription(prescription.id).subscribe({
+          next: () => {
+            const patientId = this.selectedPatient()?.id;
+            if (patientId) {
+              this.reloadAll(patientId);
+            }
+          },
+          error: () =>
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete prescription' }),
+        });
       },
-      error: () => undefined,
     });
   }
 }

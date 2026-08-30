@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { ConfirmationService } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { PatientDetail } from './patient-detail.js';
 import { PatientsApiService, Patient } from './patients-api.service.js';
 import { VitalsApiService, Vital } from './vitals-api.service.js';
-import { EncountersApiService, ClinicalNote } from './encounters-api.service.js';
+import { EncountersApiService, ClinicalNote, Diagnosis } from './encounters-api.service.js';
 import { AppointmentsApiService } from '../appointments/appointments-api.service.js';
 import { AdmissionsApiService } from '../admissions/admissions-api.service.js';
 import { OrdersApiService } from '../orders/orders-api.service.js';
@@ -41,6 +42,8 @@ describe('PatientDetail', () => {
       getNotesByPatient: jest.fn().mockReturnValue(of([])),
       getDiagnosesByPatient: jest.fn().mockReturnValue(of([])),
       getPrescriptionsByPatient: jest.fn().mockReturnValue(of([])),
+      deleteDiagnosis: jest.fn().mockReturnValue(of({ success: true })),
+      deletePrescription: jest.fn().mockReturnValue(of({ success: true })),
     } as unknown as EncountersApiService;
     const appointmentsApi = {
       list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
@@ -109,10 +112,10 @@ describe('PatientDetail', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(appointmentsApi.list).toHaveBeenCalledWith({ patientId: 'patient-1' });
-    expect(admissionsApi.list).toHaveBeenCalledWith({ patientId: 'patient-1' });
-    expect(ordersApi.list).toHaveBeenCalledWith({ patientId: 'patient-1' });
-    expect(invoicesApi.list).toHaveBeenCalledWith({ patientId: 'patient-1' });
+    expect(appointmentsApi.list).toHaveBeenCalledWith({ patientId: 'patient-1', limit: 200 });
+    expect(admissionsApi.list).toHaveBeenCalledWith({ patientId: 'patient-1', limit: 200 });
+    expect(ordersApi.list).toHaveBeenCalledWith({ patientId: 'patient-1', limit: 200 });
+    expect(invoicesApi.list).toHaveBeenCalledWith({ patientId: 'patient-1', limit: 200 });
   });
 
   it('skips appointments/admissions/orders/invoices loads when the user lacks read permission', async () => {
@@ -253,7 +256,7 @@ describe('PatientDetail', () => {
     expect(fixture.componentInstance.vitalForm()).toEqual({});
   });
 
-  it('pre-fills Record Vitals from the most recent reading, excluding recordedAt/appointmentId', async () => {
+  it('carries forward only height/weight from the most recent reading, not point-in-time measurements', async () => {
     const latestVital: Vital = {
       id: 'vital-1',
       patientId: 'patient-1',
@@ -283,14 +286,28 @@ describe('PatientDetail', () => {
     expect(fixture.componentInstance.vitalForm()).toEqual({
       height: 170,
       weight: 65,
-      temperature: 37.1,
-      pulse: 72,
-      bpSystolic: 120,
-      bpDiastolic: 80,
-      respiratoryRate: 16,
-      spO2: 98,
-      painScale: 0,
-      triageNotes: 'Stable',
     });
+  });
+
+  it('asks for confirmation before deleting a diagnosis, and reloads the list once confirmed', async () => {
+    const { fixture, encountersApi } = setup(['encounter.read']);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
+    const confirmSpy = jest.spyOn(confirmationService, 'confirm');
+
+    const diagnosis = { id: 'diag-1', description: 'URTI' } as Diagnosis;
+    fixture.componentInstance.removeDiagnosis(diagnosis);
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(encountersApi.deleteDiagnosis).not.toHaveBeenCalled();
+
+    // Simulate the user accepting the confirm dialog.
+    confirmSpy.mock.calls[0][0].accept?.();
+
+    expect(encountersApi.deleteDiagnosis).toHaveBeenCalledWith('diag-1');
+    // Called once on initial load, once more after the confirmed delete.
+    expect(encountersApi.getDiagnosesByPatient).toHaveBeenCalledTimes(2);
   });
 });

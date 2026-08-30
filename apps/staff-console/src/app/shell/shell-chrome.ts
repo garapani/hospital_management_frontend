@@ -7,6 +7,7 @@ import { ApiError } from '@org/api-client';
 import { MessageService } from 'primeng/api';
 import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -25,6 +26,7 @@ import { Subscription } from 'rxjs';
     FormsModule,
     TooltipModule,
     ToastModule,
+    ConfirmDialogModule,
     DialogModule,
     ButtonModule,
     InputTextModule,

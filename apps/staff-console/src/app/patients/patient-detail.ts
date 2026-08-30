@@ -5,7 +5,8 @@ import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { TabsModule } from 'primeng/tabs';
 import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
@@ -36,6 +37,11 @@ import { OrdersApiService, Order } from '../orders/orders-api.service.js';
 import { InvoicesApiService } from '../billing/invoices-api.service.js';
 import { Invoice, invoiceReference, statusSeverity as invoiceStatusSeverity } from '../billing/invoice.model.js';
 
+// The backend's paginate() default (20) otherwise silently truncates a patient's chart tabs; these
+// embedded tabs page over the fetched rows client-side (p-table [paginator]="true") rather than a
+// second, server-side paginator, so the fix is one large-enough fetch rather than a lazy table.
+const PATIENT_CHART_TAB_LIMIT = 200;
+
 type EditFormState = Partial<CreatePatientDto>;
 type VitalFormState = Omit<CreateVitalDto, 'patientId'>;
 type NoteFormState = Omit<CreateNoteDto, 'patientId' | 'doctorId'>;
@@ -51,6 +57,7 @@ type PrescriptionFormState = Omit<CreatePrescriptionDto, 'patientId' | 'doctorId
     ButtonModule,
     TagModule,
     ToastModule,
+    ConfirmDialogModule,
     TabsModule,
     TableModule,
     DialogModule,
@@ -60,7 +67,7 @@ type PrescriptionFormState = Omit<CreatePrescriptionDto, 'patientId' | 'doctorId
     CheckboxModule,
     PaginatorModule,
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './patient-detail.html',
 })
 export class PatientDetail implements OnInit {
@@ -74,6 +81,7 @@ export class PatientDetail implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
   readonly appointmentStatusSeverity = appointmentStatusSeverity;
   readonly admissionStatusSeverity = admissionStatusSeverity;
@@ -255,23 +263,12 @@ export class PatientDetail implements OnInit {
   }
 
   openVitalModal() {
+    // Only height/weight carry forward from the previous reading — they change slowly and a nurse
+    // recording, say, a new temperature shouldn't have to re-enter them. Point-in-time measurements
+    // (temperature, pulse, BP, respiratory rate, SpO2, pain score) and free-text notes must not
+    // carry forward: pre-filling them produced fabricated vitals a nurse could save unmodified.
     const latest = this.vitals()[0];
-    this.vitalForm.set(
-      latest
-        ? {
-            height: latest.height,
-            weight: latest.weight,
-            temperature: latest.temperature,
-            pulse: latest.pulse,
-            bpSystolic: latest.bpSystolic,
-            bpDiastolic: latest.bpDiastolic,
-            respiratoryRate: latest.respiratoryRate,
-            spO2: latest.spO2,
-            painScale: latest.painScale,
-            triageNotes: latest.triageNotes,
-          }
-        : {},
-    );
+    this.vitalForm.set(latest ? { height: latest.height, weight: latest.weight } : {});
     this.showVitalModal.set(true);
   }
 
@@ -369,10 +366,19 @@ export class PatientDetail implements OnInit {
   removeDiagnosis(diagnosis: Diagnosis) {
     const patientId = this.patient()?.id;
     if (!patientId) return;
-    this.encountersApi.deleteDiagnosis(diagnosis.id).subscribe({
-      next: () => this.loadDiagnoses(patientId),
-      error: () => {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete diagnosis' });
+    this.confirmationService.confirm({
+      header: 'Delete Diagnosis',
+      message: `Delete the diagnosis "${diagnosis.description}"? This cannot be undone.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Delete', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.encountersApi.deleteDiagnosis(diagnosis.id).subscribe({
+          next: () => this.loadDiagnoses(patientId),
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete diagnosis' });
+          },
+        });
       },
     });
   }
@@ -416,10 +422,19 @@ export class PatientDetail implements OnInit {
   removePrescription(prescription: Prescription) {
     const patientId = this.patient()?.id;
     if (!patientId) return;
-    this.encountersApi.deletePrescription(prescription.id).subscribe({
-      next: () => this.loadPrescriptions(patientId),
-      error: () => {
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete prescription' });
+    this.confirmationService.confirm({
+      header: 'Delete Prescription',
+      message: `Delete the prescription for "${prescription.medicationName}"? This cannot be undone.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Delete', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.encountersApi.deletePrescription(prescription.id).subscribe({
+          next: () => this.loadPrescriptions(patientId),
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to delete prescription' });
+          },
+        });
       },
     });
   }
@@ -427,7 +442,7 @@ export class PatientDetail implements OnInit {
   // --- Appointments ---
   loadAppointments(patientId: string) {
     this.appointmentsLoading.set(true);
-    this.appointmentsApi.list({ patientId }).subscribe({
+    this.appointmentsApi.list({ patientId, limit: PATIENT_CHART_TAB_LIMIT }).subscribe({
       next: (result) => {
         this.appointments.set(result.data);
         this.appointmentsLoading.set(false);
@@ -443,7 +458,7 @@ export class PatientDetail implements OnInit {
   // --- Admissions ---
   loadAdmissions(patientId: string) {
     this.admissionsLoading.set(true);
-    this.admissionsApi.list({ patientId }).subscribe({
+    this.admissionsApi.list({ patientId, limit: PATIENT_CHART_TAB_LIMIT }).subscribe({
       next: (result) => {
         this.admissions.set(result.data);
         this.admissionsLoading.set(false);
@@ -459,7 +474,7 @@ export class PatientDetail implements OnInit {
   // --- Orders ---
   loadOrders(patientId: string) {
     this.ordersLoading.set(true);
-    this.ordersApi.list({ patientId }).subscribe({
+    this.ordersApi.list({ patientId, limit: PATIENT_CHART_TAB_LIMIT }).subscribe({
       next: (result) => {
         this.orders.set(result.data);
         this.ordersLoading.set(false);
@@ -475,7 +490,7 @@ export class PatientDetail implements OnInit {
   // --- Invoices ---
   loadInvoices(patientId: string) {
     this.invoicesLoading.set(true);
-    this.invoicesApi.list({ patientId }).subscribe({
+    this.invoicesApi.list({ patientId, limit: PATIENT_CHART_TAB_LIMIT }).subscribe({
       next: (result) => {
         this.invoices.set(result.data);
         this.invoicesLoading.set(false);

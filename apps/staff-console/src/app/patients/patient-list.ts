@@ -1,4 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -153,14 +154,14 @@ export class PatientList implements OnInit {
 
     if (!form.allowDuplicate) {
       try {
-        const matches = await this.api
-          .checkDuplicates({
+        const matches = await firstValueFrom(
+          this.api.checkDuplicates({
             firstName: form.firstName,
             lastName: form.lastName,
             phoneNumber: form.phoneNumber,
             dateOfBirth: form.dateOfBirth,
-          })
-          .toPromise();
+          }),
+        );
 
         if (matches && matches.length > 0) {
           this.duplicateMatches.set(matches);
@@ -195,6 +196,9 @@ export class PatientList implements OnInit {
       },
       error: (err: ApiError) => {
         this.isSaving.set(false);
+        // Drop back to the editable form (patientForm still holds what the user typed) rather than
+        // leaving them stuck on the duplicate-warning panel with no way to fix the submitted data.
+        this.showDuplicateWarning.set(false);
         this.messageService.add({
           severity: 'error',
           summary: err.status === 403 ? 'Permission Required' : 'Error',
@@ -208,6 +212,8 @@ export class PatientList implements OnInit {
   }
 
   proceedWithDuplicate() {
+    if (this.isSaving()) return;
+    this.isSaving.set(true);
     this.patientForm.set({ ...this.patientForm(), allowDuplicate: true });
     this.submitRegistration();
   }

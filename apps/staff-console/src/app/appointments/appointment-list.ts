@@ -12,10 +12,7 @@ import { AuthService } from '@org/auth';
 
 import { AppointmentsApiService, Appointment, CreateAppointmentDto } from './appointments-api.service.js';
 import { appointmentDisplayName, appointmentStatusSeverity, APPOINTMENT_STATUSES } from './appointment.model.js';
-
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+import { todayLocal as today } from '../shared/date.util.js';
 
 @Component({
   selector: 'hms-appointment-list',

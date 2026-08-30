@@ -1,3 +1,5 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
 <div class="h-full flex flex-col gap-6">
   <div class="flex items-center gap-4">
     <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (onClick)="goBack()"></p-button>
@@ -18,6 +20,13 @@
   @if (loading()) {
   <div class="flex-1 flex items-center justify-center">
     <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
+  </div>
+  } @else if (notFound()) {
+  <div class="flex-1 flex items-center justify-center">
+    <div class="text-center">
+      <p class="text-slate-600 font-medium">Order not found.</p>
+      <p-button label="Back to Orders" [text]="true" (onClick)="goBack()"></p-button>
+    </div>
   </div>
   } @else if (order(); as o) {
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -71,6 +80,7 @@
             <th class="table-header-cell">Priority</th>
             <th class="table-header-cell">Status</th>
             <th class="table-header-cell">Cancel Reason</th>
+            <th class="table-header-cell"></th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-item>
@@ -80,11 +90,33 @@
             <td><p-tag [value]="item.priority" [severity]="prioritySeverity(item.priority)" [rounded]="true"></p-tag></td>
             <td><p-tag [value]="item.status" [severity]="itemStatusSeverity(item.status)" [rounded]="true"></p-tag></td>
             <td class="text-slate-500">{{ item.cancelReason || '—' }}</td>
+            <td class="text-right">
+              @if (item.status === 'Pending' && auth.hasPermission('order.manage')) {
+              <div class="flex justify-end gap-1">
+                <p-button
+                  label="Complete"
+                  severity="success"
+                  [text]="true"
+                  size="small"
+                  [loading]="actionItemId() === item.id"
+                  (onClick)="completeItem(item)"
+                ></p-button>
+                <p-button
+                  label="Cancel"
+                  severity="danger"
+                  [text]="true"
+                  size="small"
+                  [loading]="actionItemId() === item.id"
+                  (onClick)="openCancelModal(item)"
+                ></p-button>
+              </div>
+              }
+            </td>
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="5" class="text-center p-6 text-slate-500">No line items on this order.</td>
+            <td colspan="6" class="text-center p-6 text-slate-500">No line items on this order.</td>
           </tr>
         </ng-template>
       </p-table>
@@ -92,3 +124,28 @@
   </div>
   }
 </div>
+
+<!-- Cancel Order Item Modal -->
+<p-dialog header="Cancel Order Item" [(visible)]="showCancelModal" [modal]="true" [style]="{ width: '450px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-2 py-2">
+    <label for="orderCancelReason" class="text-sm font-medium text-slate-700">Cancellation Reason</label>
+    <textarea
+      pTextarea
+      id="orderCancelReason"
+      [ngModel]="cancelReason()"
+      (ngModelChange)="cancelReason.set($event)"
+      rows="3"
+      class="w-full"
+    ></textarea>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Back" severity="secondary" [text]="true" (onClick)="showCancelModal.set(false)"></p-button>
+    <p-button
+      label="Confirm Cancel"
+      severity="danger"
+      [loading]="actionItemId() !== null"
+      [disabled]="!cancelReason().trim()"
+      (onClick)="confirmCancelItem()"
+    ></p-button>
+  </ng-template>
+</p-dialog>

@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { MessageService, ConfirmationService, Confirmation } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { EncounterList } from './encounter-list.js';
 import { EncountersApiService } from './encounters-api.service.js';
@@ -25,12 +26,18 @@ describe('EncounterList', () => {
       currentUser: () => ({ sub: 'doctor-1' }),
     } as unknown as AuthService;
 
+    const confirmationService = {
+      confirm: jest.fn((c: Confirmation) => c.accept?.()),
+    } as unknown as ConfirmationService;
+
     TestBed.configureTestingModule({
       imports: [EncounterList],
       providers: [
         { provide: EncountersApiService, useValue: encountersApi },
         { provide: PatientsApiService, useValue: patientsApi },
         { provide: AuthService, useValue: auth },
+        MessageService,
+        { provide: ConfirmationService, useValue: confirmationService },
       ],
     });
 

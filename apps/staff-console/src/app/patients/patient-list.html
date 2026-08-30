@@ -142,6 +142,7 @@
             severity="warn"
             icon="pi pi-check"
             size="small"
+            [loading]="isSaving()"
             (onClick)="proceedWithDuplicate()"
           ></p-button>
         </div>

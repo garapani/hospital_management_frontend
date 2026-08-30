@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, throwError, Subject } from 'rxjs';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { NotificationsApiService } from '../notifications/notifications-api.service.js';
@@ -51,6 +51,7 @@ describe('ShellChrome user menu', () => {
         { provide: AuthService, useValue: authService },
         { provide: NotificationsApiService, useValue: notificationsApi },
         { provide: MessageService, useValue: messageService },
+        ConfirmationService,
         { provide: BrandingService, useValue: brandingService },
       ],
     });

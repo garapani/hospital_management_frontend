@@ -9,6 +9,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { SelectModule } from 'primeng/select';
 import { DialogModule } from 'primeng/dialog';
 import { AuthService } from '@org/auth';
+import { ApiError } from '@org/api-client';
 
 import { AppointmentsApiService, Appointment } from './appointments-api.service.js';
 import { appointmentDisplayName, appointmentStatusSeverity, APPOINTMENT_STATUSES } from './appointment.model.js';
@@ -27,6 +28,7 @@ export class AppointmentDetail implements OnInit {
 
   readonly appointment = signal<Appointment | null>(null);
   readonly loading = signal(true);
+  readonly notFound = signal(false);
   readonly saving = signal(false);
 
   readonly appointmentType = signal('');
@@ -54,6 +56,7 @@ export class AppointmentDetail implements OnInit {
 
   load(id: string) {
     this.loading.set(true);
+    this.notFound.set(false);
     this.appointmentsApi.getById(id).subscribe({
       next: (data) => {
         this.appointment.set(data);
@@ -62,7 +65,12 @@ export class AppointmentDetail implements OnInit {
         this.reason.set(data.reason ?? '');
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: (err: ApiError) => {
+        this.loading.set(false);
+        if (err.status === 404) {
+          this.notFound.set(true);
+        }
+      },
     });
   }
 

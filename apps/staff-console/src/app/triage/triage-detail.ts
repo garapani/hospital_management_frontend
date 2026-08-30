@@ -69,18 +69,24 @@ export class TriageDetail implements OnInit {
   }
 
   saveAssessment() {
-    const id = this.entry()?.id;
-    if (!id) return;
+    const entry = this.entry();
+    if (!entry) return;
+
+    // triagedAt/triagedBy record the moment of the *first* triage assessment (used to measure
+    // door-to-triage time) — a later edit (e.g. discharge remarks, status change) must not
+    // overwrite them with whoever last touched the form.
+    const isFirstTriage = !entry.triagedAt;
 
     this.saving.set(true);
     this.triageApi
-      .update(id, {
+      .update(entry.id, {
         acuityLevel: this.acuityLevel() ?? undefined,
         colorCode: this.colorCode() ?? undefined,
         status: this.status(),
         dischargeRemarks: this.dischargeRemarks() || undefined,
-        triagedBy: this.auth.currentUser()?.sub,
-        triagedAt: new Date().toISOString(),
+        ...(isFirstTriage
+          ? { triagedBy: this.auth.currentUser()?.sub, triagedAt: new Date().toISOString() }
+          : {}),
       })
       .subscribe({
         next: (updated) => {

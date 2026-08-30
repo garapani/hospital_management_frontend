@@ -83,4 +83,12 @@ export class OrdersApiService {
   getById(id: string) {
     return this.apiClient.get<OrderWithItems>(`/orders/${id}`);
   }
+
+  completeItem(orderId: string, itemId: string) {
+    return this.apiClient.patch<OrderItem>(`/orders/${orderId}/items/${itemId}/complete`, {});
+  }
+
+  cancelItem(orderId: string, itemId: string, cancelReason: string) {
+    return this.apiClient.patch<OrderItem>(`/orders/${orderId}/items/${itemId}/cancel`, { cancelReason });
+  }
 }

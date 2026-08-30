@@ -61,4 +61,21 @@ describe('OrdersApiService', () => {
     expect(req.request.method).toBe('GET');
     req.flush({ id: 'ord-1', items: [] });
   });
+
+  it('completes an order item', () => {
+    service.completeItem('ord-1', 'item-1').subscribe();
+
+    const req = httpMock.expectOne('https://gateway.example/api/orders/ord-1/items/item-1/complete');
+    expect(req.request.method).toBe('PATCH');
+    req.flush({ id: 'item-1', status: 'Completed' });
+  });
+
+  it('cancels an order item with a reason', () => {
+    service.cancelItem('ord-1', 'item-1', 'Duplicate order').subscribe();
+
+    const req = httpMock.expectOne('https://gateway.example/api/orders/ord-1/items/item-1/cancel');
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ cancelReason: 'Duplicate order' });
+    req.flush({ id: 'item-1', status: 'Cancelled' });
+  });
 });

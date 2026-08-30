@@ -76,6 +76,44 @@ describe('TriageDetail', () => {
     expect(fixture.componentInstance.entry()?.status).toBe('Triaged');
   });
 
+  it('does not overwrite triagedAt/triagedBy on a later edit of an already-triaged entry', async () => {
+    const triagedEntry: TriageEntry = {
+      ...entry,
+      status: 'Triaged',
+      acuityLevel: 2,
+      colorCode: 'Orange',
+      triagedBy: 'account-1',
+      triagedAt: '2026-08-12T00:05:00Z',
+    };
+    const triageApi = {
+      findOne: jest.fn().mockReturnValue(of(triagedEntry)),
+      update: jest.fn().mockReturnValue(of({ ...triagedEntry, status: 'Discharged' })),
+      linkPatient: jest.fn(),
+    } as unknown as TriageApiService;
+    const auth = { hasPermission: () => true, currentUser: () => ({ sub: 'account-2' }) } as unknown as AuthService;
+    const activatedRoute = { paramMap: of(convertToParamMap({ id: 'entry-1' })) } as unknown as ActivatedRoute;
+    TestBed.configureTestingModule({
+      imports: [TriageDetail],
+      providers: [
+        provideRouter([]),
+        { provide: TriageApiService, useValue: triageApi },
+        { provide: AuthService, useValue: auth },
+        { provide: ActivatedRoute, useValue: activatedRoute },
+      ],
+    });
+    const fixture = TestBed.createComponent(TriageDetail);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.status.set('Discharged');
+    fixture.componentInstance.saveAssessment();
+
+    const payload = (triageApi.update as jest.Mock).mock.calls[0][1];
+    expect(payload.triagedAt).toBeUndefined();
+    expect(payload.triagedBy).toBeUndefined();
+    expect(payload.status).toBe('Discharged');
+  });
+
   it('links a patient and clears the input on success', async () => {
     const { fixture, triageApi } = setup();
     fixture.detectChanges();

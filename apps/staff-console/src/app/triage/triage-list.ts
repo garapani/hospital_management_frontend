@@ -9,6 +9,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
+import { TooltipModule } from 'primeng/tooltip';
 import { AuthService } from '@org/auth';
 
 import { TriageApiService, TriageEntry, CreateTriageEntryDto } from './triage-api.service.js';
@@ -28,6 +29,7 @@ import { triageDisplayName, colorCodeSeverity, ARRIVAL_MODES } from './triage.mo
     InputTextModule,
     SelectModule,
     CheckboxModule,
+    TooltipModule,
   ],
   templateUrl: './triage-list.html',
 })

@@ -97,6 +97,9 @@
           </div>
           }
           <div class="flex flex-col gap-3">
+            @if (loading()) {
+            <div class="text-center text-slate-500 py-6"><i class="pi pi-spin pi-spinner"></i></div>
+            } @else {
             @for (note of notes(); track note.id) {
             <div class="rounded-lg border border-slate-200 p-4">
               <div class="flex items-center justify-between">
@@ -127,6 +130,7 @@
             } @empty {
             <p class="text-sm text-slate-500 py-4">No clinical notes for this patient.</p>
             }
+            }
           </div>
         </div>
       </p-tabpanel>
@@ -143,7 +147,7 @@
             />
           </div>
           }
-          <p-table [value]="diagnoses()" dataKey="id" styleClass="p-datatable-sm">
+          <p-table [value]="diagnoses()" [loading]="loading()" dataKey="id" styleClass="p-datatable-sm">
             <ng-template pTemplate="header">
               <tr>
                 <th class="table-header-cell">Description</th>
@@ -197,7 +201,7 @@
             />
           </div>
           }
-          <p-table [value]="prescriptions()" dataKey="id" styleClass="p-datatable-sm">
+          <p-table [value]="prescriptions()" [loading]="loading()" dataKey="id" styleClass="p-datatable-sm">
             <ng-template pTemplate="header">
               <tr>
                 <th class="table-header-cell">Medication</th>
@@ -251,9 +255,10 @@
 >
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Chief Complaint</label>
+      <label for="noteChiefComplaint" class="text-sm font-medium">Chief Complaint</label>
       <textarea
         pTextarea
+        id="noteChiefComplaint"
         rows="2"
         class="w-full"
         [ngModel]="noteForm().chiefComplaint"
@@ -261,9 +266,10 @@
       ></textarea>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">History of Presenting Illness</label>
+      <label for="noteHistory" class="text-sm font-medium">History of Presenting Illness</label>
       <textarea
         pTextarea
+        id="noteHistory"
         rows="2"
         class="w-full"
         [ngModel]="noteForm().historyOfPresentingIllness"
@@ -271,9 +277,10 @@
       ></textarea>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Physical Examination</label>
+      <label for="noteExam" class="text-sm font-medium">Physical Examination</label>
       <textarea
         pTextarea
+        id="noteExam"
         rows="2"
         class="w-full"
         [ngModel]="noteForm().physicalExamination"
@@ -281,9 +288,10 @@
       ></textarea>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Plan</label>
+      <label for="notePlan" class="text-sm font-medium">Plan</label>
       <textarea
         pTextarea
+        id="notePlan"
         rows="2"
         class="w-full"
         [ngModel]="noteForm().plan"
@@ -306,9 +314,10 @@
 >
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Description</label>
+      <label for="diagnosisDescription" class="text-sm font-medium">Description</label>
       <input
         pInputText
+        id="diagnosisDescription"
         class="w-full"
         [ngModel]="diagnosisForm().description"
         (ngModelChange)="diagnosisForm.update(v => ({...v, description: $event}))"
@@ -316,9 +325,10 @@
       />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">ICD-10 Code</label>
+      <label for="diagnosisIcd10" class="text-sm font-medium">ICD-10 Code</label>
       <input
         pInputText
+        id="diagnosisIcd10"
         class="w-full"
         [ngModel]="diagnosisForm().icd10Code"
         (ngModelChange)="diagnosisForm.update(v => ({...v, icd10Code: $event}))"
@@ -355,9 +365,10 @@
 >
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
-      <label class="text-sm font-medium">Medication</label>
+      <label for="prescriptionMedication" class="text-sm font-medium">Medication</label>
       <input
         pInputText
+        id="prescriptionMedication"
         class="w-full"
         [ngModel]="prescriptionForm().medicationName"
         (ngModelChange)="prescriptionForm.update(v => ({...v, medicationName: $event}))"
@@ -365,9 +376,10 @@
       />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Dosage</label>
+      <label for="prescriptionDosage" class="text-sm font-medium">Dosage</label>
       <input
         pInputText
+        id="prescriptionDosage"
         class="w-full"
         [ngModel]="prescriptionForm().dosage"
         (ngModelChange)="prescriptionForm.update(v => ({...v, dosage: $event}))"
@@ -375,9 +387,10 @@
       />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Frequency</label>
+      <label for="prescriptionFrequency" class="text-sm font-medium">Frequency</label>
       <input
         pInputText
+        id="prescriptionFrequency"
         class="w-full"
         [ngModel]="prescriptionForm().frequency"
         (ngModelChange)="prescriptionForm.update(v => ({...v, frequency: $event}))"
@@ -385,26 +398,29 @@
       />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Route</label>
+      <label for="prescriptionRoute" class="text-sm font-medium">Route</label>
       <input
         pInputText
+        id="prescriptionRoute"
         class="w-full"
         [ngModel]="prescriptionForm().route"
         (ngModelChange)="prescriptionForm.update(v => ({...v, route: $event}))"
       />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Duration (days)</label>
+      <label for="prescriptionDuration" class="text-sm font-medium">Duration (days)</label>
       <p-inputNumber
+        inputId="prescriptionDuration"
         [ngModel]="prescriptionForm().durationDays"
         (ngModelChange)="prescriptionForm.update(v => ({...v, durationDays: $event}))"
         [min]="1"
       />
     </div>
     <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
-      <label class="text-sm font-medium">Notes</label>
+      <label for="prescriptionNotes" class="text-sm font-medium">Notes</label>
       <textarea
         pTextarea
+        id="prescriptionNotes"
         rows="2"
         class="w-full"
         [ngModel]="prescriptionForm().notes"
