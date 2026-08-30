@@ -8,6 +8,8 @@ import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { AuthService } from '@org/auth';
 
 import { CreatePharmacyDispensingDto, PharmacyDispensingApiService } from './pharmacy-dispensing-api.service.js';
@@ -26,11 +28,14 @@ import { DISPENSING_STATUSES, dispensingStatusSeverity, PharmacyDispensing } fro
     DialogModule,
     InputTextModule,
     SelectModule,
+    ToastModule,
   ],
+  providers: [MessageService],
   templateUrl: './pharmacy-dispensing-list.html',
 })
 export class PharmacyDispensingList {
   private readonly pharmacyApi = inject(PharmacyDispensingApiService);
+  private readonly messageService = inject(MessageService);
   readonly auth = inject(AuthService);
 
   readonly dispensings = signal<PharmacyDispensing[]>([]);
@@ -73,7 +78,10 @@ export class PharmacyDispensingList {
           this.totalRecords.set(res.meta.total);
           this.loading.set(false);
         },
-        error: () => this.loading.set(false),
+        error: () => {
+          this.loading.set(false);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load pharmacy dispensings.' });
+        },
       });
   }
 
@@ -108,6 +116,7 @@ export class PharmacyDispensingList {
       },
       error: () => {
         this.saving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to create the dispensing.' });
       },
     });
   }

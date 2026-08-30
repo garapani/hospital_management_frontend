@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { ConfirmationService, Confirmation } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { LabRequisitionDetail } from './lab-requisition-detail.js';
 import { LabApiService, LabRequisition, LabTestComponent } from '../lab-api.service.js';
@@ -55,6 +56,7 @@ describe('LabRequisitionDetail', () => {
       listComponentsByTest: jest.fn().mockReturnValue(of(components)),
       collectSample: jest.fn().mockReturnValue(of({ ...requisition, status: 'SampleCollected' })),
       enterResult: jest.fn().mockReturnValue(of({ id: 'res-1', requisitionId: 'req-1', componentId: 'comp-1', value: '13.5', isAbnormal: false, enteredBy: 'user-1', enteredAt: '2026-08-02T00:00:00Z' })),
+      getResults: jest.fn().mockReturnValue(of([])),
       verify: jest.fn().mockReturnValue(of({ ...requisition, status: 'Verified' })),
       ...labApiOverrides,
     } as unknown as LabApiService;
@@ -72,7 +74,15 @@ describe('LabRequisitionDetail', () => {
     });
 
     const fixture = TestBed.createComponent(LabRequisitionDetail);
-    return { fixture, labApi };
+    // LabRequisitionDetail self-provides ConfirmationService (component-level, like MessageService),
+    // so a TestBed-level override wouldn't take effect — spy on the real instance instead and
+    // auto-accept, since no <p-confirmDialog> is rendered in these component tests.
+    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
+    jest.spyOn(confirmationService, 'confirm').mockImplementation((c: Confirmation) => {
+      c.accept?.();
+      return confirmationService;
+    });
+    return { fixture, labApi, confirmationService };
   }
 
   it('loads the requisition on init', async () => {

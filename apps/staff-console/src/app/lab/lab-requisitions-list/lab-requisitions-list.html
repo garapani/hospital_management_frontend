@@ -1,22 +1,33 @@
+<p-toast></p-toast>
 <div class="h-full flex flex-col gap-6">
-  <div>
-    <h1 class="page-title">Lab Requisitions</h1>
-    <p class="text-sm text-slate-500 mt-1">Track and manage laboratory requisitions for order items.</p>
+  <div class="flex items-start justify-between">
+    <div>
+      <h1 class="page-title">Lab Requisitions</h1>
+      <p class="text-sm text-slate-500 mt-1">Track and manage laboratory requisitions for order items.</p>
+    </div>
+    @if (auth.hasPermission('lab.catalog.manage')) {
+    <a routerLink="/clinical/lab/catalog" class="text-sm font-medium text-sky-600 hover:text-sky-800">Manage Test Catalog</a>
+    }
   </div>
 
   <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-wrap items-end gap-3">
     <div class="flex flex-col gap-2">
-      <label for="filterOrderItem" class="text-xs font-semibold text-slate-600">Order Item ID (required)</label>
+      <label for="filterOrderItem" class="text-xs font-semibold text-slate-600">Order Item ID</label>
       <input
         id="filterOrderItem"
         pInputText
         [ngModel]="orderItemIdFilter()"
         (ngModelChange)="orderItemIdFilter.set($event)"
+        (keyup.enter)="applyFilters()"
         placeholder="e.g. order-item-123"
         class="w-72"
       />
     </div>
-    <p-button label="Search" size="small" severity="secondary" [disabled]="!orderItemIdFilter().trim()" (onClick)="applyFilters()"></p-button>
+    <div class="flex flex-col gap-2">
+      <label for="filterStatus" class="text-xs font-semibold text-slate-600">Status</label>
+      <p-select inputId="filterStatus" [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); applyFilters()" styleClass="w-48"></p-select>
+    </div>
+    <p-button label="Search" size="small" severity="secondary" (onClick)="applyFilters()"></p-button>
   </div>
 
   <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white p-4">
@@ -57,13 +68,7 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="6" class="text-center p-6 text-slate-500">
-            @if (hasSearched()) {
-            No requisitions found for this order item.
-            } @else {
-            Enter an order item ID and press Search to load requisitions.
-            }
-          </td>
+          <td colspan="6" class="text-center p-6 text-slate-500">No requisitions match the current filters.</td>
         </tr>
       </ng-template>
     </p-table>

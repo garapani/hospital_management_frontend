@@ -7,6 +7,8 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { AuthService } from '@org/auth';
 
 import { RadiologyApiService } from './radiology-api.service.js';
@@ -24,12 +26,15 @@ import { RADIOLOGY_STATUSES, RadiologyRequisition, radiologyStatusSeverity } fro
     TagModule,
     InputTextModule,
     SelectModule,
+    ToastModule,
   ],
+  providers: [MessageService],
   templateUrl: './radiology-requisitions-list.html',
 })
 export class RadiologyRequisitionsList {
   private readonly radiologyApi = inject(RadiologyApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly messageService = inject(MessageService);
   readonly auth = inject(AuthService);
 
   readonly requisitions = signal<RadiologyRequisition[]>([]);
@@ -46,18 +51,16 @@ export class RadiologyRequisitionsList {
   readonly statusSeverity = radiologyStatusSeverity;
 
   constructor() {
-    // Pre-fill the orderItemId filter from the query param (e.g. when this list is reached
-    // from an order context), then fetch page 1 with whatever filters are set. `of(...)` in
-    // specs and the real queryParamMap both emit synchronously, so the filter is set before
-    // the initial load below — no double fetch.
+    // load() lives inside the subscription (not called separately after it) so that a later
+    // emission — e.g. navigating from ?orderItemId=A to ?orderItemId=B while Angular reuses this
+    // component instance — re-fetches too, not just the first (synchronous) emission on init.
     this.route.queryParamMap.subscribe((params) => {
       const orderItemId = params.get('orderItemId');
       if (orderItemId) {
         this.orderItemIdFilter.set(orderItemId);
       }
+      this.load(0);
     });
-
-    this.load(0);
   }
 
   load(first: number): void {
@@ -77,7 +80,10 @@ export class RadiologyRequisitionsList {
           this.totalRecords.set(res.meta.total);
           this.loading.set(false);
         },
-        error: () => this.loading.set(false),
+        error: () => {
+          this.loading.set(false);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load radiology requisitions.' });
+        },
       });
   }
 

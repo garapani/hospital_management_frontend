@@ -4,6 +4,11 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
+import { DialogModule } from 'primeng/dialog';
+import { TextareaModule } from 'primeng/textarea';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AuthService } from '@org/auth';
 
 import { PharmacyDispensingApiService } from './pharmacy-dispensing-api.service.js';
@@ -12,18 +17,29 @@ import { dispensingStatusSeverity, PharmacyDispensing } from './pharmacy-dispens
 @Component({
   selector: 'hms-pharmacy-dispensing-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, DialogModule, TextareaModule, ToastModule, ConfirmDialogModule],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './pharmacy-dispensing-detail.html',
 })
 export class PharmacyDispensingDetail implements OnInit {
   private readonly pharmacyApi = inject(PharmacyDispensingApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
 
   readonly dispensing = signal<PharmacyDispensing | null>(null);
   readonly loading = signal(true);
   readonly dispensingInProgress = signal(false);
+
+  readonly showCancelModal = signal(false);
+  readonly cancelReason = signal('');
+  readonly cancelSaving = signal(false);
+
+  readonly showReverseModal = signal(false);
+  readonly reversalReason = signal('');
+  readonly reverseSaving = signal(false);
 
   readonly statusSeverity = dispensingStatusSeverity;
 
@@ -45,7 +61,10 @@ export class PharmacyDispensingDetail implements OnInit {
         this.dispensing.set(data);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load the dispensing record.' });
+      },
     });
   }
 
@@ -58,13 +77,72 @@ export class PharmacyDispensingDetail implements OnInit {
     const id = current?.id;
     if (!id || current?.status !== 'Pending') return;
 
-    this.dispensingInProgress.set(true);
-    this.pharmacyApi.dispense(id).subscribe({
+    this.confirmationService.confirm({
+      header: 'Dispense',
+      message: `Dispense ${current.quantity} unit(s)? This decrements physical stock and cannot be undone from here — use Reverse afterwards if needed.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Dispense', severity: 'success' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.dispensingInProgress.set(true);
+        this.pharmacyApi.dispense(id).subscribe({
+          next: (updated) => {
+            this.dispensing.set(updated);
+            this.dispensingInProgress.set(false);
+          },
+          error: () => {
+            this.dispensingInProgress.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Action failed', detail: 'Failed to dispense.' });
+          },
+        });
+      },
+    });
+  }
+
+  openCancelModal() {
+    this.cancelReason.set('');
+    this.showCancelModal.set(true);
+  }
+
+  confirmCancel() {
+    const id = this.dispensing()?.id;
+    if (!id) return;
+
+    this.cancelSaving.set(true);
+    this.pharmacyApi.cancel(id, this.cancelReason().trim() || undefined).subscribe({
       next: (updated) => {
         this.dispensing.set(updated);
-        this.dispensingInProgress.set(false);
+        this.cancelSaving.set(false);
+        this.showCancelModal.set(false);
       },
-      error: () => this.dispensingInProgress.set(false),
+      error: () => {
+        this.cancelSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Action failed', detail: 'Failed to cancel the dispensing.' });
+      },
+    });
+  }
+
+  openReverseModal() {
+    this.reversalReason.set('');
+    this.showReverseModal.set(true);
+  }
+
+  confirmReverse() {
+    const id = this.dispensing()?.id;
+    const reason = this.reversalReason().trim();
+    if (!id || !reason) return;
+
+    this.reverseSaving.set(true);
+    this.pharmacyApi.reverse(id, reason).subscribe({
+      next: (updated) => {
+        this.dispensing.set(updated);
+        this.reverseSaving.set(false);
+        this.showReverseModal.set(false);
+      },
+      error: () => {
+        this.reverseSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Action failed', detail: 'Failed to reverse the dispensing.' });
+      },
     });
   }
 }

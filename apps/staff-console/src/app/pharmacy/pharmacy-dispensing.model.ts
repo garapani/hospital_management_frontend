@@ -1,4 +1,4 @@
-export type PharmacyDispensingStatus = 'Pending' | 'Dispensed' | 'Cancelled';
+export type PharmacyDispensingStatus = 'Pending' | 'Dispensed' | 'Cancelled' | 'Reversed';
 
 /**
  * Shape of the joined `orderItem` relation the backend list query declares
@@ -33,17 +33,21 @@ export interface PharmacyDispensing {
   dispensedBy: string | null;
   dispensedAt: string | null;
   cancelReason: string | null;
+  reversedBy: string | null;
+  reversedAt: string | null;
+  reversalReason: string | null;
   createdAt: string;
   updatedAt: string;
   orderItem?: PharmacyDispensingOrderItem;
 }
 
-export const DISPENSING_STATUSES: PharmacyDispensingStatus[] = ['Pending', 'Dispensed', 'Cancelled'];
+export const DISPENSING_STATUSES: PharmacyDispensingStatus[] = ['Pending', 'Dispensed', 'Cancelled', 'Reversed'];
 
 const STATUS_SEVERITY: Record<string, 'success' | 'warn' | 'danger' | 'info' | 'secondary'> = {
   Pending: 'warn',
   Dispensed: 'success',
   Cancelled: 'danger',
+  Reversed: 'danger',
 };
 
 export function dispensingStatusSeverity(status: string): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {

@@ -26,6 +26,8 @@ export class RadiologyCatalog {
 
   readonly typeOptions = computed(() => this.types().map((t) => ({ label: t.name, value: t.id })));
 
+  private itemsRequestToken = 0;
+
   constructor() {
     this.loadTypes();
   }
@@ -44,15 +46,20 @@ export class RadiologyCatalog {
   onTypeChange(typeId: string): void {
     this.selectedTypeId.set(typeId);
     this.items.set([]);
+    const requestToken = ++this.itemsRequestToken;
     if (!typeId) return;
 
     this.loadingItems.set(true);
     this.radiologyApi.listItemsByType(typeId).subscribe({
       next: (items) => {
+        if (requestToken !== this.itemsRequestToken) return;
         this.items.set(items);
         this.loadingItems.set(false);
       },
-      error: () => this.loadingItems.set(false),
+      error: () => {
+        if (requestToken !== this.itemsRequestToken) return;
+        this.loadingItems.set(false);
+      },
     });
   }
 }

@@ -53,4 +53,16 @@ export class PharmacyDispensingApiService {
     // dispensedBy is deprecated on the backend — the authenticated principal wins.
     return this.apiClient.patch<PharmacyDispensing>(`/pharmacy/dispensings/${id}/dispense`, {});
   }
+
+  cancel(id: string, cancelReason?: string) {
+    return this.apiClient.patch<PharmacyDispensing>(`/pharmacy/dispensings/${id}/cancel`, {
+      ...(cancelReason ? { cancelReason } : {}),
+    });
+  }
+
+  reverse(id: string, reversalReason?: string) {
+    return this.apiClient.patch<PharmacyDispensing>(`/pharmacy/dispensings/${id}/reverse`, {
+      ...(reversalReason ? { reversalReason } : {}),
+    });
+  }
 }

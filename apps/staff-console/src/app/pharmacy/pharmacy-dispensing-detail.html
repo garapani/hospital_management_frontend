@@ -1,6 +1,8 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
 <div class="h-full flex flex-col gap-6">
   <div class="flex items-center gap-4">
-    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (onClick)="goBack()"></p-button>
+    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" ariaLabel="Back to pharmacy dispensings" (onClick)="goBack()"></p-button>
     <div>
       <h1 class="page-title flex items-center gap-3">
         @if (dispensing(); as d) {
@@ -58,13 +60,61 @@
         <div class="font-medium text-slate-900">{{ d.cancelReason }}</div>
       </div>
       }
+      @if (d.reversalReason) {
+      <div class="md:col-span-2">
+        <div class="text-xs text-slate-500 mb-1">Reversal Reason</div>
+        <div class="font-medium text-slate-900">{{ d.reversalReason }}</div>
+      </div>
+      }
+      @if (d.reversedAt) {
+      <div>
+        <div class="text-xs text-slate-500 mb-1">Reversed At</div>
+        <div class="font-medium text-slate-900">{{ d.reversedAt | date }}</div>
+      </div>
+      }
     </div>
 
-    @if (auth.hasPermission('pharmacy.dispensing.dispense') && d.status === 'Pending') {
-    <div class="flex justify-end border-t border-slate-200 pt-4">
+    <div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
+      @if (auth.hasPermission('pharmacy.dispensing.create') && d.status === 'Pending') {
+      <p-button label="Cancel Dispensing" severity="danger" [text]="true" [loading]="cancelSaving()" (onClick)="openCancelModal()"></p-button>
+      }
+      @if (auth.hasPermission('pharmacy.dispensing.dispense') && d.status === 'Pending') {
       <p-button label="Dispense" icon="pi pi-check" [loading]="dispensingInProgress()" (onClick)="dispenseDrug()"></p-button>
+      }
+      @if (auth.hasPermission('pharmacy.dispensing.dispense') && d.status === 'Dispensed') {
+      <p-button label="Reverse Dispensing" severity="danger" [loading]="reverseSaving()" (onClick)="openReverseModal()"></p-button>
+      }
     </div>
-    }
   </div>
   }
 </div>
+
+<!-- Cancel Dispensing Modal -->
+<p-dialog header="Cancel Dispensing" [(visible)]="showCancelModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-2 py-2">
+    <label for="pharmacyCancelReason" class="text-sm font-medium text-slate-700">Cancellation Reason</label>
+    <textarea pTextarea id="pharmacyCancelReason" rows="3" [ngModel]="cancelReason()" (ngModelChange)="cancelReason.set($event)" class="w-full"></textarea>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Back" severity="secondary" [text]="true" (onClick)="showCancelModal.set(false)"></p-button>
+    <p-button label="Confirm Cancel" severity="danger" [loading]="cancelSaving()" (onClick)="confirmCancel()"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Reverse Dispensing Modal -->
+<p-dialog header="Reverse Dispensing" [(visible)]="showReverseModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-2 py-2">
+    <label for="pharmacyReversalReason" class="text-sm font-medium text-slate-700">Reversal Reason <span class="text-red-500">*</span></label>
+    <textarea pTextarea id="pharmacyReversalReason" rows="3" [ngModel]="reversalReason()" (ngModelChange)="reversalReason.set($event)" class="w-full"></textarea>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Back" severity="secondary" [text]="true" (onClick)="showReverseModal.set(false)"></p-button>
+    <p-button
+      label="Confirm Reverse"
+      severity="danger"
+      [loading]="reverseSaving()"
+      [disabled]="!reversalReason().trim()"
+      (onClick)="confirmReverse()"
+    ></p-button>
+  </ng-template>
+</p-dialog>

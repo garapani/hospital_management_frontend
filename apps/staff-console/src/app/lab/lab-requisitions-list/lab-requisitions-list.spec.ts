@@ -27,13 +27,6 @@ describe('LabRequisitionsList', () => {
       listRequisitions: jest
         .fn()
         .mockReturnValue(of({ data: [requisition], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } })),
-      getRequisition: jest.fn(),
-      collectSample: jest.fn(),
-      enterResult: jest.fn(),
-      verify: jest.fn(),
-      listCategories: jest.fn(),
-      listTestsByCategory: jest.fn(),
-      listComponentsByTest: jest.fn(),
     } as unknown as LabApiService;
     const auth = { hasPermission: () => true } as unknown as AuthService;
 
@@ -50,17 +43,21 @@ describe('LabRequisitionsList', () => {
     return { fixture, labApi };
   }
 
-  it('does not call the API on init because orderItemId is required', async () => {
+  it('loads the Pending worklist on init, with no order item id required', async () => {
     const { fixture, labApi } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(labApi.listRequisitions).not.toHaveBeenCalled();
-    expect(fixture.componentInstance.requisitions()).toEqual([]);
-    expect(fixture.componentInstance.loading()).toBe(false);
+    expect(labApi.listRequisitions).toHaveBeenCalledWith({
+      orderItemId: undefined,
+      status: 'Pending',
+      page: 1,
+      limit: fixture.componentInstance.pageSize(),
+    });
+    expect(fixture.componentInstance.requisitions()).toEqual([requisition]);
   });
 
-  it('loads requisitions for the applied order item id, page 1', async () => {
+  it('filters by order item id when one is entered', async () => {
     const { fixture, labApi } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
@@ -68,12 +65,20 @@ describe('LabRequisitionsList', () => {
     fixture.componentInstance.orderItemIdFilter.set('order-item-1');
     fixture.componentInstance.applyFilters();
 
-    expect(labApi.listRequisitions).toHaveBeenCalledTimes(1);
-    const call = (labApi.listRequisitions as jest.Mock).mock.calls[0][0];
-    expect(call).toEqual({ orderItemId: 'order-item-1', page: 1, limit: fixture.componentInstance.pageSize() });
-    expect(fixture.componentInstance.requisitions()).toEqual([requisition]);
-    expect(fixture.componentInstance.totalRecords()).toBe(1);
-    expect(fixture.componentInstance.hasSearched()).toBe(true);
+    const call = (labApi.listRequisitions as jest.Mock).mock.calls[1][0];
+    expect(call).toEqual({ orderItemId: 'order-item-1', status: 'Pending', page: 1, limit: fixture.componentInstance.pageSize() });
+  });
+
+  it('filters by status', async () => {
+    const { fixture, labApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.statusFilter.set('Verified');
+    fixture.componentInstance.applyFilters();
+
+    const call = (labApi.listRequisitions as jest.Mock).mock.calls[1][0];
+    expect(call.status).toBe('Verified');
   });
 
   it('requests the correct page when the table lazy-loads a later page', async () => {
@@ -81,8 +86,6 @@ describe('LabRequisitionsList', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    fixture.componentInstance.orderItemIdFilter.set('order-item-1');
-    fixture.componentInstance.applyFilters();
     fixture.componentInstance.onLazyLoad({ first: 20 });
 
     const call = (labApi.listRequisitions as jest.Mock).mock.calls[1][0];
@@ -90,32 +93,22 @@ describe('LabRequisitionsList', () => {
     expect(fixture.componentInstance.firstRecord()).toBe(20);
   });
 
-  it('clears the table and skips the API when the order item id is emptied', async () => {
-    const { fixture, labApi } = setup();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    fixture.componentInstance.orderItemIdFilter.set('order-item-1');
-    fixture.componentInstance.applyFilters();
-    fixture.componentInstance.orderItemIdFilter.set('');
-    fixture.componentInstance.applyFilters();
-
-    expect(labApi.listRequisitions).toHaveBeenCalledTimes(1);
-    expect(fixture.componentInstance.requisitions()).toEqual([]);
-    expect(fixture.componentInstance.totalRecords()).toBe(0);
-    expect(fixture.componentInstance.hasSearched()).toBe(false);
-  });
-
   it('clears the loading flag when the list request errors', async () => {
-    const { fixture, labApi } = setup();
-    (labApi.listRequisitions as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));
+    const labApiFail = { listRequisitions: jest.fn().mockReturnValue(throwError(() => new Error('boom'))) } as unknown as LabApiService;
+    const auth = { hasPermission: () => true } as unknown as AuthService;
+    TestBed.configureTestingModule({
+      imports: [LabRequisitionsList],
+      providers: [
+        provideRouter([]),
+        { provide: LabApiService, useValue: labApiFail },
+        { provide: AuthService, useValue: auth },
+      ],
+    });
+    const failingFixture = TestBed.createComponent(LabRequisitionsList);
 
-    fixture.detectChanges();
-    await fixture.whenStable();
+    failingFixture.detectChanges();
+    await failingFixture.whenStable();
 
-    fixture.componentInstance.orderItemIdFilter.set('order-item-1');
-    fixture.componentInstance.applyFilters();
-
-    expect(fixture.componentInstance.loading()).toBe(false);
+    expect(failingFixture.componentInstance.loading()).toBe(false);
   });
 });

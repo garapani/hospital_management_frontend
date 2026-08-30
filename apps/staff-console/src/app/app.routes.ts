@@ -214,6 +214,11 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.LAB_READ)],
       },
       {
+        path: 'clinical/lab/catalog',
+        loadComponent: () => import('./lab/lab-tests/lab-tests.js').then((m) => m.LabTests),
+        canActivate: [permissionGuard(Permissions.LAB_CATALOG_MANAGE)],
+      },
+      {
         path: 'clinical/lab/:id',
         loadComponent: () => import('./lab/lab-requisition-detail/lab-requisition-detail.js').then((m) => m.LabRequisitionDetail),
         canActivate: [permissionGuard(Permissions.LAB_READ)],
@@ -222,6 +227,11 @@ export const appRoutes: Route[] = [
         path: 'clinical/radiology',
         loadComponent: () => import('./radiology/radiology-requisitions-list.js').then((m) => m.RadiologyRequisitionsList),
         canActivate: [permissionGuard(Permissions.RADIOLOGY_READ)],
+      },
+      {
+        path: 'clinical/radiology/catalog',
+        loadComponent: () => import('./radiology/radiology-catalog.js').then((m) => m.RadiologyCatalog),
+        canActivate: [permissionGuard(Permissions.RADIOLOGY_CATALOG_MANAGE)],
       },
       {
         path: 'clinical/radiology/:id',

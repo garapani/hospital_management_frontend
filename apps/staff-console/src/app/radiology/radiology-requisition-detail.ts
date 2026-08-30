@@ -7,6 +7,9 @@ import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { DialogModule } from 'primeng/dialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AuthService } from '@org/auth';
 
 import { RadiologyApiService } from './radiology-api.service.js';
@@ -15,13 +18,16 @@ import { NON_TERMINAL_RADIOLOGY_STATUSES, RadiologyRequisition, radiologyStatusS
 @Component({
   selector: 'hms-radiology-requisition-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, DialogModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, DialogModule, ToastModule, ConfirmDialogModule],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './radiology-requisition-detail.html',
 })
 export class RadiologyRequisitionDetail implements OnInit {
   private readonly radiologyApi = inject(RadiologyApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
 
   readonly requisition = signal<RadiologyRequisition | null>(null);
@@ -57,7 +63,10 @@ export class RadiologyRequisitionDetail implements OnInit {
         this.requisition.set(data);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load the requisition.' });
+      },
     });
   }
 
@@ -75,7 +84,10 @@ export class RadiologyRequisitionDetail implements OnInit {
         this.requisition.set(updated);
         this.actionLoading.set(false);
       },
-      error: () => this.actionLoading.set(false),
+      error: () => {
+        this.actionLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Action failed', detail: 'Failed to mark as scanned.' });
+      },
     });
   }
 
@@ -104,7 +116,10 @@ export class RadiologyRequisitionDetail implements OnInit {
           this.actionLoading.set(false);
           this.showReportModal.set(false);
         },
-        error: () => this.actionLoading.set(false),
+        error: () => {
+          this.actionLoading.set(false);
+          this.messageService.add({ severity: 'error', summary: 'Action failed', detail: 'Failed to save the report.' });
+        },
       });
   }
 
@@ -112,13 +127,25 @@ export class RadiologyRequisitionDetail implements OnInit {
     const id = this.requisition()?.id;
     if (!id) return;
 
-    this.actionLoading.set(true);
-    this.radiologyApi.verify(id).subscribe({
-      next: (updated) => {
-        this.requisition.set(updated);
-        this.actionLoading.set(false);
+    this.confirmationService.confirm({
+      header: 'Verify Report',
+      message: 'Verifying locks this report permanently. Have you reviewed it above?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Verify', severity: 'success' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.actionLoading.set(true);
+        this.radiologyApi.verify(id).subscribe({
+          next: (updated) => {
+            this.requisition.set(updated);
+            this.actionLoading.set(false);
+          },
+          error: () => {
+            this.actionLoading.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Action failed', detail: 'Failed to verify the report.' });
+          },
+        });
       },
-      error: () => this.actionLoading.set(false),
     });
   }
 
@@ -138,7 +165,10 @@ export class RadiologyRequisitionDetail implements OnInit {
         this.actionLoading.set(false);
         this.showCancelModal.set(false);
       },
-      error: () => this.actionLoading.set(false),
+      error: () => {
+        this.actionLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Action failed', detail: 'Failed to cancel the requisition.' });
+      },
     });
   }
 }

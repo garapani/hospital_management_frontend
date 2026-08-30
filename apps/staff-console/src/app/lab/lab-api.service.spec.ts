@@ -61,4 +61,22 @@ describe('LabApiService', () => {
     expect(req.request.method).toBe('GET');
     req.flush({ id: 'req-1' });
   });
+
+  it('includes status in query params when provided', () => {
+    service.listRequisitions({ status: 'Verified', page: 1, limit: 10 }).subscribe();
+
+    const req = httpMock.expectOne(
+      (r: HttpRequest<unknown>) => r.url === 'https://gateway.example/api/lab/requisitions',
+    );
+    expect(req.request.params.get('status')).toBe('Verified');
+    req.flush({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } });
+  });
+
+  it('gets the entered results for a requisition', () => {
+    service.getResults('req-1').subscribe();
+
+    const req = httpMock.expectOne('https://gateway.example/api/lab/requisitions/req-1/results');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
 });

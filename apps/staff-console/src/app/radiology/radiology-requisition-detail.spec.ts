@@ -1,10 +1,19 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { ConfirmationService, Confirmation } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { RadiologyRequisitionDetail } from './radiology-requisition-detail.js';
 import { RadiologyApiService } from './radiology-api.service.js';
 import { RadiologyRequisition } from './radiology.model.js';
+
+function autoAcceptConfirms(fixture: { debugElement: { injector: { get(token: unknown): ConfirmationService } } }) {
+  const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
+  jest.spyOn(confirmationService, 'confirm').mockImplementation((c: Confirmation) => {
+    c.accept?.();
+    return confirmationService;
+  });
+}
 
 describe('RadiologyRequisitionDetail', () => {
   const requisition: RadiologyRequisition = {
@@ -54,6 +63,7 @@ describe('RadiologyRequisitionDetail', () => {
     });
 
     const fixture = TestBed.createComponent(RadiologyRequisitionDetail);
+    autoAcceptConfirms(fixture);
     return { fixture, radiologyApi };
   }
 
@@ -142,13 +152,15 @@ describe('RadiologyRequisitionDetail', () => {
     expect(fixture.componentInstance.showReportModal()).toBe(true);
   });
 
-  it('verifies the requisition', async () => {
+  it('confirms before verifying the requisition', async () => {
     const { fixture, radiologyApi } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
+    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
 
     fixture.componentInstance.verify();
 
+    expect(confirmationService.confirm).toHaveBeenCalled();
     expect(radiologyApi.verify).toHaveBeenCalledWith('rad-1');
     expect(fixture.componentInstance.requisition()?.status).toBe('Verified');
   });

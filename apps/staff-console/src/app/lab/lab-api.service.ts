@@ -74,6 +74,7 @@ export interface PaginatedResponse<T> {
 
 export interface ListRequisitionsParams {
   orderItemId?: string;
+  status?: LabRequisitionStatus;
   page?: number;
   limit?: number;
 }
@@ -93,6 +94,7 @@ export class LabApiService {
     return this.apiClient.get<PaginatedResponse<LabRequisition>>('/lab/requisitions', {
       params: {
         ...(params.orderItemId ? { orderItemId: params.orderItemId } : {}),
+        ...(params.status ? { status: params.status } : {}),
         ...(params.page !== undefined ? { page: params.page } : {}),
         ...(params.limit !== undefined ? { limit: params.limit } : {}),
       },
@@ -111,6 +113,10 @@ export class LabApiService {
 
   enterResult(id: string, dto: EnterResultDto): Observable<LabResult> {
     return this.apiClient.post<LabResult>(`/lab/requisitions/${id}/results`, dto);
+  }
+
+  getResults(id: string): Observable<LabResult[]> {
+    return this.apiClient.get<LabResult[]>(`/lab/requisitions/${id}/results`);
   }
 
   verify(id: string, verifiedBy?: string): Observable<LabRequisition> {

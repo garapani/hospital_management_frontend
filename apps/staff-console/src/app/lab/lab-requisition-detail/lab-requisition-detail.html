@@ -1,6 +1,8 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
 <div class="h-full flex flex-col gap-6">
   <div class="flex items-center gap-4">
-    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (onClick)="goBack()"></p-button>
+    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" ariaLabel="Back to lab requisitions" (onClick)="goBack()"></p-button>
     <div>
       <h1 class="page-title flex items-center gap-3">
         @if (requisition(); as r) {
@@ -67,6 +69,44 @@
     </div>
 
     <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 flex flex-col gap-4">
+      @if (r.status === 'ResultsEntered' || r.status === 'Verified') {
+      <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Entered Results</h3>
+      @if (resultsViewLoading()) {
+      <div class="flex items-center justify-center py-4">
+        <i class="pi pi-spin pi-spinner text-2xl text-sky-600"></i>
+      </div>
+      } @else {
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-slate-500 border-b border-slate-200">
+            <th class="table-header-cell">Component</th>
+            <th class="table-header-cell">Value</th>
+            <th class="table-header-cell">Unit</th>
+            <th class="table-header-cell">Reference Range</th>
+            <th class="table-header-cell">Flag</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of enteredResults(); track row.component.id) {
+          <tr class="border-b border-slate-100">
+            <td class="py-2 font-medium">{{ row.component.name }}</td>
+            <td class="py-2" [class.text-red-600]="row.result?.isAbnormal" [class.font-semibold]="row.result?.isAbnormal">
+              {{ row.result?.value ?? '—' }}
+            </td>
+            <td class="py-2 text-slate-500">{{ row.component.unit || '—' }}</td>
+            <td class="py-2 text-slate-500">{{ referenceRange(row.component) || '—' }}</td>
+            <td class="py-2">
+              @if (row.result?.isAbnormal) {
+              <p-tag value="Abnormal" severity="danger" [rounded]="true"></p-tag>
+              }
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+      }
+      }
+
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Workflow</h3>
 
       <div class="flex flex-wrap gap-3">
@@ -116,6 +156,7 @@
       </div>
       <input
         pInputText
+        [attr.aria-label]="component.name + ' value'"
         [ngModel]="resultValues()[component.id]"
         (ngModelChange)="setResultValue(component.id, $event)"
         placeholder="Value"

@@ -2,32 +2,47 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { forkJoin } from 'rxjs';
+import { forkJoin, from } from 'rxjs';
+import { concatMap, toArray } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ToastModule } from 'primeng/toast';
 import { AuthService } from '@org/auth';
 
-import { LabApiService, LabRequisition, LabTestComponent } from '../lab-api.service.js';
+import { LabApiService, LabRequisition, LabResult, LabTestComponent } from '../lab-api.service.js';
 import { labRequisitionStatusSeverity, componentReferenceRange } from '../lab.model.js';
+
+export interface DisplayedResult {
+  component: LabTestComponent;
+  result: LabResult | undefined;
+}
 
 @Component({
   selector: 'hms-lab-requisition-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, DialogModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, DialogModule, ToastModule, ConfirmDialogModule],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './lab-requisition-detail.html',
 })
 export class LabRequisitionDetail implements OnInit {
   private readonly labApi = inject(LabApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
 
   readonly requisition = signal<LabRequisition | null>(null);
   readonly loading = signal(true);
   readonly collecting = signal(false);
   readonly verifying = signal(false);
+
+  readonly enteredResults = signal<DisplayedResult[]>([]);
+  readonly resultsViewLoading = signal(false);
 
   readonly showResultsDialog = signal(false);
   readonly components = signal<LabTestComponent[]>([]);
@@ -54,8 +69,38 @@ export class LabRequisitionDetail implements OnInit {
       next: (data) => {
         this.requisition.set(data);
         this.loading.set(false);
+        if (data.status === 'ResultsEntered' || data.status === 'Verified') {
+          this.loadResultsView(data.id, data.testId);
+        } else {
+          this.enteredResults.set([]);
+        }
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load the requisition.' });
+      },
+    });
+  }
+
+  private loadResultsView(requisitionId: string, testId: string) {
+    this.resultsViewLoading.set(true);
+    forkJoin({
+      results: this.labApi.getResults(requisitionId),
+      components: this.labApi.listComponentsByTest(testId),
+    }).subscribe({
+      next: ({ results, components }) => {
+        this.enteredResults.set(
+          components.map((component) => ({
+            component,
+            result: results.find((r) => r.componentId === component.id),
+          })),
+        );
+        this.resultsViewLoading.set(false);
+      },
+      error: () => {
+        this.resultsViewLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load entered results.' });
+      },
     });
   }
 
@@ -73,7 +118,10 @@ export class LabRequisitionDetail implements OnInit {
         this.requisition.set(updated);
         this.collecting.set(false);
       },
-      error: () => this.collecting.set(false),
+      error: () => {
+        this.collecting.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to record sample collection.' });
+      },
     });
   }
 
@@ -115,7 +163,14 @@ export class LabRequisitionDetail implements OnInit {
 
     this.enteringResults.set(true);
     this.resultsError.set('');
-    forkJoin(components.map((c) => this.labApi.enterResult(id, { componentId: c.id, value: values[c.id].trim() }))).subscribe({
+    // Sequential (concatMap), not parallel: enterResult takes a pessimistic_write lock on the
+    // requisition row, so N concurrent requests just serialize on that lock anyway — going
+    // sequential also means a partial failure is attributable to a specific component instead of
+    // one blanket error after some have already saved.
+    from(components).pipe(
+      concatMap((c) => this.labApi.enterResult(id, { componentId: c.id, value: values[c.id].trim() })),
+      toArray(),
+    ).subscribe({
       next: () => {
         this.enteringResults.set(false);
         this.showResultsDialog.set(false);
@@ -126,7 +181,7 @@ export class LabRequisitionDetail implements OnInit {
       },
       error: () => {
         this.enteringResults.set(false);
-        this.resultsError.set('Failed to save the results. Please try again.');
+        this.resultsError.set('Failed to save the results. Already-saved values are safe — retrying will not duplicate them.');
       },
     });
   }
@@ -135,13 +190,25 @@ export class LabRequisitionDetail implements OnInit {
     const id = this.requisition()?.id;
     if (!id) return;
 
-    this.verifying.set(true);
-    this.labApi.verify(id).subscribe({
-      next: (updated) => {
-        this.requisition.set(updated);
-        this.verifying.set(false);
+    this.confirmationService.confirm({
+      header: 'Verify Results',
+      message: 'Verifying locks these results permanently. Have you reviewed the entered values above?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Verify', severity: 'success' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.verifying.set(true);
+        this.labApi.verify(id).subscribe({
+          next: (updated) => {
+            this.requisition.set(updated);
+            this.verifying.set(false);
+          },
+          error: () => {
+            this.verifying.set(false);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to verify results.' });
+          },
+        });
       },
-      error: () => this.verifying.set(false),
     });
   }
 }

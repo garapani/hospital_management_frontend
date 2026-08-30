@@ -1,6 +1,8 @@
+<p-toast></p-toast>
+<p-confirmDialog></p-confirmDialog>
 <div class="h-full flex flex-col gap-6">
   <div class="flex items-center gap-4">
-    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" (onClick)="goBack()"></p-button>
+    <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" ariaLabel="Back to radiology requisitions" (onClick)="goBack()"></p-button>
     <div>
       <h1 class="page-title flex items-center gap-3">
         @if (requisition(); as r) {
@@ -64,8 +66,13 @@
       @if (r.status === 'Pending' && auth.hasPermission('radiology.report.enter')) {
       <p-button label="Mark Scanned" icon="pi pi-camera" [loading]="actionLoading()" (onClick)="markScanned()"></p-button>
       }
-      @if (r.status === 'Scanned' && auth.hasPermission('radiology.report.enter')) {
-      <p-button label="Enter Report" icon="pi pi-pencil" [loading]="actionLoading()" (onClick)="openReportModal()"></p-button>
+      @if ((r.status === 'Scanned' || r.status === 'ReportEntered') && auth.hasPermission('radiology.report.enter')) {
+      <p-button
+        [label]="r.status === 'ReportEntered' ? 'Edit Report' : 'Enter Report'"
+        icon="pi pi-pencil"
+        [loading]="actionLoading()"
+        (onClick)="openReportModal()"
+      ></p-button>
       }
       @if (r.status === 'ReportEntered' && auth.hasPermission('radiology.report.verify')) {
       <p-button label="Verify Report" icon="pi pi-check" severity="success" [loading]="actionLoading()" (onClick)="verify()"></p-button>
