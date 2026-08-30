@@ -17,7 +17,7 @@ import { PaginatorModule } from 'primeng/paginator';
 import { AuthService } from '@org/auth';
 
 import { PatientsApiService, Patient, CreatePatientDto } from './patients-api.service.js';
-import { calculateAge } from './patient.model.js';
+import { calculateAge, isValidEmail, isValidPhoneNumber } from './patient.model.js';
 import { VitalsApiService, Vital, CreateVitalDto } from './vitals-api.service.js';
 import {
   EncountersApiService,
@@ -85,6 +85,8 @@ export class PatientDetail implements OnInit {
   readonly loading = signal(true);
   readonly activeTab = signal('appointments');
   readonly age = calculateAge;
+  readonly isValidPhoneNumber = isValidPhoneNumber;
+  readonly isValidEmail = isValidEmail;
 
   readonly showEditModal = signal(false);
   readonly editForm = signal<EditFormState>({});

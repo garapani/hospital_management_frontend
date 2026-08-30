@@ -446,10 +446,16 @@
     <div class="flex flex-col gap-2">
       <label for="editPhone" class="text-sm font-medium text-slate-700">Phone Number</label>
       <input id="editPhone" pInputText [ngModel]="editForm().phoneNumber" (ngModelChange)="editForm.set({ ...editForm(), phoneNumber: $event })" class="w-full" />
+      @if (!isValidPhoneNumber(editForm().phoneNumber)) {
+      <span class="text-xs text-red-600">Enter a 10-digit phone number</span>
+      }
     </div>
     <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="editEmail" class="text-sm font-medium text-slate-700">Email Address</label>
       <input id="editEmail" pInputText [ngModel]="editForm().email" (ngModelChange)="editForm.set({ ...editForm(), email: $event })" class="w-full" />
+      @if (!isValidEmail(editForm().email)) {
+      <span class="text-xs text-red-600">Enter a valid email address</span>
+      }
     </div>
     <div class="flex flex-col gap-2">
       <label for="editGovIdType" class="text-sm font-medium text-slate-700">Government ID Type</label>
@@ -467,7 +473,12 @@
         label="Save"
         [loading]="editSaving()"
         (onClick)="submitEdit()"
-        [disabled]="!editForm().firstName || !editForm().lastName"
+        [disabled]="
+          !editForm().firstName ||
+          !editForm().lastName ||
+          !isValidPhoneNumber(editForm().phoneNumber) ||
+          !isValidEmail(editForm().email)
+        "
       ></p-button>
     </div>
   </ng-template>

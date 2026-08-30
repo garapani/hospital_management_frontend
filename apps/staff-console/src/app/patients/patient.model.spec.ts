@@ -1,4 +1,41 @@
-import { calculateAge } from './patient.model.js';
+import { calculateAge, isValidEmail, isValidPhoneNumber } from './patient.model.js';
+
+describe('isValidPhoneNumber', () => {
+  it('accepts a 10-digit number', () => {
+    expect(isValidPhoneNumber('9811000001')).toBe(true);
+  });
+
+  it('accepts an absent value (field is optional)', () => {
+    expect(isValidPhoneNumber(undefined)).toBe(true);
+    expect(isValidPhoneNumber(null)).toBe(true);
+    expect(isValidPhoneNumber('')).toBe(true);
+  });
+
+  it('rejects a number with the wrong length or non-digit characters', () => {
+    expect(isValidPhoneNumber('12345')).toBe(false);
+    expect(isValidPhoneNumber('98110000012')).toBe(false);
+    expect(isValidPhoneNumber('98110-0001')).toBe(false);
+    expect(isValidPhoneNumber('abcdefghij')).toBe(false);
+  });
+});
+
+describe('isValidEmail', () => {
+  it('accepts a well-formed email', () => {
+    expect(isValidEmail('jane.doe@example.com')).toBe(true);
+  });
+
+  it('accepts an absent value (field is optional)', () => {
+    expect(isValidEmail(undefined)).toBe(true);
+    expect(isValidEmail(null)).toBe(true);
+    expect(isValidEmail('')).toBe(true);
+  });
+
+  it('rejects a malformed email', () => {
+    expect(isValidEmail('not-an-email')).toBe(false);
+    expect(isValidEmail('missing-domain@')).toBe(false);
+    expect(isValidEmail('@missing-local.com')).toBe(false);
+  });
+});
 
 describe('calculateAge', () => {
   it('returns null when dateOfBirth is missing', () => {
