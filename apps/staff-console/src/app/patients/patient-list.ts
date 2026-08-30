@@ -12,6 +12,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { PatientsApiService, Patient, CreatePatientDto } from './patients-api.service.js';
 import { calculateAge, isValidEmail, isValidPhoneNumber } from './patient.model.js';
 
@@ -37,6 +38,7 @@ export class PatientList implements OnInit {
   private api = inject(PatientsApiService);
   private router = inject(Router);
   private messageService = inject(MessageService);
+  readonly auth = inject(AuthService);
 
   readonly patients = signal<Patient[]>([]);
   readonly totalRecords = signal(0);
@@ -195,8 +197,11 @@ export class PatientList implements OnInit {
         this.isSaving.set(false);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: err.message || 'Failed to register patient',
+          summary: err.status === 403 ? 'Permission Required' : 'Error',
+          detail:
+            err.status === 403
+              ? "You don't have permission to register new patients. Contact your hospital administrator for access."
+              : err.message || 'Failed to register patient',
         });
       },
     });

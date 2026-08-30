@@ -24,12 +24,14 @@
           (keyup.enter)="search()"
         />
       </div>
+      @if (auth.hasPermission('patients.create')) {
       <p-button
         label="Register Patient"
         icon="pi pi-user-plus"
         (onClick)="openRegistration()"
         styleClass="shadow-sm"
       ></p-button>
+      }
     </div>
   </div>
 
