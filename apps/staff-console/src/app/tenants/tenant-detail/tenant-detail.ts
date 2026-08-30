@@ -470,6 +470,11 @@ export class TenantDetail implements OnInit {
     this.tenantsApi.getOne(id).subscribe({
       next: (t) => {
         this.tenant.set(t);
+        // Re-sync regardless of load order: loadPackages() seeds the draft from
+        // tenant()?.packageCode, which is still null whenever /packages resolves first, so it
+        // falls back to the first package option. Also covers a params-only navigation between
+        // two tenants, where the draft would otherwise keep the previous tenant's code.
+        this.packageDraft.set(t.packageCode);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
@@ -604,7 +609,7 @@ export class TenantDetail implements OnInit {
       return;
     }
     this.purgeSaving.set(true);
-    this.tenantsApi.purge(current.hospitalId, current.hospitalId).subscribe({
+    this.tenantsApi.purge(current.hospitalId, this.purgeTypedId()).subscribe({
       next: () => {
         this.purgeSaving.set(false);
         this.messageService.add({

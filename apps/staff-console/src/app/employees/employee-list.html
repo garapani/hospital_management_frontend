@@ -39,6 +39,7 @@
       [value]="employees()"
       [paginator]="true"
       [rows]="pageSize()"
+      [first]="firstRecord()"
       [totalRecords]="totalRecords()"
       [lazy]="true"
       [lazyLoadOnInit]="false"
@@ -90,6 +91,7 @@
               [severity]="emp.isActive ? 'danger' : 'success'"
               [text]="true"
               size="small"
+              [disabled]="togglingId() !== null"
               (onClick)="toggleActive(emp)"
             />
             }

@@ -13,3 +13,15 @@ export function toLocalDateString(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+
+/**
+ * Local-timezone `YYYY-MM-DDTHH:mm`, matching what `<input type="datetime-local">` expects and
+ * emits — that control is local wall-clock, not UTC, so seeding it from `toISOString()` (or
+ * reading it back with the assumption it's UTC) is off by the local UTC offset in both
+ * directions.
+ */
+export function toLocalDateTimeString(date: Date): string {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${toLocalDateString(date)}T${hours}:${minutes}`;
+}

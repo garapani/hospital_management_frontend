@@ -44,7 +44,6 @@ export class ShellChrome implements OnInit, OnDestroy {
 
   readonly userMenuOpen = signal(false);
   readonly notificationsOpen = signal(false);
-  readonly quickActionsOpen = signal(false);
   readonly sidebarOpen = signal(false);
 
   readonly unreadCount = signal(0);
@@ -127,13 +126,6 @@ export class ShellChrome implements OnInit, OnDestroy {
   toggleUserMenu(): void {
     this.userMenuOpen.update((open) => !open);
     this.notificationsOpen.set(false);
-    this.quickActionsOpen.set(false);
-  }
-
-  toggleQuickActions(): void {
-    this.quickActionsOpen.update((open) => !open);
-    this.userMenuOpen.set(false);
-    this.notificationsOpen.set(false);
   }
 
   currentUser() {
@@ -179,9 +171,26 @@ export class ShellChrome implements OnInit, OnDestroy {
   toggleNotifications(): void {
     this.notificationsOpen.update((open) => !open);
     this.userMenuOpen.set(false);
-    this.quickActionsOpen.set(false);
-    if (!this.notificationsOpen()) {
+    if (this.notificationsOpen()) {
+      // Refetch on open, not close — the shell persists across in-app navigation for the whole
+      // session (in-memory access token, no reload), so ngOnInit's initial load would otherwise
+      // be the only fetch a user signed in for a shift ever sees.
       this.loadNotifications();
+    }
+  }
+
+  notificationIconClass(type: Notification['type']): string {
+    switch (type) {
+      case 'info':
+        return 'pi-info-circle text-blue-500';
+      case 'warning':
+        return 'pi-exclamation-triangle text-yellow-500';
+      case 'error':
+        return 'pi-times-circle text-red-500';
+      case 'success':
+        return 'pi-check-circle text-green-500';
+      default:
+        return 'pi-bell text-slate-500';
     }
   }
 }

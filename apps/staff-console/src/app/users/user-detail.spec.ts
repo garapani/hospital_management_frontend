@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService, Confirmation } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { UserDetail } from './user-detail.js';
 import { UsersApiService } from './users-api.service.js';
@@ -44,6 +44,9 @@ describe('UserDetail', () => {
     } as unknown as UsersApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
     const router = { navigate: jest.fn() } as unknown as Router;
+    const confirmationService = {
+      confirm: jest.fn((c: Confirmation) => c.accept?.()),
+    } as unknown as ConfirmationService;
 
     TestBed.configureTestingModule({
       imports: [UserDetail],
@@ -52,11 +55,12 @@ describe('UserDetail', () => {
         { provide: UsersApiService, useValue: usersApi },
         { provide: MessageService, useValue: messageService },
         { provide: Router, useValue: router },
+        { provide: ConfirmationService, useValue: confirmationService },
       ],
     });
 
     const fixture = TestBed.createComponent(UserDetail);
-    return { fixture, usersApi, messageService, router };
+    return { fixture, usersApi, messageService, router, confirmationService };
   }
 
   it('loads the account and its role options on construction', async () => {
@@ -105,12 +109,26 @@ describe('UserDetail', () => {
     expect(fixture.componentInstance.showAssignModal()).toBe(true);
   });
 
-  it('removes a role assignment via the chip action and toasts', async () => {
-    const { fixture, usersApi, messageService } = setup();
+  it('confirms before deactivating the account', async () => {
+    const { fixture, usersApi, confirmationService, messageService } = setup();
+    await fixture.whenStable();
+
+    fixture.componentInstance.deactivate();
+
+    expect(confirmationService.confirm).toHaveBeenCalled();
+    expect(usersApi.deactivate).toHaveBeenCalledWith('acc-1');
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Account deactivated' }),
+    );
+  });
+
+  it('confirms before removing a role assignment, then toasts', async () => {
+    const { fixture, usersApi, confirmationService, messageService } = setup();
     await fixture.whenStable();
 
     fixture.componentInstance.removeRole({ id: 'assign-1', roleName: 'Super Admin' });
 
+    expect(confirmationService.confirm).toHaveBeenCalled();
     expect(usersApi.revokeRole).toHaveBeenCalledWith('acc-1', 'assign-1');
     expect(usersApi.getOne).toHaveBeenCalledTimes(2);
     expect(messageService.add).toHaveBeenCalledWith(
@@ -168,6 +186,7 @@ describe('UserDetail', () => {
         { provide: UsersApiService, useValue: usersApi },
         { provide: MessageService, useValue: messageService },
         { provide: Router, useValue: { navigate: jest.fn() } },
+        { provide: ConfirmationService, useValue: { confirm: jest.fn() } },
       ],
     });
     const fixture = TestBed.createComponent(UserDetail);

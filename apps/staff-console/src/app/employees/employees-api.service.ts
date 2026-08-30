@@ -55,7 +55,9 @@ export class EmployeesApiService {
   private readonly api = inject(ApiClientService);
 
   list(params: { page: number; limit: number; q?: string }): Observable<Paginated<Employee>> {
-    return this.api.get<Paginated<Employee>>('/employees', { params });
+    const query: Record<string, string | number> = { page: params.page, limit: params.limit };
+    if (params.q !== undefined) query['q'] = params.q;
+    return this.api.get<Paginated<Employee>>('/employees', { params: query });
   }
 
   create(dto: CreateEmployeeDto): Observable<Employee> {

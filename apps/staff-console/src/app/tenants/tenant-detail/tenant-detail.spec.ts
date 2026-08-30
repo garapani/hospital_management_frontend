@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
@@ -141,6 +141,60 @@ describe('TenantDetail package change', () => {
     expect(fixture.componentInstance.showPackageConfirm()).toBe(true);
     expect(tenantsApi.setPackage).not.toHaveBeenCalled();
     expect(fixture.componentInstance.packageDirection()).toBe('upgrade');
+  });
+
+  it('re-syncs the package draft when the tenant loads after the package catalog', async () => {
+    const tenant: Tenant = {
+      hospitalId: 'h1',
+      hospitalName: 'Demo Hospital',
+      status: 'active',
+      packageCode: 'enterprise',
+      createdAt: '',
+      updatedAt: '',
+    };
+    const tenantSubject = new Subject<Tenant>();
+    const tenantsApi = {
+      getOne: jest.fn().mockReturnValue(tenantSubject.asObservable()),
+      listRoles: jest.fn().mockReturnValue(of([])),
+      listPackages: jest.fn().mockReturnValue(
+        of([
+          { code: 'basic', name: 'Basic', description: null, modules: [], defaultRoleNames: [], createdAt: '' },
+          { code: 'enterprise', name: 'Enterprise', description: null, modules: [], defaultRoleNames: [], createdAt: '' },
+        ]),
+      ),
+      history: jest.fn().mockReturnValue(of({ data: [] })),
+    } as unknown as TenantsApiService;
+    const subscriptionsApi = {
+      getSubscription: jest.fn().mockReturnValue(of(null)),
+      listInvoices: jest.fn().mockReturnValue(of([])),
+    } as unknown as SubscriptionsApiService;
+    const brandingApi = {
+      getForAdmin: jest.fn().mockReturnValue(of({ displayName: null, primaryColor: null, logoUrl: null })),
+    } as unknown as BrandingApiService;
+
+    TestBed.configureTestingModule({
+      imports: [TenantDetail],
+      providers: [
+        { provide: ActivatedRoute, useValue: { paramMap: of({ get: () => 'h1' }) } },
+        { provide: TenantsApiService, useValue: tenantsApi },
+        { provide: SubscriptionsApiService, useValue: subscriptionsApi },
+        { provide: BrandingApiService, useValue: brandingApi },
+        { provide: MessageService, useValue: { add: jest.fn() } },
+        { provide: Router, useValue: { navigate: jest.fn() } },
+      ],
+    });
+    const fixture = TestBed.createComponent(TenantDetail);
+
+    // listPackages() resolves synchronously (of(...)) before getOne() does (a held-open Subject),
+    // reproducing the "packages resolve first" race — packageDraft would wrongly fall back to
+    // the first package option (basic) instead of the tenant's actual code (enterprise).
+    fixture.detectChanges();
+    expect(fixture.componentInstance.packageDraft()).toBe('basic');
+
+    tenantSubject.next(tenant);
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.packageDraft()).toBe('enterprise');
   });
 
   it('applies the change and toasts success only after confirmation', async () => {

@@ -8,17 +8,18 @@ import { UsersApiService } from '../users/users-api.service.js';
 import { AuditApiService } from '../audit/audit-api.service.js';
 
 describe('AdminDashboard (platform overview)', () => {
-  function setup(overrides: { auditList?: unknown } = {}) {
+  function setup(overrides: { auditList?: unknown; tenantsList?: unknown } = {}) {
     const tenantsApi = {
-      list: jest
-        .fn()
-        .mockReturnValue(
-          of([
-            { hospitalId: 'h1', hospitalName: 'Hospital One', status: 'active', createdAt: '2026-08-01T00:00:00Z' },
-            { hospitalId: 'h2', hospitalName: 'Hospital Two', status: 'active', createdAt: '2026-08-02T00:00:00Z' },
-            { hospitalId: 'h3', hospitalName: 'Hospital Three', status: 'suspended', createdAt: '2026-08-03T00:00:00Z' },
-          ]),
-        ),
+      list:
+        overrides.tenantsList === 'error'
+          ? jest.fn().mockReturnValue(throwError(() => new Error('boom')))
+          : jest.fn().mockReturnValue(
+              of([
+                { hospitalId: 'h1', hospitalName: 'Hospital One', status: 'active', createdAt: '2026-08-01T00:00:00Z' },
+                { hospitalId: 'h2', hospitalName: 'Hospital Two', status: 'active', createdAt: '2026-08-02T00:00:00Z' },
+                { hospitalId: 'h3', hospitalName: 'Hospital Three', status: 'suspended', createdAt: '2026-08-03T00:00:00Z' },
+              ]),
+            ),
     } as unknown as TenantsApiService;
     const usersApi = {
       list: jest
@@ -102,13 +103,31 @@ describe('AdminDashboard (platform overview)', () => {
     expect(text).toContain('accounts · create');
   });
 
-  it('toasts when the overview fails to load', async () => {
+  it('toasts a section-scoped error when only the audit trail fails to load, without blanking the rest', async () => {
     const { fixture, messageService } = setup({ auditList: 'error' });
     await fixture.whenStable();
 
     expect(messageService.add).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error', summary: 'Dashboard load failed' }),
+      expect.objectContaining({ severity: 'error', summary: 'Could not load recent activity' }),
     );
     expect(fixture.componentInstance.loading()).toBe(false);
+    // The other two sources still succeeded — this is the actual regression fix: a single
+    // Promise.all used to reject (and discard every already-succeeded result) on this failure.
+    expect(fixture.componentInstance.stats().map((s) => s.value)).toEqual([3, 2, 1]);
+    expect(fixture.componentInstance.recentAuditLogs()).toEqual([]);
+  });
+
+  it('keeps the platform accounts and audit sections intact when only the tenants API fails', async () => {
+    const { fixture, messageService } = setup({ tenantsList: 'error' });
+    await fixture.whenStable();
+
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error', summary: 'Could not load tenants' }),
+    );
+    expect(fixture.componentInstance.loading()).toBe(false);
+    const stats = fixture.componentInstance.stats();
+    expect(stats[0].value).toBe('—');
+    expect(stats[2].value).toBe(1);
+    expect(fixture.componentInstance.recentAuditLogs()).toHaveLength(1);
   });
 });

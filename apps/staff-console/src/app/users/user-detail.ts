@@ -8,7 +8,7 @@ import { DialogModule } from 'primeng/dialog';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { UsersApiService } from './users-api.service.js';
 import { RoleDto, UserWithRoles, userStatusLabel, userStatusSeverity } from './user.model.js';
@@ -33,6 +33,7 @@ export class UserDetail {
   private readonly router = inject(Router);
   private readonly usersApi = inject(UsersApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
 
   readonly accountData = signal<UserWithRoles | null>(null);
   readonly loading = signal(true);
@@ -100,14 +101,23 @@ export class UserDetail {
   deactivate(): void {
     const id = this.accountData()?.account.id;
     if (!id) return;
-    this.usersApi.deactivate(id).subscribe({
-      next: () => this.afterAction('Account deactivated'),
-      error: () =>
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Deactivate failed',
-          detail: 'Could not deactivate the account. Please try again.',
-        }),
+    this.confirmationService.confirm({
+      header: 'Deactivate Account',
+      message: 'Deactivate this account? It will no longer be able to log in.',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Deactivate', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.usersApi.deactivate(id).subscribe({
+          next: () => this.afterAction('Account deactivated'),
+          error: () =>
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Deactivate failed',
+              detail: 'Could not deactivate the account. Please try again.',
+            }),
+        });
+      },
     });
   }
 
@@ -189,13 +199,22 @@ export class UserDetail {
   removeRole(assignment: { id: string; roleName: string }): void {
     const id = this.accountData()?.account.id;
     if (!id) return;
-    this.usersApi.revokeRole(id, assignment.id).subscribe({
-      next: () => this.afterAction(`Role ${assignment.roleName} removed`),
-      error: (error: ApiError) => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Role removal failed',
-          detail: error.message || 'Could not remove the role. Please try again.',
+    this.confirmationService.confirm({
+      header: 'Remove Role',
+      message: `Remove the "${assignment.roleName}" role from this account?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Remove', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.usersApi.revokeRole(id, assignment.id).subscribe({
+          next: () => this.afterAction(`Role ${assignment.roleName} removed`),
+          error: (error: ApiError) => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Role removal failed',
+              detail: error.message || 'Could not remove the role. Please try again.',
+            });
+          },
         });
       },
     });

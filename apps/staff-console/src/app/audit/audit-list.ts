@@ -10,6 +10,7 @@ import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { AuditApiService } from './audit-api.service.js';
 import { AuditRecord } from './audit.model.js';
+import { toLocalDateTimeString } from '../shared/date.util.js';
 
 @Component({
   imports: [
@@ -36,10 +37,8 @@ export class AuditList {
 
   // Filters (Default to last 24 hours)
   readonly filters = signal({
-    startDate: new Date(Date.now() - 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 16),
-    endDate: new Date().toISOString().slice(0, 16),
+    startDate: toLocalDateTimeString(new Date(Date.now() - 24 * 60 * 60 * 1000)),
+    endDate: toLocalDateTimeString(new Date()),
     tableName: '',
     action: '' as 'create' | 'update' | 'delete' | '',
     correlationId: '',
@@ -62,8 +61,10 @@ export class AuditList {
 
   onLazyLoad(event: TableLazyLoadEvent): void {
     const rows = event.rows ?? this.pageSize();
-    const page = Math.floor((event.first ?? 0) / rows) + 1;
+    const first = event.first ?? 0;
+    const page = Math.floor(first / rows) + 1;
     this.pageSize.set(rows);
+    this.firstRecord.set(first);
     this.load(page, rows);
   }
 

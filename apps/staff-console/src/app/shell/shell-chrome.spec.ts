@@ -139,4 +139,27 @@ describe('ShellChrome user menu', () => {
     );
     expect(authService.changeOwnPassword).not.toHaveBeenCalled();
   });
+
+  it('refetches notifications on opening the panel, not on closing it', () => {
+    const { fixture } = setup();
+    const notificationsApi = TestBed.inject(NotificationsApiService);
+    (notificationsApi.getSummary as jest.Mock).mockClear();
+
+    fixture.componentInstance.toggleNotifications();
+    expect(fixture.componentInstance.notificationsOpen()).toBe(true);
+    expect(notificationsApi.getSummary).toHaveBeenCalledTimes(1);
+
+    fixture.componentInstance.toggleNotifications();
+    expect(fixture.componentInstance.notificationsOpen()).toBe(false);
+    expect(notificationsApi.getSummary).toHaveBeenCalledTimes(1);
+  });
+
+  it('maps each notification type to a distinct icon/colour', () => {
+    const { fixture } = setup();
+
+    expect(fixture.componentInstance.notificationIconClass('info')).toContain('pi-info-circle');
+    expect(fixture.componentInstance.notificationIconClass('warning')).toContain('pi-exclamation-triangle');
+    expect(fixture.componentInstance.notificationIconClass('error')).toContain('pi-times-circle');
+    expect(fixture.componentInstance.notificationIconClass('success')).toContain('pi-check-circle');
+  });
 });

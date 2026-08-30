@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { TableModule } from 'primeng/table';
@@ -41,131 +41,163 @@ export class AdminDashboard {
   private readonly auditApi = inject(AuditApiService);
   private readonly messageService = inject(MessageService);
 
-  readonly loading = signal(false);
-  readonly stats = signal<StatCard[]>([]);
-  readonly recentTenants = signal<Tenant[]>([]);
+  // Each data source loads and errors independently — a failing endpoint blanks only its own
+  // section instead of the whole dashboard (this used to be a single `Promise.all`, which
+  // rejects, and therefore discards every already-succeeded result, on the first failure).
+  private readonly tenants = signal<Tenant[] | null>(null);
+  private readonly userCount = signal<number | null>(null);
   readonly recentAuditLogs = signal<AuditRecord[]>([]);
-  readonly chartData = signal<any>(null);
-  readonly chartOptions = signal<any>(null);
+
+  readonly tenantsLoading = signal(true);
+  readonly usersLoading = signal(true);
+  readonly auditLoading = signal(true);
+  readonly loading = computed(() => this.tenantsLoading() || this.usersLoading() || this.auditLoading());
+
+  readonly stats = computed<StatCard[]>(() => {
+    const tenants = this.tenants();
+    const userCount = this.userCount();
+    const tenantCount = tenants?.length ?? 0;
+    const activeTenants = tenants?.filter((t) => t.status === 'active').length ?? 0;
+    return [
+      {
+        title: 'Total Tenants',
+        value: tenants === null ? '—' : tenantCount,
+        icon: 'pi pi-building',
+        color: 'bg-primary-50 text-primary-600',
+        trend: tenants === null ? 'Could not load' : `${tenantCount} hospital${tenantCount === 1 ? '' : 's'} on the platform`,
+        trendUp: true,
+      },
+      {
+        title: 'Active Tenants',
+        value: tenants === null ? '—' : activeTenants,
+        icon: 'pi pi-check-circle',
+        color: 'bg-emerald-50 text-emerald-600',
+        trend:
+          tenants === null
+            ? 'Could not load'
+            : `${tenantCount > 0 ? Math.round((activeTenants / tenantCount) * 100) : 0}% active`,
+        trendUp: true,
+      },
+      {
+        title: 'Platform Accounts',
+        value: userCount === null ? '—' : userCount,
+        icon: 'pi pi-users',
+        color: 'bg-sky-50 text-sky-600',
+        trend: userCount === null ? 'Could not load' : 'operator accounts in the platform tenant',
+        trendUp: true,
+      },
+    ];
+  });
+
+  // Recent tenants — copy before sorting: .sort() mutates in place, and the original order is
+  // still needed for the status counts below.
+  readonly recentTenants = computed<Tenant[]>(() =>
+    [...(this.tenants() ?? [])]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5),
+  );
+
+  // Tenants by status — real data from the registry (no fabricated history).
+  readonly chartData = computed(() => {
+    const statusCounts = new Map<string, number>();
+    for (const tenant of this.tenants() ?? []) {
+      const status = tenant.status ?? 'unknown';
+      statusCounts.set(status, (statusCounts.get(status) ?? 0) + 1);
+    }
+    const statusLabels = [...statusCounts.keys()];
+    return {
+      labels: statusLabels,
+      datasets: [
+        {
+          label: 'Tenants',
+          data: statusLabels.map((label) => statusCounts.get(label) ?? 0),
+          backgroundColor: 'rgba(0, 109, 119, 0.75)',
+          borderRadius: 4,
+        },
+      ],
+    };
+  });
+
+  readonly chartOptions = signal<any>({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          precision: 0,
+        },
+        grid: {
+          color: 'rgba(200, 200, 200, 0.1)',
+        },
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+      },
+    },
+  });
 
   constructor() {
     this.loadDashboard();
   }
 
   loadDashboard(): void {
-    this.loading.set(true);
+    this.tenantsLoading.set(true);
+    this.usersLoading.set(true);
+    this.auditLoading.set(true);
 
-    // Load all data in parallel. These are platform-scoped: tenants (the whole registry), the
-    // platform's operator accounts, and the platform audit trail.
-    Promise.all([
-      this.tenantsApi.list().toPromise(),
-      this.usersApi.list().toPromise(),
-      this.auditApi.list(1, 5).toPromise(),
-    ])
-      .then(([tenants, users, audits]) => {
-        const tenantCount = tenants?.length || 0;
-        // The list endpoint now paginates ({ items, total }) — the dashboard wants the true
-        // count of operator accounts, which is `total` (the count query is unbounded).
-        const userCount = users?.total ?? 0;
-        const activeTenants =
-          tenants?.filter((t) => t.status === 'active').length || 0;
-
-        // Calculate stats
-        this.stats.set([
-          {
-            title: 'Total Tenants',
-            value: tenantCount,
-            icon: 'pi pi-building',
-            color: 'bg-primary-50 text-primary-600',
-            trend: `${tenantCount} hospital${tenantCount === 1 ? '' : 's'} on the platform`,
-            trendUp: true,
-          },
-          {
-            title: 'Active Tenants',
-            value: activeTenants,
-            icon: 'pi pi-check-circle',
-            color: 'bg-emerald-50 text-emerald-600',
-            trend: `${tenantCount > 0 ? Math.round((activeTenants / tenantCount) * 100) : 0}% active`,
-            trendUp: true,
-          },
-          {
-            title: 'Platform Accounts',
-            value: userCount,
-            icon: 'pi pi-users',
-            color: 'bg-sky-50 text-sky-600',
-            trend: 'operator accounts in the platform tenant',
-            trendUp: true,
-          },
-        ]);
-
-        // Recent tenants — copy before sorting: .sort() mutates in place, and the original
-        // order is still needed for the status counts below.
-        this.recentTenants.set(
-          [...(tenants || [])]
-            .sort(
-              (a, b) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-            )
-            .slice(0, 5),
-        );
-
-        // Recent audit logs
-        this.recentAuditLogs.set(audits || []);
-
-        // Tenants by status — real data from the registry (no fabricated history).
-        const statusCounts = new Map<string, number>();
-        for (const tenant of tenants ?? []) {
-          const status = tenant.status ?? 'unknown';
-          statusCounts.set(status, (statusCounts.get(status) ?? 0) + 1);
-        }
-        const statusLabels = [...statusCounts.keys()];
-        this.chartData.set({
-          labels: statusLabels,
-          datasets: [
-            {
-              label: 'Tenants',
-              data: statusLabels.map((label) => statusCounts.get(label) ?? 0),
-              backgroundColor: 'rgba(0, 109, 119, 0.75)',
-              borderRadius: 4,
-            },
-          ],
-        });
-
-        this.chartOptions.set({
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false,
-            },
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                precision: 0,
-              },
-              grid: {
-                color: 'rgba(200, 200, 200, 0.1)',
-              },
-            },
-            x: {
-              grid: {
-                display: false,
-              },
-            },
-          },
-        });
-
-        this.loading.set(false);
-      })
-      .catch(() => {
-        this.loading.set(false);
+    this.tenantsApi.list().subscribe({
+      next: (tenants) => {
+        this.tenants.set(tenants);
+        this.tenantsLoading.set(false);
+      },
+      error: () => {
+        this.tenantsLoading.set(false);
         this.messageService.add({
           severity: 'error',
-          summary: 'Dashboard load failed',
-          detail: 'Could not load the platform overview. Please try again.',
+          summary: 'Could not load tenants',
+          detail: 'Tenant counts and the status chart may be unavailable.',
         });
-      });
+      },
+    });
+
+    this.usersApi.list().subscribe({
+      next: (users) => {
+        // The list endpoint paginates ({ items, total }) — the dashboard wants the true count of
+        // operator accounts, which is `total` (the count query is unbounded).
+        this.userCount.set(users?.total ?? 0);
+        this.usersLoading.set(false);
+      },
+      error: () => {
+        this.usersLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Could not load platform accounts',
+          detail: 'The platform accounts count may be unavailable.',
+        });
+      },
+    });
+
+    this.auditApi.list(1, 5).subscribe({
+      next: (audits) => {
+        this.recentAuditLogs.set(audits ?? []);
+        this.auditLoading.set(false);
+      },
+      error: () => {
+        this.auditLoading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Could not load recent activity',
+          detail: 'The recent audit log may be unavailable.',
+        });
+      },
+    });
   }
 }

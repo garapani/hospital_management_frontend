@@ -4,6 +4,7 @@ import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuditList } from './audit-list.js';
 import { AuditApiService } from './audit-api.service.js';
+import { toLocalDateTimeString } from '../shared/date.util.js';
 
 describe('AuditList', () => {
   function setup(searchResult: 'ok' | 'error') {
@@ -74,5 +75,25 @@ describe('AuditList', () => {
       expect.objectContaining({ severity: 'error', summary: 'Search failed' }),
     );
     expect(fixture.componentInstance.loading()).toBe(false);
+  });
+
+  it('defaults the date filters to local wall-clock time, not a UTC-labeled string', async () => {
+    const { fixture } = setup('ok');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.filters().endDate).toBe(toLocalDateTimeString(new Date()));
+  });
+
+  it('keeps the paginator in sync with the requested page on lazy-load', async () => {
+    const { fixture, auditApi } = setup('ok');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.onLazyLoad({ first: 40, rows: 20 });
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.firstRecord()).toBe(40);
+    expect(auditApi.search).toHaveBeenCalledWith(expect.objectContaining({ page: 3, limit: 20 }));
   });
 });

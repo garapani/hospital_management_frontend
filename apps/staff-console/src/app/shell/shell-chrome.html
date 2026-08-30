@@ -60,9 +60,12 @@
       <div class="flex items-center gap-3">
         <!-- Notifications -->
         <div class="relative">
-          <button 
+          <button
             class="relative p-2 rounded-full hover:bg-slate-100 transition-colors"
             (click)="toggleNotifications()"
+            aria-haspopup="true"
+            [attr.aria-expanded]="notificationsOpen()"
+            aria-label="Notifications"
           >
             <i class="pi pi-bell text-slate-600"></i>
             @if (unreadCount() > 0) {
@@ -90,20 +93,11 @@
                   <p class="px-4 py-6 text-sm text-slate-500 text-center">No notifications</p>
                 } @else {
                   @for (notification of recentNotifications(); track notification.id) {
-                    <a 
-                      [href]="notification.link || '#'"
+                    <a
+                      [routerLink]="notification.link || null"
                       class="flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0"
-                      (click)="!notification.link && $event.preventDefault()"
                     >
-                      <i class="pi 
-                        @switch (notification.type) {
-                          @case ('info') { pi-info-circle text-blue-500; }
-                          @case ('warning') { pi-exclamation-triangle text-yellow-500; }
-                          @case ('error') { pi-times-circle text-red-500; }
-                          @case ('success') { pi-check-circle text-green-500; }
-                          @default { pi-bell text-slate-500; }
-                        }
-                      " class="text-base mt-0.5 shrink-0"></i>
+                      <i class="pi {{ notificationIconClass(notification.type) }} text-base mt-0.5 shrink-0"></i>
                       <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-slate-800 truncate">{{ notification.title }}</p>
                         <p class="text-xs text-slate-500 line-clamp-2 mt-0.5">{{ notification.message }}</p>
@@ -127,21 +121,14 @@
           }
         </div>
         
-        <!-- Quick Actions -->
-        <button 
-          class="p-2 rounded-full hover:bg-slate-100 transition-colors"
-          pTooltip="Quick Actions"
-          tooltipPosition="bottom"
-          (click)="toggleQuickActions()"
-        >
-          <i class="pi pi-plus-circle text-slate-600"></i>
-        </button>
-        
         <!-- User Profile Dropdown -->
         <div class="relative">
-          <button 
+          <button
             class="flex items-center gap-2 p-2 rounded-full hover:bg-slate-100 transition-colors"
             (click)="toggleUserMenu()"
+            aria-haspopup="true"
+            [attr.aria-expanded]="userMenuOpen()"
+            aria-label="User menu"
           >
             <div class="w-8 h-8 rounded-full accent-bg flex items-center justify-center text-white font-semibold text-sm">
               {{ userInitials() }}
@@ -152,8 +139,8 @@
           @if (userMenuOpen()) {
             <div class="absolute right-0 mt-2 w-56 surface-panel rounded-xl shadow-lg border border-slate-200 py-2 z-50">
               <div class="px-4 py-3 border-b border-slate-200">
-                <p class="text-sm font-semibold text-slate-800">{{ currentUser()?.roles?.[0] || 'Admin User' }}</p>
-                <p class="text-xs text-slate-500">{{ currentUser()?.hospitalId || 'admin@medicare.os' }}</p>
+                <p class="text-sm font-semibold text-slate-800">{{ currentUser()?.roles?.[0] || 'Signed in' }}</p>
+                <p class="text-xs text-slate-500">{{ currentUser()?.hospitalId || '—' }}</p>
               </div>
               <button
                 (click)="openPasswordModal()"
