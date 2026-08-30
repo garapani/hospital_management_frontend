@@ -300,6 +300,37 @@ describe('InsuranceDashboard', () => {
     expect(insuranceApi.markClaimPaid).toHaveBeenCalledWith('claim-1');
   });
 
+  it('refuses to approve a claim for more than was claimed', async () => {
+    const { fixture, insuranceApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openApproveModal(claim);
+    fixture.componentInstance.approveAmountDraft.set(claim.amountClaimed + 1);
+    expect(fixture.componentInstance.approveAmountInvalid).toBe(true);
+
+    fixture.componentInstance.confirmApprove();
+    expect(insuranceApi.approveClaim).not.toHaveBeenCalled();
+  });
+
+  it('refuses to approve a claim with a null or non-positive amount', async () => {
+    const { fixture, insuranceApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openApproveModal(claim);
+
+    fixture.componentInstance.approveAmountDraft.set(null);
+    expect(fixture.componentInstance.approveAmountInvalid).toBe(true);
+    fixture.componentInstance.confirmApprove();
+    expect(insuranceApi.approveClaim).not.toHaveBeenCalled();
+
+    fixture.componentInstance.approveAmountDraft.set(0);
+    expect(fixture.componentInstance.approveAmountInvalid).toBe(true);
+    fixture.componentInstance.confirmApprove();
+    expect(insuranceApi.approveClaim).not.toHaveBeenCalled();
+  });
+
   it('rejects a claim only when remarks are provided', async () => {
     const { fixture, insuranceApi } = setup();
     fixture.detectChanges();

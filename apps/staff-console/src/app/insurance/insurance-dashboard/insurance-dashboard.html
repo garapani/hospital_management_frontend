@@ -53,9 +53,10 @@
                   @if (auth.hasPermission('insurance.manage')) {
                   <td class="text-right">
                     <div class="flex justify-end gap-2">
-                      <p-button icon="pi pi-pencil" [text]="true" size="small" (onClick)="openEditPayerModal(payer)"></p-button>
+                      <p-button icon="pi pi-pencil" ariaLabel="Edit payer" [text]="true" size="small" (onClick)="openEditPayerModal(payer)"></p-button>
                       <p-button
                         [icon]="payer.isActive ? 'pi pi-ban' : 'pi pi-check'"
+                        [ariaLabel]="payer.isActive ? 'Deactivate payer' : 'Reactivate payer'"
                         [text]="true"
                         size="small"
                         [severity]="payer.isActive ? 'danger' : 'success'"
@@ -128,7 +129,7 @@
                   <td class="font-mono text-xs text-slate-600">{{ policy.patientId }}</td>
                   <td>{{ payerNameById().get(policy.payerId) ?? policy.payerId }}</td>
                   <td>{{ policy.coverageStartDate }} – {{ policy.coverageEndDate }}</td>
-                  <td class="text-right font-mono">₹{{ policy.sumInsured | number }}</td>
+                  <td class="text-right font-mono">{{ policy.sumInsured | currency: 'INR' : 'symbol-narrow' : '1.2-2' }}</td>
                   <td class="text-right">{{ policy.copayPercent }}%</td>
                   <td>
                     <p-tag [value]="policy.isActive ? 'Active' : 'Inactive'" [severity]="policy.isActive ? 'success' : 'secondary'" [rounded]="true"></p-tag>
@@ -139,6 +140,7 @@
                       @if (auth.hasPermission('insurance.manage')) {
                       <p-button
                         [icon]="policy.isActive ? 'pi pi-ban' : 'pi pi-check'"
+                        [ariaLabel]="policy.isActive ? 'Deactivate policy' : 'Reactivate policy'"
                         [text]="true"
                         size="small"
                         [severity]="policy.isActive ? 'danger' : 'success'"
@@ -222,8 +224,8 @@
                 <tr>
                   <td class="font-medium">{{ claim.claimNumber }}</td>
                   <td class="font-mono text-xs text-slate-600">{{ claim.patientId }}</td>
-                  <td class="text-right font-mono">₹{{ claim.amountClaimed | number }}</td>
-                  <td class="text-right font-mono">{{ claim.amountApproved !== null ? '₹' + (claim.amountApproved | number) : '—' }}</td>
+                  <td class="text-right font-mono">{{ claim.amountClaimed | currency: 'INR' : 'symbol-narrow' : '1.2-2' }}</td>
+                  <td class="text-right font-mono">{{ claim.amountApproved !== null ? (claim.amountApproved | currency: 'INR' : 'symbol-narrow' : '1.2-2') : '—' }}</td>
                   <td><p-tag [value]="claim.status" [severity]="claimStatusSeverity(claim.status)" [rounded]="true"></p-tag></td>
                   <td>{{ claim.submittedAt ? (claim.submittedAt | date: 'mediumDate') : '—' }}</td>
                   @if (auth.hasPermission('insurance.manage')) {
@@ -405,7 +407,7 @@
     }
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
       <div><span class="text-slate-500">Payer</span><p class="font-medium">{{ result.payerName }}</p></div>
-      <div><span class="text-slate-500">Sum Insured</span><p class="font-medium">₹{{ result.sumInsured | number }}</p></div>
+      <div><span class="text-slate-500">Sum Insured</span><p class="font-medium">{{ result.sumInsured | currency: 'INR' : 'symbol-narrow' : '1.2-2' }}</p></div>
       <div><span class="text-slate-500">Copay</span><p class="font-medium">{{ result.copayPercent }}%</p></div>
       <div><span class="text-slate-500">Window</span><p class="font-medium">{{ result.coverageStartDate }} – {{ result.coverageEndDate }}</p></div>
     </div>
@@ -453,13 +455,19 @@
 <p-dialog header="Approve Claim" [(visible)]="showApproveModal" [modal]="true" [style]="{ width: '380px' }">
   <div class="flex flex-col gap-4 py-2">
     <div class="flex flex-col gap-2">
-      <label for="approveAmount" class="text-sm font-medium">Amount approved (₹)</label>
-      <p-inputNumber inputId="approveAmount" [ngModel]="approveAmountDraft()" (ngModelChange)="approveAmountDraft.set($event)" [min]="0"></p-inputNumber>
+      <label for="approveAmount" class="text-sm font-medium">Amount approved (₹, max {{ approveAmountClaimed() }})</label>
+      <p-inputNumber
+        inputId="approveAmount"
+        [ngModel]="approveAmountDraft()"
+        (ngModelChange)="approveAmountDraft.set($event)"
+        [min]="0"
+        [max]="approveAmountClaimed()"
+      ></p-inputNumber>
     </div>
   </div>
   <ng-template pTemplate="footer">
     <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showApproveModal.set(false)"></p-button>
-    <p-button label="Approve" severity="success" [loading]="approveSaving()" (onClick)="confirmApprove()"></p-button>
+    <p-button label="Approve" severity="success" [loading]="approveSaving()" [disabled]="approveAmountInvalid" (onClick)="confirmApprove()"></p-button>
   </ng-template>
 </p-dialog>
 

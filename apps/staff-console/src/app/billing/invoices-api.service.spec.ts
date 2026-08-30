@@ -40,7 +40,7 @@ describe('InvoicesApiService', () => {
     expect(req.request.params.get('limit')).toBe('10');
     expect(req.request.params.has('patientId')).toBe(false);
 
-    const body = { data: [], total: 0, page: 2, limit: 10 };
+    const body = { data: [], meta: { total: 0, page: 2, limit: 10, totalPages: 0 } };
     req.flush(body);
     expect(result).toEqual(body);
   });
@@ -53,7 +53,7 @@ describe('InvoicesApiService', () => {
         r.url === 'https://gateway.example/api/billing/invoices',
     );
     expect(req.request.params.get('patientId')).toBe('patient-1');
-    req.flush({ data: [], total: 0, page: 1, limit: 20 });
+    req.flush({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } });
   });
 
   it('fetches a single invoice by id', () => {

@@ -6,18 +6,22 @@ import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { InvoicesApiService } from '../invoices-api.service.js';
 import { Invoice, invoiceReference, statusSeverity } from '../invoice.model.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 
 @Component({
-  imports: [DecimalPipe, DatePipe, FormsModule, RouterModule, TableModule, InputTextModule, ButtonModule, TagModule],
+  imports: [DecimalPipe, DatePipe, FormsModule, RouterModule, TableModule, InputTextModule, ButtonModule, TagModule, ToastModule],
+  providers: [MessageService],
   selector: 'hms-invoice-list',
   templateUrl: './invoice-list.html',
 })
 export class InvoiceList {
   private readonly invoicesApi = inject(InvoicesApiService);
+  private readonly messageService = inject(MessageService);
 
   readonly invoices = signal<Invoice[]>([]);
   readonly totalRecords = signal(0);
@@ -45,10 +49,13 @@ export class InvoiceList {
     this.invoicesApi.list({ patientId: this.patientIdFilter() || undefined, page, limit }).subscribe({
       next: (result) => {
         this.invoices.set(result.data);
-        this.totalRecords.set(result.total);
+        this.totalRecords.set(result.meta.total);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load invoices.' });
+      },
     });
   }
 

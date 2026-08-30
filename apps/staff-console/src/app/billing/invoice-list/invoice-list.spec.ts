@@ -7,7 +7,7 @@ import { Invoice, InvoiceListResult } from '../invoice.model.js';
 
 describe('InvoiceList', () => {
   function setup() {
-    const result: InvoiceListResult = { data: [], total: 0, page: 1, limit: 20 };
+    const result: InvoiceListResult = { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } };
     const invoicesApi = { list: jest.fn().mockReturnValue(of(result)) } as unknown as InvoicesApiService;
 
     TestBed.configureTestingModule({
@@ -48,7 +48,7 @@ describe('InvoiceList', () => {
     const { fixture, invoicesApi } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
-    invoicesApi.list = jest.fn().mockReturnValue(of({ data: [], total: 0, page: 3, limit: 20 }));
+    invoicesApi.list = jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 3, limit: 20, totalPages: 0 } }));
 
     fixture.componentInstance.onLazyLoad({ first: 40, rows: 20 });
 
@@ -59,7 +59,7 @@ describe('InvoiceList', () => {
     const { fixture, invoicesApi } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
-    invoicesApi.list = jest.fn().mockReturnValue(of({ data: [], total: 0, page: 1, limit: 20 }));
+    invoicesApi.list = jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } }));
 
     fixture.componentInstance.patientIdFilter.set('patient-1');
     fixture.componentInstance.applyPatientFilter();
@@ -85,7 +85,7 @@ describe('InvoiceList', () => {
       createdAt: '2026-08-09T00:00:00Z',
       updatedAt: '2026-08-09T00:00:00Z',
     };
-    const result: InvoiceListResult = { data: [invoice], total: 1, page: 1, limit: 20 };
+    const result: InvoiceListResult = { data: [invoice], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } };
     const invoicesApi = { list: jest.fn().mockReturnValue(of(result)) } as unknown as InvoicesApiService;
     TestBed.configureTestingModule({
       imports: [InvoiceList],

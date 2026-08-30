@@ -1,35 +1,42 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService, Confirmation } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { FixedAssetsConsole } from './fixed-assets-console.js';
 import { FixedAssetsApiService } from './fixed-assets-api.service.js';
 
 describe('FixedAssetsConsole', () => {
-  function setup() {
+  function setup(canManage = true) {
     const api = {
       listCategories: jest.fn().mockReturnValue(of([])),
       createCategory: jest.fn().mockReturnValue(of({})),
       deactivateCategory: jest.fn().mockReturnValue(of({})),
       reactivateCategory: jest.fn().mockReturnValue(of({})),
-      listAssets: jest.fn().mockReturnValue(of({ data: [], total: 0 })),
+      listAssets: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
       createAsset: jest.fn().mockReturnValue(of({ id: 'a1', assetCode: 'FA-0001' })),
       getValuation: jest.fn().mockReturnValue(of({})),
       deactivateAsset: jest.fn().mockReturnValue(of({})),
       reactivateAsset: jest.fn().mockReturnValue(of({})),
     } as unknown as FixedAssetsApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
+    const confirmationService = {
+      confirm: jest.fn((c: Confirmation) => c.accept?.()),
+    } as unknown as ConfirmationService;
+    const auth = { hasPermission: () => canManage } as unknown as AuthService;
 
     TestBed.configureTestingModule({
       imports: [FixedAssetsConsole],
       providers: [
         { provide: FixedAssetsApiService, useValue: api },
         { provide: MessageService, useValue: messageService },
+        { provide: ConfirmationService, useValue: confirmationService },
+        { provide: AuthService, useValue: auth },
       ],
     });
 
     const fixture = TestBed.createComponent(FixedAssetsConsole);
-    return { fixture, api, messageService };
+    return { fixture, api, messageService, confirmationService };
   }
 
   it('loads categories and assets on init', async () => {
@@ -94,5 +101,34 @@ describe('FixedAssetsConsole', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.assetError()).toBe('Invalid category');
+  });
+
+  it('confirms before deactivating an asset, but not before reactivating one', async () => {
+    const { fixture, api, confirmationService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.toggleAssetActive({ id: 'a1', isActive: true, assetCode: 'FA-0001', name: 'MRI' } as never);
+    expect(confirmationService.confirm).toHaveBeenCalled();
+    expect(api.deactivateAsset).toHaveBeenCalledWith('a1');
+
+    fixture.componentInstance.toggleAssetActive({ id: 'a2', isActive: false, assetCode: 'FA-0002', name: 'X-Ray' } as never);
+    expect(api.reactivateAsset).toHaveBeenCalledWith('a2');
+  });
+
+  it('loads assets with page/limit, page 1 on init', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(api.listAssets).toHaveBeenCalledWith({ page: 1, limit: 20 });
+  });
+
+  it('hides mutating actions for a read-only user', async () => {
+    const { fixture } = setup(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.canManage).toBe(false);
   });
 });

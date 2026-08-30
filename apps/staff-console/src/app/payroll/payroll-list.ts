@@ -8,6 +8,9 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 import { MessageModule } from 'primeng/message';
+import { ToastModule } from 'primeng/toast';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { PayrollApiService, Payslip, RunPayrollDto } from './payroll-api.service.js';
 
@@ -59,11 +62,16 @@ function currentYear(): number {
     SelectModule,
     TagModule,
     MessageModule,
+    ToastModule,
+    ConfirmDialogModule,
   ],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './payroll-list.html',
 })
 export class PayrollList {
   private readonly payrollApi = inject(PayrollApiService);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
 
   readonly payslips = signal<Payslip[]>([]);
@@ -89,6 +97,7 @@ export class PayrollList {
   readonly months = MONTHS;
   readonly monthNames = MONTH_NAMES;
   readonly canManage = this.auth.hasPermission('payroll.manage');
+  readonly markingPaidId = signal<string | null>(null);
 
   constructor() {
     this.load(0);
@@ -155,9 +164,28 @@ export class PayrollList {
   }
 
   markPaid(payslip: Payslip): void {
-    this.payrollApi.markPaid(payslip.id).subscribe({
-      next: () => this.load(this.firstRecord()),
-      error: () => undefined,
+    if (this.markingPaidId() !== null) return;
+
+    this.confirmationService.confirm({
+      header: 'Mark Paid',
+      message: `Mark this payslip as paid? This stamps a payment record and cannot be undone from here.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Mark Paid', severity: 'success' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.markingPaidId.set(payslip.id);
+        this.payrollApi.markPaid(payslip.id).subscribe({
+          next: () => {
+            this.markingPaidId.set(null);
+            this.load(this.firstRecord());
+            this.messageService.add({ severity: 'success', summary: 'Payslip marked paid' });
+          },
+          error: () => {
+            this.markingPaidId.set(null);
+            this.messageService.add({ severity: 'error', summary: 'Action failed', detail: 'Failed to mark payslip as paid.' });
+          },
+        });
+      },
     });
   }
 }

@@ -14,10 +14,25 @@
       <p-tabpanels styleClass="p-0">
         <p-tabpanel value="0">
           <div class="p-4 flex flex-col gap-4">
+            @if (canManage) {
             <div class="flex justify-end">
               <p-button label="Register Asset" icon="pi pi-plus" size="small" (onClick)="openAssetModal()"></p-button>
             </div>
-            <p-table [value]="assets()" [loading]="assetsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+            }
+            <p-table
+              [value]="assets()"
+              [lazy]="true"
+              [lazyLoadOnInit]="false"
+              (onLazyLoad)="onAssetsLazyLoad($event)"
+              [paginator]="true"
+              [rows]="assetsPageSize()"
+              [first]="assetsFirstRecord()"
+              [totalRecords]="assetsTotalRecords()"
+              [loading]="assetsLoading()"
+              [rowHover]="true"
+              dataKey="id"
+              styleClass="p-datatable-sm p-datatable-gridlines"
+            >
               <ng-template pTemplate="header">
                 <tr>
                   <th class="table-header-cell">Asset Code</th>
@@ -34,7 +49,7 @@
                   <td class="font-mono font-medium">{{ asset.assetCode }}</td>
                   <td>{{ asset.name }}</td>
                   <td>{{ categoryNameFor(asset.categoryId) }}</td>
-                  <td class="text-right font-mono">{{ asset.purchaseCost | number: '1.2-2' }}</td>
+                  <td class="text-right font-mono">{{ asset.purchaseCost | currency: 'INR' : 'symbol-narrow' : '1.2-2' }}</td>
                   <td>
                     <p-tag
                       [value]="asset.condition"
@@ -46,12 +61,14 @@
                   </td>
                   <td class="flex gap-2">
                     <p-button label="Valuation" [text]="true" size="small" (onClick)="viewValuation(asset)"></p-button>
+                    @if (canManage) {
                     <p-button
                       [label]="asset.isActive ? 'Deactivate' : 'Reactivate'"
                       [text]="true"
                       size="small"
                       (onClick)="toggleAssetActive(asset)"
                     ></p-button>
+                    }
                   </td>
                 </tr>
               </ng-template>
@@ -66,13 +83,15 @@
 
         <p-tabpanel value="1">
           <div class="p-4 flex flex-col gap-4">
+            @if (canManage) {
             <div class="flex items-end gap-3 flex-wrap">
-              <label class="flex flex-col gap-2">
+              <label for="newCategoryName" class="flex flex-col gap-2">
                 <span class="text-sm font-medium text-slate-700">New Category</span>
-                <input pInputText [ngModel]="newCategoryName()" (ngModelChange)="newCategoryName.set($event)" (keyup.enter)="addCategory()" class="w-64" />
+                <input pInputText id="newCategoryName" [ngModel]="newCategoryName()" (ngModelChange)="newCategoryName.set($event)" (keyup.enter)="addCategory()" class="w-64" />
               </label>
               <p-button label="Add" [loading]="categorySaving()" (onClick)="addCategory()" size="small"></p-button>
             </div>
+            }
             <p-table [value]="categories()" [loading]="categoriesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
               <ng-template pTemplate="header">
                 <tr>
@@ -88,12 +107,16 @@
                     <p-tag [value]="category.isActive ? 'Active' : 'Inactive'" [severity]="category.isActive ? 'success' : 'warn'"></p-tag>
                   </td>
                   <td>
+                    @if (canManage) {
                     <p-button
                       [label]="category.isActive ? 'Deactivate' : 'Reactivate'"
                       [text]="true"
                       size="small"
                       (onClick)="toggleCategoryActive(category)"
                     ></p-button>
+                    } @else {
+                    <span class="text-xs text-slate-400">View only</span>
+                    }
                   </td>
                 </tr>
               </ng-template>
@@ -120,31 +143,31 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Category</label>
-      <p-select [options]="categoryOptions" [ngModel]="assetForm().categoryId" (ngModelChange)="assetForm.set({ ...assetForm(), categoryId: $event })" styleClass="w-full"></p-select>
+      <label for="assetCategory" class="text-sm font-medium text-slate-700">Category</label>
+      <p-select inputId="assetCategory" [options]="categoryOptions" [ngModel]="assetForm().categoryId" (ngModelChange)="assetForm.set({ ...assetForm(), categoryId: $event })" styleClass="w-full"></p-select>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Name</label>
-      <input pInputText [ngModel]="assetForm().name" (ngModelChange)="assetForm.set({ ...assetForm(), name: $event })" class="w-full" />
+      <label for="assetName" class="text-sm font-medium text-slate-700">Name</label>
+      <input pInputText id="assetName" [ngModel]="assetForm().name" (ngModelChange)="assetForm.set({ ...assetForm(), name: $event })" class="w-full" />
     </div>
     <div class="flex flex-col sm:flex-row gap-4">
       <div class="flex flex-col gap-2 flex-1">
-        <label class="text-sm font-medium text-slate-700">Purchase Date</label>
-        <input pInputText type="date" [ngModel]="assetForm().purchaseDate" (ngModelChange)="assetForm.set({ ...assetForm(), purchaseDate: $event })" class="w-full" />
+        <label for="assetPurchaseDate" class="text-sm font-medium text-slate-700">Purchase Date</label>
+        <input pInputText id="assetPurchaseDate" type="date" [ngModel]="assetForm().purchaseDate" (ngModelChange)="assetForm.set({ ...assetForm(), purchaseDate: $event })" class="w-full" />
       </div>
       <div class="flex flex-col gap-2 flex-1">
-        <label class="text-sm font-medium text-slate-700">Purchase Cost</label>
-        <p-inputNumber [ngModel]="assetForm().purchaseCost" (ngModelChange)="assetForm.set({ ...assetForm(), purchaseCost: $event })" [min]="0" mode="decimal" [minFractionDigits]="2" styleClass="w-full" />
+        <label for="assetPurchaseCost" class="text-sm font-medium text-slate-700">Purchase Cost</label>
+        <p-inputNumber inputId="assetPurchaseCost" [ngModel]="assetForm().purchaseCost" (ngModelChange)="assetForm.set({ ...assetForm(), purchaseCost: $event })" [min]="0" mode="decimal" [minFractionDigits]="2" styleClass="w-full" />
       </div>
     </div>
     <div class="flex flex-col sm:flex-row gap-4">
       <div class="flex flex-col gap-2 flex-1">
-        <label class="text-sm font-medium text-slate-700">Useful Life (years)</label>
-        <p-inputNumber [ngModel]="assetForm().usefulLifeYears" (ngModelChange)="assetForm.set({ ...assetForm(), usefulLifeYears: $event })" [min]="0" styleClass="w-full" />
+        <label for="assetUsefulLife" class="text-sm font-medium text-slate-700">Useful Life (years)</label>
+        <p-inputNumber inputId="assetUsefulLife" [ngModel]="assetForm().usefulLifeYears" (ngModelChange)="assetForm.set({ ...assetForm(), usefulLifeYears: $event })" [min]="0" styleClass="w-full" />
       </div>
       <div class="flex flex-col gap-2 flex-1">
-        <label class="text-sm font-medium text-slate-700">Salvage Value</label>
-        <p-inputNumber [ngModel]="assetForm().salvageValue" (ngModelChange)="assetForm.set({ ...assetForm(), salvageValue: $event })" [min]="0" mode="decimal" [minFractionDigits]="2" styleClass="w-full" />
+        <label for="assetSalvageValue" class="text-sm font-medium text-slate-700">Salvage Value</label>
+        <p-inputNumber inputId="assetSalvageValue" [ngModel]="assetForm().salvageValue" (ngModelChange)="assetForm.set({ ...assetForm(), salvageValue: $event })" [min]="0" mode="decimal" [minFractionDigits]="2" styleClass="w-full" />
       </div>
     </div>
   </div>
@@ -168,19 +191,19 @@
   } @else if (valuation(); as v) {
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
     <span class="text-slate-500">Purchase Cost</span>
-    <span class="font-mono">{{ v.purchaseCost | number: '1.2-2' }}</span>
+    <span class="font-mono">{{ v.purchaseCost | currency: 'INR' : 'symbol-narrow' : '1.2-2' }}</span>
     <span class="text-slate-500">Salvage Value</span>
-    <span class="font-mono">{{ v.salvageValue | number: '1.2-2' }}</span>
+    <span class="font-mono">{{ v.salvageValue | currency: 'INR' : 'symbol-narrow' : '1.2-2' }}</span>
     <span class="text-slate-500">Useful Life</span>
     <span>{{ v.usefulLifeYears ?? '—' }} years</span>
     <span class="text-slate-500">Months in Service</span>
     <span>{{ v.monthsInService }}</span>
     <span class="text-slate-500">Annual Depreciation</span>
-    <span class="font-mono">{{ v.annualDepreciation !== null ? (v.annualDepreciation | number: '1.2-2') : '—' }}</span>
+    <span class="font-mono">{{ v.annualDepreciation !== null ? (v.annualDepreciation | currency: 'INR' : 'symbol-narrow' : '1.2-2') : '—' }}</span>
     <span class="text-slate-500">Accumulated Depreciation</span>
-    <span class="font-mono">{{ v.accumulatedDepreciation | number: '1.2-2' }}</span>
+    <span class="font-mono">{{ v.accumulatedDepreciation | currency: 'INR' : 'symbol-narrow' : '1.2-2' }}</span>
     <span class="text-slate-500 font-semibold">Book Value</span>
-    <span class="font-mono font-semibold">{{ v.bookValue | number: '1.2-2' }}</span>
+    <span class="font-mono font-semibold">{{ v.bookValue | currency: 'INR' : 'symbol-narrow' : '1.2-2' }}</span>
   </div>
   }
 </p-dialog>

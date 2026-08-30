@@ -1,7 +1,7 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
@@ -9,21 +9,25 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TabsModule } from 'primeng/tabs';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { FixedAssetsApiService } from './fixed-assets-api.service.js';
 import { CreateFixedAssetDto, FixedAsset, FixedAssetCategory, FixedAssetValuation } from './fixed-assets.model.js';
 
 const EMPTY_ASSET_FORM: CreateFixedAssetDto = { categoryId: '', name: '', purchaseDate: '', purchaseCost: 0 };
 
 @Component({
-  imports: [DecimalPipe, DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, SelectModule, TabsModule],
+  imports: [DecimalPipe, DatePipe, CurrencyPipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, SelectModule, TabsModule],
   selector: 'hms-fixed-assets-console',
   templateUrl: './fixed-assets-console.html',
 })
 export class FixedAssetsConsole {
   private readonly api = inject(FixedAssetsApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  readonly auth = inject(AuthService);
+  readonly canManage = this.auth.hasPermission('fixed-asset.manage');
 
   readonly categories = signal<FixedAssetCategory[]>([]);
   readonly categoriesLoading = signal(false);
@@ -31,6 +35,9 @@ export class FixedAssetsConsole {
   readonly categorySaving = signal(false);
 
   readonly assets = signal<FixedAsset[]>([]);
+  readonly assetsTotalRecords = signal(0);
+  readonly assetsPageSize = signal(20);
+  readonly assetsFirstRecord = signal(0);
   readonly assetsLoading = signal(false);
   readonly showAssetModal = signal(false);
   readonly assetForm = signal<CreateFixedAssetDto>(EMPTY_ASSET_FORM);
@@ -54,7 +61,7 @@ export class FixedAssetsConsole {
 
   constructor() {
     this.loadCategories();
-    this.loadAssets();
+    this.loadAssets(1, this.assetsPageSize());
   }
 
   // --- Categories ---
@@ -92,29 +99,52 @@ export class FixedAssetsConsole {
   }
 
   toggleCategoryActive(category: FixedAssetCategory): void {
-    const action = category.isActive ? this.api.deactivateCategory(category.id) : this.api.reactivateCategory(category.id);
-    action.subscribe({
-      next: () => {
-        this.loadCategories();
-        this.messageService.add({
-          severity: 'success',
-          summary: category.isActive ? 'Category deactivated' : 'Category reactivated',
-          detail: category.name,
-        });
-      },
-      error: (err: ApiError) => {
-        this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
-      },
+    const doToggle = () => {
+      const action = category.isActive ? this.api.deactivateCategory(category.id) : this.api.reactivateCategory(category.id);
+      action.subscribe({
+        next: () => {
+          this.loadCategories();
+          this.messageService.add({
+            severity: 'success',
+            summary: category.isActive ? 'Category deactivated' : 'Category reactivated',
+            detail: category.name,
+          });
+        },
+        error: (err: ApiError) => {
+          this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
+        },
+      });
+    };
+
+    if (!category.isActive) {
+      doToggle();
+      return;
+    }
+    this.confirmationService.confirm({
+      header: 'Deactivate Category',
+      message: `Deactivate "${category.name}"? It will no longer be selectable for new assets.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Deactivate', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: doToggle,
     });
   }
 
   // --- Assets ---
 
-  loadAssets(): void {
+  onAssetsLazyLoad(event: TableLazyLoadEvent): void {
+    const rows = event.rows ?? this.assetsPageSize();
+    const page = Math.floor((event.first ?? 0) / rows) + 1;
+    this.loadAssets(page, rows);
+  }
+
+  loadAssets(page: number, limit: number): void {
     this.assetsLoading.set(true);
-    this.api.listAssets().subscribe({
+    this.assetsFirstRecord.set((page - 1) * limit);
+    this.api.listAssets({ page, limit }).subscribe({
       next: (result) => {
         this.assets.set(result.data);
+        this.assetsTotalRecords.set(result.meta.total);
         this.assetsLoading.set(false);
       },
       error: () => {
@@ -137,7 +167,7 @@ export class FixedAssetsConsole {
       next: (asset) => {
         this.assetSaving.set(false);
         this.showAssetModal.set(false);
-        this.loadAssets();
+        this.loadAssets(1, this.assetsPageSize());
         this.messageService.add({ severity: 'success', summary: 'Asset registered', detail: asset.assetCode });
       },
       error: (err: ApiError) => {
@@ -148,19 +178,34 @@ export class FixedAssetsConsole {
   }
 
   toggleAssetActive(asset: FixedAsset): void {
-    const action = asset.isActive ? this.api.deactivateAsset(asset.id) : this.api.reactivateAsset(asset.id);
-    action.subscribe({
-      next: () => {
-        this.loadAssets();
-        this.messageService.add({
-          severity: 'success',
-          summary: asset.isActive ? 'Asset deactivated' : 'Asset reactivated',
-          detail: asset.name,
-        });
-      },
-      error: (err: ApiError) => {
-        this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
-      },
+    const doToggle = () => {
+      const action = asset.isActive ? this.api.deactivateAsset(asset.id) : this.api.reactivateAsset(asset.id);
+      action.subscribe({
+        next: () => {
+          this.loadAssets(1, this.assetsPageSize());
+          this.messageService.add({
+            severity: 'success',
+            summary: asset.isActive ? 'Asset deactivated' : 'Asset reactivated',
+            detail: asset.name,
+          });
+        },
+        error: (err: ApiError) => {
+          this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
+        },
+      });
+    };
+
+    if (!asset.isActive) {
+      doToggle();
+      return;
+    }
+    this.confirmationService.confirm({
+      header: 'Deactivate Asset',
+      message: `Deactivate "${asset.assetCode} — ${asset.name}"?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Deactivate', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: doToggle,
     });
   }
 

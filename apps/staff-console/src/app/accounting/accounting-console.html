@@ -16,9 +16,11 @@
         <!-- CHART OF ACCOUNTS -->
         <p-tabpanel value="0">
           <div class="p-4 flex flex-col gap-4">
+            @if (canManage) {
             <div class="flex justify-end">
               <p-button label="Add Account" icon="pi pi-plus" size="small" (onClick)="openAccountModal()"></p-button>
             </div>
+            }
             <p-table [value]="accounts()" [loading]="accountsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
               <ng-template pTemplate="header">
                 <tr>
@@ -38,12 +40,16 @@
                     <p-tag [value]="account.isActive ? 'Active' : 'Inactive'" [severity]="account.isActive ? 'success' : 'warn'"></p-tag>
                   </td>
                   <td>
+                    @if (canManage) {
                     <p-button
                       [label]="account.isActive ? 'Deactivate' : 'Reactivate'"
                       [text]="true"
                       size="small"
                       (onClick)="toggleAccountActive(account)"
                     ></p-button>
+                    } @else {
+                    <span class="text-xs text-slate-400">View only</span>
+                    }
                   </td>
                 </tr>
               </ng-template>
@@ -69,9 +75,24 @@
                   styleClass="w-48"
                 ></p-select>
               </div>
+              @if (canManage) {
               <p-button label="New Journal Entry" icon="pi pi-plus" size="small" (onClick)="openJournalModal()"></p-button>
+              }
             </div>
-            <p-table [value]="journals()" [loading]="journalsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+            <p-table
+              [value]="journals()"
+              [lazy]="true"
+              [lazyLoadOnInit]="false"
+              (onLazyLoad)="onJournalsLazyLoad($event)"
+              [paginator]="true"
+              [rows]="journalsPageSize()"
+              [first]="journalsFirstRecord()"
+              [totalRecords]="journalsTotalRecords()"
+              [loading]="journalsLoading()"
+              [rowHover]="true"
+              dataKey="id"
+              styleClass="p-datatable-sm p-datatable-gridlines"
+            >
               <ng-template pTemplate="header">
                 <tr>
                   <th class="table-header-cell">Journal #</th>
@@ -91,7 +112,7 @@
                   </td>
                   <td class="flex gap-2">
                     <p-button label="View" [text]="true" size="small" (onClick)="viewJournal(journal)"></p-button>
-                    @if (journal.status === 'Draft') {
+                    @if (canManage && journal.status === 'Draft') {
                     <p-button
                       label="Post"
                       [text]="true"
@@ -349,7 +370,12 @@
   <ng-template pTemplate="footer">
     <div class="flex justify-end gap-2 mt-4">
       <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showJournalModal.set(false)"></p-button>
-      <p-button label="Save" [loading]="journalSaving()" (onClick)="submitJournal()" [disabled]="!journalIsBalanced"></p-button>
+      <p-button
+        label="Save"
+        [loading]="journalSaving()"
+        (onClick)="submitJournal()"
+        [disabled]="!journalIsBalanced || journalHasLineWithBothDebitAndCredit || journalHasAmountWithoutAccount"
+      ></p-button>
     </div>
   </ng-template>
 </p-dialog>

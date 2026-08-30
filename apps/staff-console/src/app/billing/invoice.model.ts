@@ -20,9 +20,12 @@ export interface Invoice {
 
 export interface InvoiceListResult {
   data: Invoice[];
-  total: number;
-  page: number;
-  limit: number;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface InvoiceReturn {

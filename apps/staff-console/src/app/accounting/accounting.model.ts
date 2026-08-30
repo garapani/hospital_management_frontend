@@ -64,7 +64,12 @@ export interface CreateJournalDto {
 
 export interface JournalListResult {
   data: JournalEntry[];
-  total: number;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface TrialBalanceRow {

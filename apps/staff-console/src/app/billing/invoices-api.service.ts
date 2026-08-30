@@ -30,12 +30,4 @@ export class InvoicesApiService {
   findOne(id: string): Observable<InvoiceWithReturns> {
     return this.apiClient.get<InvoiceWithReturns>(`/billing/invoices/${id}`);
   }
-
-  /**
-   * Convenience method for dashboard to get invoices with pagination.
-   * Overloaded signature to support list(page, limit) syntax.
-   */
-  listByPage(page = 1, limit = 10): Observable<InvoiceListResult> {
-    return this.list({ page, limit });
-  }
 }

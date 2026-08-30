@@ -1,7 +1,7 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
@@ -10,8 +10,9 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TabsModule } from 'primeng/tabs';
 import { DatePickerModule } from 'primeng/datepicker';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { AccountingApiService } from './accounting-api.service.js';
 import {
   ACCOUNT_TYPES,
@@ -31,7 +32,18 @@ type ReportKind = 'trial-balance' | 'income-statement' | 'balance-sheet';
 function toIsoDate(value: Date | string | null): string | undefined {
   if (!value) return undefined;
   if (typeof value === 'string') return value;
-  return value.toISOString().slice(0, 10);
+  // Local date parts, not toISOString() — a p-datepicker value is local midnight, and
+  // toISOString() converts to UTC first, booking every entry one day early in IST (UTC+5:30).
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Debit/credit totals are compared as integer paise, not float rupees, so 0.10 + 0.20 doesn't
+// fail to equal 0.30 due to IEEE-754 rounding (0.30000000000000004 !== 0.3).
+function toPaise(amount: number): number {
+  return Math.round(amount * 100);
 }
 
 interface JournalLineFormRow {
@@ -66,6 +78,9 @@ function emptyLineRow(): JournalLineFormRow {
 export class AccountingConsole {
   private readonly api = inject(AccountingApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  readonly auth = inject(AuthService);
+  readonly canManage = this.auth.hasPermission('accounting.manage');
 
   readonly accountTypes = ACCOUNT_TYPES;
   readonly accountTypeOptions = ACCOUNT_TYPES.map((type) => ({ label: type, value: type }));
@@ -96,6 +111,9 @@ export class AccountingConsole {
 
   // Journals
   readonly journals = signal<JournalEntry[]>([]);
+  readonly journalsTotalRecords = signal(0);
+  readonly journalsPageSize = signal(20);
+  readonly journalsFirstRecord = signal(0);
   readonly journalsLoading = signal(false);
   readonly journalStatusFilter = signal<JournalStatus | null>(null);
   readonly showJournalModal = signal(false);
@@ -125,7 +143,7 @@ export class AccountingConsole {
 
   constructor() {
     this.loadAccounts();
-    this.loadJournals();
+    this.loadJournals(1, this.journalsPageSize());
     this.runReport();
   }
 
@@ -169,29 +187,52 @@ export class AccountingConsole {
   }
 
   toggleAccountActive(account: LedgerAccount): void {
-    const action = account.isActive ? this.api.deactivateAccount(account.id) : this.api.reactivateAccount(account.id);
-    action.subscribe({
-      next: () => {
-        this.loadAccounts();
-        this.messageService.add({
-          severity: 'success',
-          summary: account.isActive ? 'Account deactivated' : 'Account reactivated',
-          detail: account.name,
-        });
-      },
-      error: (err: ApiError) => {
-        this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
-      },
+    const doToggle = () => {
+      const action = account.isActive ? this.api.deactivateAccount(account.id) : this.api.reactivateAccount(account.id);
+      action.subscribe({
+        next: () => {
+          this.loadAccounts();
+          this.messageService.add({
+            severity: 'success',
+            summary: account.isActive ? 'Account deactivated' : 'Account reactivated',
+            detail: account.name,
+          });
+        },
+        error: (err: ApiError) => {
+          this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
+        },
+      });
+    };
+
+    if (!account.isActive) {
+      doToggle();
+      return;
+    }
+    this.confirmationService.confirm({
+      header: 'Deactivate Account',
+      message: `Deactivate "${account.accountCode} — ${account.name}"? It will no longer be selectable for new journal lines.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Deactivate', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: doToggle,
     });
   }
 
   // --- Journals ---
 
-  loadJournals(): void {
+  onJournalsLazyLoad(event: TableLazyLoadEvent): void {
+    const rows = event.rows ?? this.journalsPageSize();
+    const page = Math.floor((event.first ?? 0) / rows) + 1;
+    this.loadJournals(page, rows);
+  }
+
+  loadJournals(page: number, limit: number): void {
     this.journalsLoading.set(true);
-    this.api.listJournals({ status: this.journalStatusFilter() ?? undefined }).subscribe({
+    this.journalsFirstRecord.set((page - 1) * limit);
+    this.api.listJournals({ status: this.journalStatusFilter() ?? undefined, page, limit }).subscribe({
       next: (result) => {
         this.journals.set(result.data);
+        this.journalsTotalRecords.set(result.meta.total);
         this.journalsLoading.set(false);
       },
       error: () => {
@@ -203,7 +244,7 @@ export class AccountingConsole {
 
   setJournalStatusFilter(status: JournalStatus | null): void {
     this.journalStatusFilter.set(status);
-    this.loadJournals();
+    this.loadJournals(1, this.journalsPageSize());
   }
 
   openJournalModal(): void {
@@ -235,10 +276,27 @@ export class AccountingConsole {
   }
 
   get journalIsBalanced(): boolean {
-    return this.journalDebitTotal > 0 && this.journalDebitTotal === this.journalCreditTotal;
+    return this.journalDebitTotal > 0 && toPaise(this.journalDebitTotal) === toPaise(this.journalCreditTotal);
+  }
+
+  get journalHasLineWithBothDebitAndCredit(): boolean {
+    return this.journalLines().some((line) => (line.debit ?? 0) > 0 && (line.credit ?? 0) > 0);
+  }
+
+  get journalHasAmountWithoutAccount(): boolean {
+    return this.journalLines().some((line) => !line.accountId && ((line.debit ?? 0) > 0 || (line.credit ?? 0) > 0));
   }
 
   submitJournal(): void {
+    if (this.journalHasLineWithBothDebitAndCredit) {
+      this.journalError.set('Each line must be either a debit or a credit, not both.');
+      return;
+    }
+    if (this.journalHasAmountWithoutAccount) {
+      this.journalError.set('Every line with an amount needs an account selected.');
+      return;
+    }
+
     const lines: JournalLineInput[] = this.journalLines()
       .filter((line) => line.accountId)
       .map((line) => ({
@@ -260,7 +318,7 @@ export class AccountingConsole {
         next: (journal) => {
           this.journalSaving.set(false);
           this.showJournalModal.set(false);
-          this.loadJournals();
+          this.loadJournals(1, this.journalsPageSize());
           this.messageService.add({ severity: 'success', summary: 'Journal entry created', detail: journal.journalNumber });
         },
         error: (err: ApiError) => {
@@ -287,11 +345,22 @@ export class AccountingConsole {
   }
 
   postJournal(journal: JournalEntry): void {
+    this.confirmationService.confirm({
+      header: 'Post Journal',
+      message: `Post journal ${journal.journalNumber}? A posted entry can only be corrected with a contra entry, not edited.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Post', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => this.runPostJournal(journal),
+    });
+  }
+
+  private runPostJournal(journal: JournalEntry): void {
     this.postingJournalId.set(journal.id);
     this.api.postJournal(journal.id).subscribe({
       next: () => {
         this.postingJournalId.set(null);
-        this.loadJournals();
+        this.loadJournals(1, this.journalsPageSize());
         this.messageService.add({ severity: 'success', summary: 'Journal posted', detail: journal.journalNumber });
       },
       error: (err: ApiError) => {

@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
+import { ConfirmationService, Confirmation } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { PayrollList } from './payroll-list.js';
 import { PayrollApiService } from './payroll-api.service.js';
@@ -24,7 +25,14 @@ describe('PayrollList', () => {
     });
 
     const fixture = TestBed.createComponent(PayrollList);
-    return { fixture, payrollApi };
+    // PayrollList self-provides ConfirmationService (component-level) — spy on the real instance
+    // and auto-accept, since no <p-confirmDialog> is rendered in these component tests.
+    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
+    jest.spyOn(confirmationService, 'confirm').mockImplementation((c: Confirmation) => {
+      c.accept?.();
+      return confirmationService;
+    });
+    return { fixture, payrollApi, confirmationService };
   }
 
   it('loads payslips on init', async () => {
@@ -54,10 +62,12 @@ describe('PayrollList', () => {
     expect(fixture.componentInstance.runResult()).toBe('3 payslip(s) generated.');
   });
 
-  it('marks a draft payslip paid', async () => {
-    const { fixture, payrollApi } = setup();
+  it('confirms before marking a draft payslip paid, and guards against a double-click while in flight', async () => {
+    const { fixture, payrollApi, confirmationService } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
+    const markPaid$ = new Subject<unknown>();
+    (payrollApi.markPaid as jest.Mock).mockReturnValue(markPaid$);
 
     const slip = {
       id: 's1',
@@ -74,8 +84,28 @@ describe('PayrollList', () => {
       createdAt: '',
     };
     fixture.componentInstance.markPaid(slip);
-    await fixture.whenStable();
+    fixture.componentInstance.markPaid(slip);
 
+    expect(confirmationService.confirm).toHaveBeenCalledTimes(1);
+    expect(payrollApi.markPaid).toHaveBeenCalledTimes(1);
     expect(payrollApi.markPaid).toHaveBeenCalledWith('s1');
+
+    markPaid$.next({});
+    markPaid$.complete();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.markingPaidId()).toBeNull();
+  });
+
+  it('shows an error toast when marking paid fails, and clears the in-flight guard', async () => {
+    const { fixture, payrollApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (payrollApi.markPaid as jest.Mock).mockReturnValue({
+      subscribe: (handlers: { error: (err: unknown) => void }) => handlers.error(new Error('boom')),
+    });
+
+    fixture.componentInstance.markPaid({ id: 's1', status: 'Draft' } as never);
+
+    expect(fixture.componentInstance.markingPaidId()).toBeNull();
   });
 });

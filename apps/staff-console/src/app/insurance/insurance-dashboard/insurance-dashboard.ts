@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -79,7 +79,7 @@ const EMPTY_CLAIM_FORM: ClaimFormState = { patientId: '', policyId: '', invoiceI
   selector: 'hms-insurance-dashboard',
   imports: [
     DatePipe,
-    DecimalPipe,
+    CurrencyPipe,
     FormsModule,
     TableModule,
     ButtonModule,
@@ -164,7 +164,8 @@ export class InsuranceDashboard {
 
   readonly showApproveModal = signal(false);
   readonly approveClaimId = signal<string | null>(null);
-  readonly approveAmountDraft = signal(0);
+  readonly approveAmountClaimed = signal(0);
+  readonly approveAmountDraft = signal<number | null>(0);
   readonly approveSaving = signal(false);
 
   readonly showRejectModal = signal(false);
@@ -490,20 +491,31 @@ export class InsuranceDashboard {
 
   openApproveModal(claim: InsuranceClaim): void {
     this.approveClaimId.set(claim.id);
+    this.approveAmountClaimed.set(claim.amountClaimed);
     this.approveAmountDraft.set(claim.amountClaimed);
     this.showApproveModal.set(true);
   }
 
+  get approveAmountInvalid(): boolean {
+    const amount = this.approveAmountDraft();
+    return amount === null || amount <= 0 || amount > this.approveAmountClaimed();
+  }
+
   confirmApprove(): void {
     const id = this.approveClaimId();
-    if (!id) return;
+    const amount = this.approveAmountDraft();
+    if (!id || this.approveAmountInvalid || amount === null) return;
     this.approveSaving.set(true);
-    this.insuranceApi.approveClaim(id, this.approveAmountDraft()).subscribe({
+    this.insuranceApi.approveClaim(id, amount).subscribe({
       next: (claim) => {
         this.approveSaving.set(false);
         this.showApproveModal.set(false);
         this.loadClaims(this.claimFirstRecord());
-        this.messageService.add({ severity: 'success', summary: 'Claim approved', detail: `Claim ${claim.claimNumber} approved for ₹${claim.amountApproved}.` });
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Claim approved',
+          detail: `Claim ${claim.claimNumber} approved for ₹${(claim.amountApproved ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.`,
+        });
       },
       error: (err: ApiError) => {
         this.approveSaving.set(false);
