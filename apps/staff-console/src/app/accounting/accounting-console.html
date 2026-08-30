@@ -279,16 +279,16 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Account Code</label>
-      <input pInputText [ngModel]="accountForm().accountCode" (ngModelChange)="accountForm.set({ ...accountForm(), accountCode: $event })" class="w-full" />
+      <label for="accountCode" class="text-sm font-medium text-slate-700">Account Code</label>
+      <input pInputText id="accountCode" [ngModel]="accountForm().accountCode" (ngModelChange)="accountForm.set({ ...accountForm(), accountCode: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Name</label>
-      <input pInputText [ngModel]="accountForm().name" (ngModelChange)="accountForm.set({ ...accountForm(), name: $event })" class="w-full" />
+      <label for="accountName" class="text-sm font-medium text-slate-700">Name</label>
+      <input pInputText id="accountName" [ngModel]="accountForm().name" (ngModelChange)="accountForm.set({ ...accountForm(), name: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Type</label>
-      <p-select [options]="accountTypeOptions" [ngModel]="accountForm().type" (ngModelChange)="accountForm.set({ ...accountForm(), type: $event })" styleClass="w-full"></p-select>
+      <label for="accountType" class="text-sm font-medium text-slate-700">Type</label>
+      <p-select inputId="accountType" [options]="accountTypeOptions" [ngModel]="accountForm().type" (ngModelChange)="accountForm.set({ ...accountForm(), type: $event })" styleClass="w-full"></p-select>
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -315,12 +315,12 @@
     }
     <div class="flex gap-4">
       <div class="flex flex-col gap-2 flex-1">
-        <label class="text-sm font-medium text-slate-700">Entry Date</label>
-        <p-datepicker [ngModel]="journalEntryDate()" (ngModelChange)="journalEntryDate.set($event)" dateFormat="yy-mm-dd" styleClass="w-full" />
+        <label for="journalEntryDate" class="text-sm font-medium text-slate-700">Entry Date</label>
+        <p-datepicker inputId="journalEntryDate" [ngModel]="journalEntryDate()" (ngModelChange)="journalEntryDate.set($event)" dateFormat="yy-mm-dd" styleClass="w-full" />
       </div>
       <div class="flex flex-col gap-2 flex-[2]">
-        <label class="text-sm font-medium text-slate-700">Narration</label>
-        <input pInputText [ngModel]="journalNarration()" (ngModelChange)="journalNarration.set($event)" class="w-full" />
+        <label for="journalNarration" class="text-sm font-medium text-slate-700">Narration</label>
+        <input pInputText id="journalNarration" [ngModel]="journalNarration()" (ngModelChange)="journalNarration.set($event)" class="w-full" />
       </div>
     </div>
 
@@ -354,7 +354,7 @@
           [minFractionDigits]="2"
           styleClass="w-28"
         ></p-inputNumber>
-        <p-button icon="pi pi-trash" severity="danger" [text]="true" (onClick)="removeJournalLine($index)"></p-button>
+        <p-button icon="pi pi-trash" severity="danger" [text]="true" ariaLabel="Remove line" (onClick)="removeJournalLine($index)"></p-button>
       </div>
       }
     </div>
