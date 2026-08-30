@@ -7,9 +7,10 @@ import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { Observable } from 'rxjs';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { OtApiService } from './ot-api.service.js';
 import { CreateSurgeryDto, OtSurgery, OtSurgeryStatus } from './ot.model.js';
 
@@ -24,6 +25,9 @@ const EMPTY_FORM: CreateSurgeryDto = { patientId: '', procedureName: '' };
 export class OtList {
   private readonly api = inject(OtApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  readonly auth = inject(AuthService);
+  readonly canManage = this.auth.hasPermission('ot.manage');
 
   readonly surgeries = signal<OtSurgery[]>([]);
   readonly totalRecords = signal(0);
@@ -43,6 +47,7 @@ export class OtList {
 
   readonly showScheduleModal = signal(false);
   readonly scheduleForm = signal<CreateSurgeryDto>(EMPTY_FORM);
+  readonly scheduleScheduledAt = signal('');
   readonly scheduleSaving = signal(false);
   readonly scheduleError = signal<string | null>(null);
   readonly actionId = signal<string | null>(null);
@@ -50,6 +55,7 @@ export class OtList {
   readonly showDetail = signal(false);
   readonly detail = signal<OtSurgery | null>(null);
   readonly detailLoading = signal(false);
+  readonly detailError = signal(false);
 
   onLazyLoad(event: TableLazyLoadEvent): void {
     const rows = event.rows ?? this.pageSize();
@@ -74,15 +80,19 @@ export class OtList {
       .subscribe({
         next: (result) => {
           this.surgeries.set(result.data);
-          this.totalRecords.set(result.total);
+          this.totalRecords.set(result.meta.total);
           this.loading.set(false);
         },
-        error: () => this.loading.set(false),
+        error: () => {
+          this.loading.set(false);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load surgeries.' });
+        },
       });
   }
 
   openScheduleModal(): void {
     this.scheduleForm.set(EMPTY_FORM);
+    this.scheduleScheduledAt.set('');
     this.scheduleError.set(null);
     this.showScheduleModal.set(true);
   }
@@ -90,22 +100,26 @@ export class OtList {
   submitSchedule(): void {
     this.scheduleSaving.set(true);
     this.scheduleError.set(null);
-    this.api.schedule(this.scheduleForm()).subscribe({
-      next: (surgery) => {
-        this.scheduleSaving.set(false);
-        this.showScheduleModal.set(false);
-        this.load(1, this.pageSize());
-        this.messageService.add({ severity: 'success', summary: 'Surgery scheduled', detail: surgery.surgeryNumber });
-      },
-      error: (err: ApiError) => {
-        this.scheduleSaving.set(false);
-        this.scheduleError.set(err.message || 'Failed to schedule the surgery.');
-      },
-    });
+    const scheduledAt = this.scheduleScheduledAt();
+    this.api
+      .schedule({ ...this.scheduleForm(), scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined })
+      .subscribe({
+        next: (surgery) => {
+          this.scheduleSaving.set(false);
+          this.showScheduleModal.set(false);
+          this.load(1, this.pageSize());
+          this.messageService.add({ severity: 'success', summary: 'Surgery scheduled', detail: surgery.surgeryNumber });
+        },
+        error: (err: ApiError) => {
+          this.scheduleSaving.set(false);
+          this.scheduleError.set(err.message || 'Failed to schedule the surgery.');
+        },
+      });
   }
 
   viewSurgery(surgery: OtSurgery): void {
     this.detailLoading.set(true);
+    this.detailError.set(false);
     this.detail.set(null);
     this.showDetail.set(true);
     this.api.findOne(surgery.id).subscribe({
@@ -115,6 +129,7 @@ export class OtList {
       },
       error: () => {
         this.detailLoading.set(false);
+        this.detailError.set(true);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load the surgery record.' });
       },
     });
@@ -125,11 +140,25 @@ export class OtList {
   }
 
   complete(surgery: OtSurgery): void {
-    this.runAction(surgery.id, this.api.complete(surgery.id), 'Surgery completed');
+    this.confirmationService.confirm({
+      header: 'Complete Surgery',
+      message: `Mark surgery "${surgery.surgeryNumber}" (${surgery.procedureName}) as completed?`,
+      icon: 'pi pi-check-circle',
+      acceptButtonProps: { label: 'Complete', severity: 'success' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => this.runAction(surgery.id, this.api.complete(surgery.id), 'Surgery completed'),
+    });
   }
 
   cancel(surgery: OtSurgery): void {
-    this.runAction(surgery.id, this.api.cancel(surgery.id), 'Surgery cancelled');
+    this.confirmationService.confirm({
+      header: 'Cancel Surgery',
+      message: `Cancel surgery "${surgery.surgeryNumber}" (${surgery.procedureName})?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Cancel Surgery', severity: 'danger' },
+      rejectButtonProps: { label: 'Back', severity: 'secondary', outlined: true },
+      accept: () => this.runAction(surgery.id, this.api.cancel(surgery.id), 'Surgery cancelled'),
+    });
   }
 
   private runAction(id: string, action$: Observable<OtSurgery>, successSummary: string): void {

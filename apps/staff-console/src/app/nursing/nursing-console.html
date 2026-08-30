@@ -29,10 +29,25 @@
       <p-tabpanels styleClass="p-0">
         <p-tabpanel value="0">
           <div class="p-4 flex flex-col gap-4">
+            @if (canManage) {
             <div class="flex justify-end">
               <p-button label="New Task" icon="pi pi-plus" size="small" (onClick)="openTaskModal()"></p-button>
             </div>
-            <p-table [value]="tasks()" [loading]="tasksLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+            }
+            <p-table
+              [value]="tasks()"
+              [lazy]="true"
+              [lazyLoadOnInit]="false"
+              (onLazyLoad)="onTasksLazyLoad($event)"
+              [paginator]="true"
+              [rows]="tasksPageSize()"
+              [first]="tasksFirstRecord()"
+              [totalRecords]="tasksTotalRecords()"
+              [loading]="tasksLoading()"
+              [rowHover]="true"
+              dataKey="id"
+              styleClass="p-datatable-sm p-datatable-gridlines"
+            >
               <ng-template pTemplate="header">
                 <tr>
                   <th class="table-header-cell">Type</th>
@@ -54,12 +69,16 @@
                     ></p-tag>
                   </td>
                   <td class="flex gap-2">
-                    @if (task.status === 'Pending') {
-                    <p-button label="Start" [text]="true" size="small" [loading]="taskActionId() === task.id" (onClick)="startTask(task)"></p-button>
-                    }
-                    @if (task.status === 'Pending' || task.status === 'InProgress') {
-                    <p-button label="Complete" [text]="true" size="small" [loading]="taskActionId() === task.id" (onClick)="completeTask(task)"></p-button>
-                    <p-button label="Cancel" severity="danger" [text]="true" size="small" [loading]="taskActionId() === task.id" (onClick)="cancelTask(task)"></p-button>
+                    @if (canManage) {
+                      @if (task.status === 'Pending') {
+                      <p-button label="Start" [text]="true" size="small" [loading]="taskActionId() === task.id" (onClick)="startTask(task)"></p-button>
+                      }
+                      @if (task.status === 'Pending' || task.status === 'InProgress') {
+                      <p-button label="Complete" [text]="true" size="small" [loading]="taskActionId() === task.id" (onClick)="completeTask(task)"></p-button>
+                      <p-button label="Cancel" severity="danger" [text]="true" size="small" [loading]="taskActionId() === task.id" (onClick)="cancelTask(task)"></p-button>
+                      }
+                    } @else {
+                    <span class="text-xs text-slate-400">View only</span>
                     }
                   </td>
                 </tr>
@@ -75,10 +94,25 @@
 
         <p-tabpanel value="1">
           <div class="p-4 flex flex-col gap-4">
+            @if (canManage) {
             <div class="flex justify-end">
               <p-button label="Schedule Medication" icon="pi pi-plus" size="small" (onClick)="openAdminModal()"></p-button>
             </div>
-            <p-table [value]="administrations()" [loading]="administrationsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+            }
+            <p-table
+              [value]="administrations()"
+              [lazy]="true"
+              [lazyLoadOnInit]="false"
+              (onLazyLoad)="onAdministrationsLazyLoad($event)"
+              [paginator]="true"
+              [rows]="administrationsPageSize()"
+              [first]="administrationsFirstRecord()"
+              [totalRecords]="administrationsTotalRecords()"
+              [loading]="administrationsLoading()"
+              [rowHover]="true"
+              dataKey="id"
+              styleClass="p-datatable-sm p-datatable-gridlines"
+            >
               <ng-template pTemplate="header">
                 <tr>
                   <th class="table-header-cell">Drug</th>
@@ -102,9 +136,13 @@
                     ></p-tag>
                   </td>
                   <td class="flex gap-2">
-                    @if (admin.status === 'Scheduled') {
-                    <p-button label="Administer" [text]="true" size="small" [loading]="adminActionId() === admin.id" (onClick)="administer(admin)"></p-button>
-                    <p-button label="Skip" severity="danger" [text]="true" size="small" [loading]="adminActionId() === admin.id" (onClick)="skipAdministration(admin)"></p-button>
+                    @if (canManage) {
+                      @if (admin.status === 'Scheduled') {
+                      <p-button label="Administer" [text]="true" size="small" [loading]="adminActionId() === admin.id" (onClick)="administer(admin)"></p-button>
+                      <p-button label="Skip" severity="danger" [text]="true" size="small" [loading]="adminActionId() === admin.id" (onClick)="openSkipModal(admin)"></p-button>
+                      }
+                    } @else {
+                    <span class="text-xs text-slate-400">View only</span>
                     }
                   </td>
                 </tr>
@@ -132,16 +170,20 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Admission ID</label>
-      <input pInputText [ngModel]="taskForm().admissionId" (ngModelChange)="taskForm.set({ ...taskForm(), admissionId: $event })" class="w-full" />
+      <label for="taskAdmissionId" class="text-sm font-medium text-slate-700">Admission ID</label>
+      <input pInputText id="taskAdmissionId" [ngModel]="taskForm().admissionId" (ngModelChange)="taskForm.set({ ...taskForm(), admissionId: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Task Type</label>
-      <input pInputText [ngModel]="taskForm().taskType" (ngModelChange)="taskForm.set({ ...taskForm(), taskType: $event })" class="w-full" />
+      <label for="taskType" class="text-sm font-medium text-slate-700">Task Type</label>
+      <input pInputText id="taskType" [ngModel]="taskForm().taskType" (ngModelChange)="taskForm.set({ ...taskForm(), taskType: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Description</label>
-      <input pInputText [ngModel]="taskForm().description" (ngModelChange)="taskForm.set({ ...taskForm(), description: $event })" class="w-full" />
+      <label for="taskDescription" class="text-sm font-medium text-slate-700">Description</label>
+      <input pInputText id="taskDescription" [ngModel]="taskForm().description" (ngModelChange)="taskForm.set({ ...taskForm(), description: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="taskDueAt" class="text-sm font-medium text-slate-700">Due At</label>
+      <input pInputText id="taskDueAt" type="datetime-local" [ngModel]="taskDueAt()" (ngModelChange)="taskDueAt.set($event)" class="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -167,20 +209,24 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Admission ID</label>
-      <input pInputText [ngModel]="adminForm().admissionId" (ngModelChange)="adminForm.set({ ...adminForm(), admissionId: $event })" class="w-full" />
+      <label for="adminAdmissionId" class="text-sm font-medium text-slate-700">Admission ID</label>
+      <input pInputText id="adminAdmissionId" [ngModel]="adminForm().admissionId" (ngModelChange)="adminForm.set({ ...adminForm(), admissionId: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Drug Name</label>
-      <input pInputText [ngModel]="adminForm().drugName" (ngModelChange)="adminForm.set({ ...adminForm(), drugName: $event })" class="w-full" />
+      <label for="adminDrugName" class="text-sm font-medium text-slate-700">Drug Name</label>
+      <input pInputText id="adminDrugName" [ngModel]="adminForm().drugName" (ngModelChange)="adminForm.set({ ...adminForm(), drugName: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Dose</label>
-      <input pInputText [ngModel]="adminForm().dose" (ngModelChange)="adminForm.set({ ...adminForm(), dose: $event })" class="w-full" />
+      <label for="adminDose" class="text-sm font-medium text-slate-700">Dose</label>
+      <input pInputText id="adminDose" [ngModel]="adminForm().dose" (ngModelChange)="adminForm.set({ ...adminForm(), dose: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Route</label>
-      <input pInputText [ngModel]="adminForm().route" (ngModelChange)="adminForm.set({ ...adminForm(), route: $event })" class="w-full" />
+      <label for="adminRoute" class="text-sm font-medium text-slate-700">Route</label>
+      <input pInputText id="adminRoute" [ngModel]="adminForm().route" (ngModelChange)="adminForm.set({ ...adminForm(), route: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="adminScheduledAt" class="text-sm font-medium text-slate-700">Scheduled At</label>
+      <input pInputText id="adminScheduledAt" type="datetime-local" [ngModel]="adminScheduledAt()" (ngModelChange)="adminScheduledAt.set($event)" class="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -191,6 +237,28 @@
         [loading]="adminSaving()"
         (onClick)="submitAdmin()"
         [disabled]="!adminForm().admissionId || !adminForm().drugName || !adminForm().dose"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Skip Dose Modal -->
+<p-dialog header="Skip Dose" [(visible)]="showSkipModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="skipNotes" class="text-sm font-medium text-slate-700">Reason for skipping <span class="text-red-500">*</span></label>
+      <textarea pTextarea id="skipNotes" rows="3" [ngModel]="skipNotes()" (ngModelChange)="skipNotes.set($event)" class="w-full"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Back" severity="secondary" [text]="true" (onClick)="showSkipModal.set(false)"></p-button>
+      <p-button
+        label="Confirm Skip"
+        severity="danger"
+        [loading]="adminActionId() !== null"
+        [disabled]="!skipNotes().trim()"
+        (onClick)="confirmSkip()"
       ></p-button>
     </div>
   </ng-template>

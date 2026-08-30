@@ -1,30 +1,37 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService, Confirmation } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { MaternityList } from './maternity-list.js';
 import { MaternityApiService } from './maternity-api.service.js';
 
 describe('MaternityList', () => {
-  function setup() {
+  function setup(canManage = true) {
     const api = {
-      list: jest.fn().mockReturnValue(of({ data: [], total: 0 })),
+      list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
       findOne: jest.fn().mockReturnValue(of({})),
       create: jest.fn().mockReturnValue(of({})),
       recordDelivery: jest.fn().mockReturnValue(of({})),
     } as unknown as MaternityApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
+    const confirmationService = {
+      confirm: jest.fn((c: Confirmation) => c.accept?.()),
+    } as unknown as ConfirmationService;
+    const auth = { hasPermission: () => canManage } as unknown as AuthService;
 
     TestBed.configureTestingModule({
       imports: [MaternityList],
       providers: [
         { provide: MaternityApiService, useValue: api },
         { provide: MessageService, useValue: messageService },
+        { provide: ConfirmationService, useValue: confirmationService },
+        { provide: AuthService, useValue: auth },
       ],
     });
 
     const fixture = TestBed.createComponent(MaternityList);
-    return { fixture, api, messageService };
+    return { fixture, api, messageService, confirmationService };
   }
 
   it('loads records on init', async () => {
@@ -50,8 +57,8 @@ describe('MaternityList', () => {
     expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success', summary: 'Maternity record created' }));
   });
 
-  it('records a delivery and toasts success', async () => {
-    const { fixture, api, messageService } = setup();
+  it('confirms before recording a delivery, and toasts success', async () => {
+    const { fixture, api, messageService, confirmationService } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -60,8 +67,22 @@ describe('MaternityList', () => {
     fixture.componentInstance.submitDelivery();
     await fixture.whenStable();
 
+    expect(confirmationService.confirm).toHaveBeenCalled();
     expect(api.recordDelivery).toHaveBeenCalledWith('r1', { deliveryDate: '2026-08-23', deliveryType: 'Normal', babyCount: 1 });
     expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success', summary: 'Delivery recorded' }));
+  });
+
+  it('refuses to record a delivery with no baby count', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openDeliveryModal({ id: 'r1' } as never);
+    fixture.componentInstance.deliveryForm.set({ deliveryDate: '2026-08-23', deliveryType: 'Normal', babyCount: null as unknown as number });
+    fixture.componentInstance.submitDelivery();
+
+    expect(api.recordDelivery).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.deliveryError()).toBeTruthy();
   });
 
   it('shows an error toast when creating a record fails', async () => {
@@ -78,5 +99,13 @@ describe('MaternityList', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.createError()).toBe('Invalid patient');
+  });
+
+  it('hides mutating actions for a read-only user', async () => {
+    const { fixture } = setup(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.canManage).toBe(false);
   });
 });

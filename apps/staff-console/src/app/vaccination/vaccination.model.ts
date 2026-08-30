@@ -20,5 +20,10 @@ export interface CreateVaccinationRecordDto {
 
 export interface VaccinationListResult {
   data: VaccinationRecord[];
-  total: number;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

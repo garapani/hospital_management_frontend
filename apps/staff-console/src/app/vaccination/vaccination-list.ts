@@ -8,8 +8,10 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { VaccinationApiService } from './vaccination-api.service.js';
 import { CreateVaccinationRecordDto, VaccinationRecord } from './vaccination.model.js';
+import { todayLocal } from '../shared/date.util.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 const EMPTY_FORM: CreateVaccinationRecordDto = { patientId: '', vaccine: '', administeredDate: '' };
@@ -22,6 +24,8 @@ const EMPTY_FORM: CreateVaccinationRecordDto = { patientId: '', vaccine: '', adm
 export class VaccinationList {
   private readonly api = inject(VaccinationApiService);
   private readonly messageService = inject(MessageService);
+  readonly auth = inject(AuthService);
+  readonly canManage = this.auth.hasPermission('vaccination.manage');
 
   readonly records = signal<VaccinationRecord[]>([]);
   readonly totalRecords = signal(0);
@@ -51,15 +55,18 @@ export class VaccinationList {
     this.api.list({ patientId: this.patientIdFilter() || undefined, page, limit }).subscribe({
       next: (result) => {
         this.records.set(result.data);
-        this.totalRecords.set(result.total);
+        this.totalRecords.set(result.meta.total);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load vaccination records.' });
+      },
     });
   }
 
   openModal(): void {
-    this.form.set({ ...EMPTY_FORM, administeredDate: new Date().toISOString().slice(0, 10) });
+    this.form.set({ ...EMPTY_FORM, administeredDate: todayLocal() });
     this.error.set(null);
     this.showModal.set(true);
   }

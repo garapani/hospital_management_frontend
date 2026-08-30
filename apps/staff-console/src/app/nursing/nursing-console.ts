@@ -6,10 +6,13 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
+import { TextareaModule } from 'primeng/textarea';
 import { TabsModule } from 'primeng/tabs';
-import { MessageService } from 'primeng/api';
+import { TableLazyLoadEvent } from 'primeng/table';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { Observable } from 'rxjs';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { NursingApiService } from './nursing-api.service.js';
 import {
   CreateAdministrationDto,
@@ -18,53 +21,77 @@ import {
   NursingTask,
 } from './nursing.model.js';
 
+const DEFAULT_PAGE_SIZE = 20;
 const EMPTY_TASK_FORM: CreateTaskDto = { admissionId: '', taskType: '', description: '' };
 const EMPTY_ADMIN_FORM: CreateAdministrationDto = { admissionId: '', drugName: '', dose: '' };
 
 @Component({
-  imports: [DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, TabsModule],
+  imports: [DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, TextareaModule, TabsModule],
   selector: 'hms-nursing-console',
   templateUrl: './nursing-console.html',
 })
 export class NursingConsole {
   private readonly api = inject(NursingApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  readonly auth = inject(AuthService);
+  readonly canManage = this.auth.hasPermission('nursing.manage');
 
   readonly admissionIdFilter = signal('');
 
   readonly tasks = signal<NursingTask[]>([]);
+  readonly tasksTotalRecords = signal(0);
+  readonly tasksPageSize = signal(DEFAULT_PAGE_SIZE);
+  readonly tasksFirstRecord = signal(0);
   readonly tasksLoading = signal(false);
   readonly showTaskModal = signal(false);
   readonly taskForm = signal<CreateTaskDto>(EMPTY_TASK_FORM);
+  readonly taskDueAt = signal('');
   readonly taskSaving = signal(false);
   readonly taskError = signal<string | null>(null);
   readonly taskActionId = signal<string | null>(null);
 
   readonly administrations = signal<MedicationAdministration[]>([]);
+  readonly administrationsTotalRecords = signal(0);
+  readonly administrationsPageSize = signal(DEFAULT_PAGE_SIZE);
+  readonly administrationsFirstRecord = signal(0);
   readonly administrationsLoading = signal(false);
   readonly showAdminModal = signal(false);
   readonly adminForm = signal<CreateAdministrationDto>(EMPTY_ADMIN_FORM);
+  readonly adminScheduledAt = signal('');
   readonly adminSaving = signal(false);
   readonly adminError = signal<string | null>(null);
   readonly adminActionId = signal<string | null>(null);
 
+  readonly showSkipModal = signal(false);
+  readonly skipNotes = signal('');
+  private skippingAdmin: MedicationAdministration | null = null;
+
   constructor() {
-    this.loadTasks();
-    this.loadAdministrations();
+    this.loadTasks(1, this.tasksPageSize());
+    this.loadAdministrations(1, this.administrationsPageSize());
   }
 
   applyFilter(): void {
-    this.loadTasks();
-    this.loadAdministrations();
+    this.loadTasks(1, this.tasksPageSize());
+    this.loadAdministrations(1, this.administrationsPageSize());
   }
 
   // --- Tasks ---
 
-  loadTasks(): void {
+  onTasksLazyLoad(event: TableLazyLoadEvent): void {
+    const rows = event.rows ?? this.tasksPageSize();
+    const page = Math.floor((event.first ?? 0) / rows) + 1;
+    this.loadTasks(page, rows);
+  }
+
+  loadTasks(page: number, limit: number): void {
     this.tasksLoading.set(true);
-    this.api.listTasks(this.admissionIdFilter() || undefined).subscribe({
+    this.tasksFirstRecord.set((page - 1) * limit);
+    this.api.listTasks(this.admissionIdFilter() || undefined, page, limit).subscribe({
       next: (result) => {
         this.tasks.set(result.data);
+        this.tasksTotalRecords.set(result.meta.total);
         this.tasksLoading.set(false);
       },
       error: () => {
@@ -76,6 +103,7 @@ export class NursingConsole {
 
   openTaskModal(): void {
     this.taskForm.set({ ...EMPTY_TASK_FORM, admissionId: this.admissionIdFilter() });
+    this.taskDueAt.set('');
     this.taskError.set(null);
     this.showTaskModal.set(true);
   }
@@ -83,11 +111,12 @@ export class NursingConsole {
   submitTask(): void {
     this.taskSaving.set(true);
     this.taskError.set(null);
-    this.api.createTask(this.taskForm()).subscribe({
+    const dueAt = this.taskDueAt();
+    this.api.createTask({ ...this.taskForm(), dueAt: dueAt ? new Date(dueAt).toISOString() : undefined }).subscribe({
       next: () => {
         this.taskSaving.set(false);
         this.showTaskModal.set(false);
-        this.loadTasks();
+        this.loadTasks(1, this.tasksPageSize());
         this.messageService.add({ severity: 'success', summary: 'Task created', detail: this.taskForm().taskType });
       },
       error: (err: ApiError) => {
@@ -106,7 +135,14 @@ export class NursingConsole {
   }
 
   cancelTask(task: NursingTask): void {
-    this.runTaskAction(task.id, this.api.cancelTask(task.id), 'Task cancelled');
+    this.confirmationService.confirm({
+      header: 'Cancel Task',
+      message: `Cancel the "${task.taskType}" task?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Cancel Task', severity: 'danger' },
+      rejectButtonProps: { label: 'Back', severity: 'secondary', outlined: true },
+      accept: () => this.runTaskAction(task.id, this.api.cancelTask(task.id), 'Task cancelled'),
+    });
   }
 
   private runTaskAction(id: string, action$: Observable<NursingTask>, successSummary: string): void {
@@ -114,7 +150,7 @@ export class NursingConsole {
     action$.subscribe({
       next: () => {
         this.taskActionId.set(null);
-        this.loadTasks();
+        this.loadTasks(1, this.tasksPageSize());
         this.messageService.add({ severity: 'success', summary: successSummary });
       },
       error: (err: ApiError) => {
@@ -126,11 +162,19 @@ export class NursingConsole {
 
   // --- Medication administration (MAR) ---
 
-  loadAdministrations(): void {
+  onAdministrationsLazyLoad(event: TableLazyLoadEvent): void {
+    const rows = event.rows ?? this.administrationsPageSize();
+    const page = Math.floor((event.first ?? 0) / rows) + 1;
+    this.loadAdministrations(page, rows);
+  }
+
+  loadAdministrations(page: number, limit: number): void {
     this.administrationsLoading.set(true);
-    this.api.listAdministrations(this.admissionIdFilter() || undefined).subscribe({
+    this.administrationsFirstRecord.set((page - 1) * limit);
+    this.api.listAdministrations(this.admissionIdFilter() || undefined, page, limit).subscribe({
       next: (result) => {
         this.administrations.set(result.data);
+        this.administrationsTotalRecords.set(result.meta.total);
         this.administrationsLoading.set(false);
       },
       error: () => {
@@ -142,6 +186,7 @@ export class NursingConsole {
 
   openAdminModal(): void {
     this.adminForm.set({ ...EMPTY_ADMIN_FORM, admissionId: this.admissionIdFilter() });
+    this.adminScheduledAt.set('');
     this.adminError.set(null);
     this.showAdminModal.set(true);
   }
@@ -149,41 +194,64 @@ export class NursingConsole {
   submitAdmin(): void {
     this.adminSaving.set(true);
     this.adminError.set(null);
-    this.api.createAdministration(this.adminForm()).subscribe({
-      next: () => {
-        this.adminSaving.set(false);
-        this.showAdminModal.set(false);
-        this.loadAdministrations();
-        this.messageService.add({ severity: 'success', summary: 'Medication scheduled', detail: this.adminForm().drugName });
-      },
-      error: (err: ApiError) => {
-        this.adminSaving.set(false);
-        this.adminError.set(err.message || 'Failed to schedule the administration.');
-      },
-    });
+    const scheduledAt = this.adminScheduledAt();
+    this.api
+      .createAdministration({ ...this.adminForm(), scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined })
+      .subscribe({
+        next: () => {
+          this.adminSaving.set(false);
+          this.showAdminModal.set(false);
+          this.loadAdministrations(1, this.administrationsPageSize());
+          this.messageService.add({ severity: 'success', summary: 'Medication scheduled', detail: this.adminForm().drugName });
+        },
+        error: (err: ApiError) => {
+          this.adminSaving.set(false);
+          this.adminError.set(err.message || 'Failed to schedule the administration.');
+        },
+      });
   }
 
   administer(admin: MedicationAdministration): void {
-    this.adminActionId.set(admin.id);
-    this.api.administer(admin.id).subscribe({
-      next: () => {
-        this.adminActionId.set(null);
-        this.loadAdministrations();
-        this.messageService.add({ severity: 'success', summary: 'Dose administered', detail: admin.drugName });
-      },
-      error: (err: ApiError) => {
-        this.adminActionId.set(null);
-        this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
+    this.confirmationService.confirm({
+      header: 'Administer Dose',
+      message: `Record "${admin.drugName}" (${admin.dose}) as administered?`,
+      icon: 'pi pi-check-circle',
+      acceptButtonProps: { label: 'Administer', severity: 'success' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.adminActionId.set(admin.id);
+        this.api.administer(admin.id).subscribe({
+          next: () => {
+            this.adminActionId.set(null);
+            this.loadAdministrations(1, this.administrationsPageSize());
+            this.messageService.add({ severity: 'success', summary: 'Dose administered', detail: admin.drugName });
+          },
+          error: (err: ApiError) => {
+            this.adminActionId.set(null);
+            this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
+          },
+        });
       },
     });
   }
 
-  skipAdministration(admin: MedicationAdministration): void {
+  openSkipModal(admin: MedicationAdministration): void {
+    this.skippingAdmin = admin;
+    this.skipNotes.set('');
+    this.showSkipModal.set(true);
+  }
+
+  confirmSkip(): void {
+    const admin = this.skippingAdmin;
+    const notes = this.skipNotes().trim();
+    if (!admin || !notes) return;
+
     this.adminActionId.set(admin.id);
-    this.api.skipAdministration(admin.id).subscribe({
+    this.api.skipAdministration(admin.id, notes).subscribe({
       next: () => {
         this.adminActionId.set(null);
-        this.loadAdministrations();
+        this.showSkipModal.set(false);
+        this.loadAdministrations(1, this.administrationsPageSize());
         this.messageService.add({ severity: 'success', summary: 'Dose skipped', detail: admin.drugName });
       },
       error: (err: ApiError) => {

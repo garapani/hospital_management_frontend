@@ -189,7 +189,10 @@
         @for (pat of patientResults(); track pat.id) {
         <div
           class="p-2.5 hover:bg-slate-50 flex items-center justify-between cursor-pointer transition-colors"
-          (click)="selectPatient(pat)"
+          role="button"
+          tabindex="0"
+          (keydown.enter)="selectPatient(pat)"
+          (keydown.space)="selectPatient(pat); $event.preventDefault()"
         >
           <div>
             <span class="font-medium text-slate-800 text-sm">{{ pat.firstName }} {{ pat.lastName }}</span>

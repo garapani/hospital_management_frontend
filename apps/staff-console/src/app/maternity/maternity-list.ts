@@ -8,10 +8,12 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { MaternityApiService } from './maternity-api.service.js';
 import { CreateMaternityRecordDto, DELIVERY_TYPES, DeliveryType, MaternityRecord, RecordDeliveryDto } from './maternity.model.js';
+import { todayLocal } from '../shared/date.util.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 const EMPTY_CREATE_FORM: CreateMaternityRecordDto = { admissionId: '', patientId: '' };
@@ -25,6 +27,9 @@ const EMPTY_DELIVERY_FORM: RecordDeliveryDto = { deliveryDate: '', deliveryType:
 export class MaternityList {
   private readonly api = inject(MaternityApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  readonly auth = inject(AuthService);
+  readonly canManage = this.auth.hasPermission('maternity.manage');
 
   readonly deliveryTypes: DeliveryType[] = DELIVERY_TYPES;
 
@@ -62,10 +67,13 @@ export class MaternityList {
     this.api.list({ patientId: this.patientIdFilter() || undefined, page, limit }).subscribe({
       next: (result) => {
         this.records.set(result.data);
-        this.totalRecords.set(result.total);
+        this.totalRecords.set(result.meta.total);
         this.loading.set(false);
       },
-      error: () => this.loading.set(false),
+      error: () => {
+        this.loading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load maternity records.' });
+      },
     });
   }
 
@@ -94,26 +102,41 @@ export class MaternityList {
 
   openDeliveryModal(record: MaternityRecord): void {
     this.deliveryRecordId.set(record.id);
-    this.deliveryForm.set({ ...EMPTY_DELIVERY_FORM, deliveryDate: new Date().toISOString().slice(0, 10) });
+    this.deliveryForm.set({ ...EMPTY_DELIVERY_FORM, deliveryDate: todayLocal() });
     this.deliveryError.set(null);
     this.showDeliveryModal.set(true);
   }
 
   submitDelivery(): void {
     const id = this.deliveryRecordId();
+    const form = this.deliveryForm();
     if (!id) return;
-    this.deliverySaving.set(true);
-    this.deliveryError.set(null);
-    this.api.recordDelivery(id, this.deliveryForm()).subscribe({
-      next: () => {
-        this.deliverySaving.set(false);
-        this.showDeliveryModal.set(false);
-        this.load(1, this.pageSize());
-        this.messageService.add({ severity: 'success', summary: 'Delivery recorded' });
-      },
-      error: (err: ApiError) => {
-        this.deliverySaving.set(false);
-        this.deliveryError.set(err.message || 'Failed to record the delivery.');
+    if (!form.deliveryDate || !form.babyCount || form.babyCount < 1) {
+      this.deliveryError.set('Delivery date and a baby count of at least 1 are required.');
+      return;
+    }
+
+    this.confirmationService.confirm({
+      header: 'Record Delivery',
+      message: 'This delivery record cannot be edited or undone once saved. Continue?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Record Delivery', severity: 'danger' },
+      rejectButtonProps: { label: 'Back', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.deliverySaving.set(true);
+        this.deliveryError.set(null);
+        this.api.recordDelivery(id, form).subscribe({
+          next: () => {
+            this.deliverySaving.set(false);
+            this.showDeliveryModal.set(false);
+            this.load(1, this.pageSize());
+            this.messageService.add({ severity: 'success', summary: 'Delivery recorded' });
+          },
+          error: (err: ApiError) => {
+            this.deliverySaving.set(false);
+            this.deliveryError.set(err.message || 'Failed to record the delivery.');
+          },
+        });
       },
     });
   }

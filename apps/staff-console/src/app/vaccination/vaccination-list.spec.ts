@@ -2,22 +2,25 @@ import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { VaccinationList } from './vaccination-list.js';
 import { VaccinationApiService } from './vaccination-api.service.js';
 
 describe('VaccinationList', () => {
-  function setup() {
+  function setup(canManage = true) {
     const api = {
-      list: jest.fn().mockReturnValue(of({ data: [], total: 0 })),
+      list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
       record: jest.fn().mockReturnValue(of({})),
     } as unknown as VaccinationApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
+    const auth = { hasPermission: () => canManage } as unknown as AuthService;
 
     TestBed.configureTestingModule({
       imports: [VaccinationList],
       providers: [
         { provide: VaccinationApiService, useValue: api },
         { provide: MessageService, useValue: messageService },
+        { provide: AuthService, useValue: auth },
       ],
     });
 
@@ -62,5 +65,13 @@ describe('VaccinationList', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.error()).toBe('Invalid patient');
+  });
+
+  it('hides the record action for a read-only user', async () => {
+    const { fixture } = setup(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.canManage).toBe(false);
   });
 });

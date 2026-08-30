@@ -29,5 +29,10 @@ export interface CreateSurgeryDto {
 
 export interface SurgeryListResult {
   data: OtSurgery[];
-  total: number;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

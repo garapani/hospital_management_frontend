@@ -5,14 +5,17 @@
         <h1 class="page-title">Operation Theatre</h1>
         <p class="page-subtitle">Surgery scheduling and status.</p>
       </div>
+      @if (canManage) {
       <p-button label="Schedule Surgery" icon="pi pi-plus" (onClick)="openScheduleModal()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+      }
     </div>
 
     <div class="flex items-end gap-3 flex-wrap">
-      <label class="flex flex-col gap-2">
+      <label for="otPatientIdFilter" class="flex flex-col gap-2">
         <span class="text-sm font-medium text-slate-700">Patient ID</span>
         <input
           pInputText
+          id="otPatientIdFilter"
           [ngModel]="patientIdFilter()"
           (ngModelChange)="patientIdFilter.set($event)"
           (keyup.enter)="applyFilters()"
@@ -20,9 +23,9 @@
           class="w-64"
         />
       </label>
-      <label class="flex flex-col gap-2">
+      <label for="otStatusFilter" class="flex flex-col gap-2">
         <span class="text-sm font-medium text-slate-700">Status</span>
-        <p-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); applyFilters()" styleClass="w-48"></p-select>
+        <p-select inputId="otStatusFilter" [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); applyFilters()" styleClass="w-48"></p-select>
       </label>
       <p-button label="Filter" (onClick)="applyFilters()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
     </div>
@@ -69,12 +72,16 @@
           </td>
           <td class="border-b border-slate-200 flex gap-2">
             <p-button label="View" [text]="true" size="small" (onClick)="viewSurgery(surgery)"></p-button>
-            @if (surgery.status === 'Scheduled') {
-            <p-button label="Start" [text]="true" size="small" [loading]="actionId() === surgery.id" (onClick)="start(surgery)"></p-button>
-            <p-button label="Cancel" severity="danger" [text]="true" size="small" [loading]="actionId() === surgery.id" (onClick)="cancel(surgery)"></p-button>
-            }
-            @if (surgery.status === 'InProgress') {
-            <p-button label="Complete" [text]="true" size="small" [loading]="actionId() === surgery.id" (onClick)="complete(surgery)"></p-button>
+            @if (canManage) {
+              @if (surgery.status === 'Scheduled') {
+              <p-button label="Start" [text]="true" size="small" [loading]="actionId() === surgery.id" (onClick)="start(surgery)"></p-button>
+              <p-button label="Cancel" severity="danger" [text]="true" size="small" [loading]="actionId() === surgery.id" (onClick)="cancel(surgery)"></p-button>
+              }
+              @if (surgery.status === 'InProgress') {
+              <p-button label="Complete" [text]="true" size="small" [loading]="actionId() === surgery.id" (onClick)="complete(surgery)"></p-button>
+              }
+            } @else {
+            <span class="text-xs text-slate-400">View only</span>
             }
           </td>
         </tr>
@@ -98,16 +105,20 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Patient ID</label>
-      <input pInputText [ngModel]="scheduleForm().patientId" (ngModelChange)="scheduleForm.set({ ...scheduleForm(), patientId: $event })" class="w-full" />
+      <label for="otSchedulePatientId" class="text-sm font-medium text-slate-700">Patient ID</label>
+      <input pInputText id="otSchedulePatientId" [ngModel]="scheduleForm().patientId" (ngModelChange)="scheduleForm.set({ ...scheduleForm(), patientId: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Procedure Name</label>
-      <input pInputText [ngModel]="scheduleForm().procedureName" (ngModelChange)="scheduleForm.set({ ...scheduleForm(), procedureName: $event })" class="w-full" />
+      <label for="otScheduleProcedure" class="text-sm font-medium text-slate-700">Procedure Name</label>
+      <input pInputText id="otScheduleProcedure" [ngModel]="scheduleForm().procedureName" (ngModelChange)="scheduleForm.set({ ...scheduleForm(), procedureName: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">OT Room</label>
-      <input pInputText [ngModel]="scheduleForm().otRoom" (ngModelChange)="scheduleForm.set({ ...scheduleForm(), otRoom: $event })" class="w-full" />
+      <label for="otScheduleRoom" class="text-sm font-medium text-slate-700">OT Room</label>
+      <input pInputText id="otScheduleRoom" [ngModel]="scheduleForm().otRoom" (ngModelChange)="scheduleForm.set({ ...scheduleForm(), otRoom: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="otScheduleAt" class="text-sm font-medium text-slate-700">Scheduled At</label>
+      <input pInputText id="otScheduleAt" type="datetime-local" [ngModel]="scheduleScheduledAt()" (ngModelChange)="scheduleScheduledAt.set($event)" class="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -127,6 +138,8 @@
 <p-dialog header="Surgery Record" [(visible)]="showDetail" [modal]="true" [style]="{ width: '480px' }" styleClass="surface-modal">
   @if (detailLoading()) {
   <p class="text-sm text-slate-500 py-4">Loading…</p>
+  } @else if (detailError()) {
+  <p class="text-sm text-red-600 py-4">Could not load the surgery record. Please try again.</p>
   } @else if (detail(); as d) {
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
     <span class="text-slate-500">Surgery #</span>

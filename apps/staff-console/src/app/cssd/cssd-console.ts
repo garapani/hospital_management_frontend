@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
@@ -9,8 +9,9 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TabsModule } from 'primeng/tabs';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { CssdApiService } from './cssd-api.service.js';
 import {
   CreateInstrumentDto,
@@ -20,6 +21,7 @@ import {
   StartCycleDto,
 } from './cssd.model.js';
 
+const DEFAULT_PAGE_SIZE = 20;
 const EMPTY_INSTRUMENT_FORM: CreateInstrumentDto = { code: '', name: '' };
 const EMPTY_CYCLE_FORM: StartCycleDto = { instrumentId: '', method: 'Steam' };
 
@@ -31,23 +33,29 @@ const EMPTY_CYCLE_FORM: StartCycleDto = { instrumentId: '', method: 'Steam' };
 export class CssdConsole {
   private readonly api = inject(CssdApiService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
+  readonly auth = inject(AuthService);
+  readonly canManage = this.auth.hasPermission('cssd.manage');
 
   readonly sterilizationMethods = STERILIZATION_METHODS;
 
   readonly instruments = signal<CssdInstrument[]>([]);
   readonly instrumentsLoading = signal(false);
+  readonly instrumentActionId = signal<string | null>(null);
   readonly showInstrumentModal = signal(false);
   readonly instrumentForm = signal<CreateInstrumentDto>(EMPTY_INSTRUMENT_FORM);
   readonly instrumentSaving = signal(false);
   readonly instrumentError = signal<string | null>(null);
 
   readonly cycles = signal<CssdSterilizationCycle[]>([]);
+  readonly cyclesTotalRecords = signal(0);
+  readonly cyclesPageSize = signal(DEFAULT_PAGE_SIZE);
+  readonly cyclesFirstRecord = signal(0);
   readonly cyclesLoading = signal(false);
   readonly showCycleModal = signal(false);
   readonly cycleForm = signal<StartCycleDto>(EMPTY_CYCLE_FORM);
   readonly cycleSaving = signal(false);
   readonly cycleError = signal<string | null>(null);
-  readonly cycleActionId = signal<string | null>(null);
 
   readonly showFailModal = signal(false);
   readonly failCycleId = signal<string | null>(null);
@@ -59,11 +67,11 @@ export class CssdConsole {
   readonly sterileHours = signal<number | null>(48);
   readonly completeSaving = signal(false);
 
-  get instrumentOptions(): { label: string; value: string }[] {
-    return this.instruments()
+  readonly instrumentOptions = computed(() =>
+    this.instruments()
       .filter((i) => i.isActive)
-      .map((i) => ({ label: `${i.code} — ${i.name}`, value: i.id }));
-  }
+      .map((i) => ({ label: `${i.code} — ${i.name}`, value: i.id })),
+  );
 
   instrumentNameFor(instrumentId: string): string {
     const instrument = this.instruments().find((i) => i.id === instrumentId);
@@ -72,7 +80,7 @@ export class CssdConsole {
 
   constructor() {
     this.loadInstruments();
-    this.loadCycles();
+    this.loadCycles(1, this.cyclesPageSize());
   }
 
   // --- Instruments ---
@@ -115,29 +123,56 @@ export class CssdConsole {
   }
 
   toggleInstrumentActive(instrument: CssdInstrument): void {
-    const action = instrument.isActive ? this.api.deactivateInstrument(instrument.id) : this.api.reactivateInstrument(instrument.id);
-    action.subscribe({
-      next: () => {
-        this.loadInstruments();
-        this.messageService.add({
-          severity: 'success',
-          summary: instrument.isActive ? 'Instrument deactivated' : 'Instrument reactivated',
-          detail: instrument.name,
-        });
-      },
-      error: (err: ApiError) => {
-        this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
-      },
+    if (this.instrumentActionId() !== null) return;
+    const doToggle = () => {
+      this.instrumentActionId.set(instrument.id);
+      const action = instrument.isActive ? this.api.deactivateInstrument(instrument.id) : this.api.reactivateInstrument(instrument.id);
+      action.subscribe({
+        next: () => {
+          this.instrumentActionId.set(null);
+          this.loadInstruments();
+          this.messageService.add({
+            severity: 'success',
+            summary: instrument.isActive ? 'Instrument deactivated' : 'Instrument reactivated',
+            detail: instrument.name,
+          });
+        },
+        error: (err: ApiError) => {
+          this.instrumentActionId.set(null);
+          this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
+        },
+      });
+    };
+
+    if (!instrument.isActive) {
+      doToggle();
+      return;
+    }
+    this.confirmationService.confirm({
+      header: 'Deactivate Instrument',
+      message: `Deactivate "${instrument.name}"? It will no longer be selectable for new sterilization cycles.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Deactivate', severity: 'danger' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: doToggle,
     });
   }
 
   // --- Sterilization cycles ---
 
-  loadCycles(): void {
+  onCyclesLazyLoad(event: TableLazyLoadEvent): void {
+    const rows = event.rows ?? this.cyclesPageSize();
+    const page = Math.floor((event.first ?? 0) / rows) + 1;
+    this.loadCycles(page, rows);
+  }
+
+  loadCycles(page: number, limit: number): void {
     this.cyclesLoading.set(true);
-    this.api.listCycles().subscribe({
+    this.cyclesFirstRecord.set((page - 1) * limit);
+    this.api.listCycles({ page, limit }).subscribe({
       next: (result) => {
         this.cycles.set(result.data);
+        this.cyclesTotalRecords.set(result.meta.total);
         this.cyclesLoading.set(false);
       },
       error: () => {
@@ -160,7 +195,7 @@ export class CssdConsole {
       next: () => {
         this.cycleSaving.set(false);
         this.showCycleModal.set(false);
-        this.loadCycles();
+        this.loadCycles(1, this.cyclesPageSize());
         this.messageService.add({ severity: 'success', summary: 'Sterilization cycle started' });
       },
       error: (err: ApiError) => {
@@ -178,13 +213,15 @@ export class CssdConsole {
 
   submitComplete(): void {
     const id = this.completeCycleId();
+    const hours = this.sterileHours();
     if (!id) return;
+    if (!hours || hours < 1) return;
     this.completeSaving.set(true);
-    this.api.completeCycle(id, { sterileHours: this.sterileHours() ?? 0 }).subscribe({
+    this.api.completeCycle(id, { sterileHours: hours }).subscribe({
       next: () => {
         this.completeSaving.set(false);
         this.showCompleteModal.set(false);
-        this.loadCycles();
+        this.loadCycles(1, this.cyclesPageSize());
         this.messageService.add({ severity: 'success', summary: 'Cycle completed' });
       },
       error: (err: ApiError) => {
@@ -208,7 +245,7 @@ export class CssdConsole {
       next: () => {
         this.failSaving.set(false);
         this.showFailModal.set(false);
-        this.loadCycles();
+        this.loadCycles(1, this.cyclesPageSize());
         this.messageService.add({ severity: 'success', summary: 'Cycle marked failed' });
       },
       error: (err: ApiError) => {

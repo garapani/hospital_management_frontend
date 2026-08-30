@@ -5,14 +5,17 @@
         <h1 class="page-title">Vaccination</h1>
         <p class="page-subtitle">Patient vaccination records.</p>
       </div>
+      @if (canManage) {
       <p-button label="Record Vaccination" icon="pi pi-plus" (onClick)="openModal()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+      }
     </div>
 
     <div class="flex items-end gap-3 flex-wrap">
-      <label class="flex flex-col gap-2">
+      <label for="vaccinationPatientIdFilter" class="flex flex-col gap-2">
         <span class="text-sm font-medium text-slate-700">Patient ID</span>
         <input
           pInputText
+          id="vaccinationPatientIdFilter"
           [ngModel]="patientIdFilter()"
           (ngModelChange)="patientIdFilter.set($event)"
           (keyup.enter)="applyFilter()"
@@ -75,26 +78,26 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Patient ID</label>
-      <input pInputText [ngModel]="form().patientId" (ngModelChange)="form.set({ ...form(), patientId: $event })" class="w-full" />
+      <label for="vaccinationPatientId" class="text-sm font-medium text-slate-700">Patient ID</label>
+      <input pInputText id="vaccinationPatientId" [ngModel]="form().patientId" (ngModelChange)="form.set({ ...form(), patientId: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Vaccine</label>
-      <input pInputText [ngModel]="form().vaccine" (ngModelChange)="form.set({ ...form(), vaccine: $event })" class="w-full" />
+      <label for="vaccinationVaccine" class="text-sm font-medium text-slate-700">Vaccine</label>
+      <input pInputText id="vaccinationVaccine" [ngModel]="form().vaccine" (ngModelChange)="form.set({ ...form(), vaccine: $event })" class="w-full" />
     </div>
     <div class="flex flex-col sm:flex-row gap-4">
       <div class="flex flex-col gap-2 flex-1">
-        <label class="text-sm font-medium text-slate-700">Dose #</label>
-        <p-inputNumber [ngModel]="form().doseNumber" (ngModelChange)="form.set({ ...form(), doseNumber: $event })" [min]="1" styleClass="w-full" />
+        <label for="vaccinationDoseNumber" class="text-sm font-medium text-slate-700">Dose #</label>
+        <p-inputNumber inputId="vaccinationDoseNumber" [ngModel]="form().doseNumber" (ngModelChange)="form.set({ ...form(), doseNumber: $event })" [min]="1" styleClass="w-full" />
       </div>
       <div class="flex flex-col gap-2 flex-1">
-        <label class="text-sm font-medium text-slate-700">Administered Date</label>
-        <input pInputText type="date" [ngModel]="form().administeredDate" (ngModelChange)="form.set({ ...form(), administeredDate: $event })" class="w-full" />
+        <label for="vaccinationAdministeredDate" class="text-sm font-medium text-slate-700">Administered Date</label>
+        <input pInputText id="vaccinationAdministeredDate" type="date" [ngModel]="form().administeredDate" (ngModelChange)="form.set({ ...form(), administeredDate: $event })" class="w-full" />
       </div>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Batch #</label>
-      <input pInputText [ngModel]="form().batchNumber" (ngModelChange)="form.set({ ...form(), batchNumber: $event })" class="w-full" />
+      <label for="vaccinationBatchNumber" class="text-sm font-medium text-slate-700">Batch #</label>
+      <input pInputText id="vaccinationBatchNumber" [ngModel]="form().batchNumber" (ngModelChange)="form.set({ ...form(), batchNumber: $event })" class="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">

@@ -46,5 +46,10 @@ export interface CreateAdministrationDto {
 
 export interface PaginatedResult<T> {
   data: T[];
-  total: number;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

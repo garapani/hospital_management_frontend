@@ -5,14 +5,17 @@
         <h1 class="page-title">Maternity</h1>
         <p class="page-subtitle">Antenatal records and delivery outcomes.</p>
       </div>
+      @if (canManage) {
       <p-button label="New Record" icon="pi pi-plus" (onClick)="openCreateModal()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+      }
     </div>
 
     <div class="flex items-end gap-3 flex-wrap">
-      <label class="flex flex-col gap-2">
+      <label for="maternityPatientIdFilter" class="flex flex-col gap-2">
         <span class="text-sm font-medium text-slate-700">Patient ID</span>
         <input
           pInputText
+          id="maternityPatientIdFilter"
           [ngModel]="patientIdFilter()"
           (ngModelChange)="patientIdFilter.set($event)"
           (keyup.enter)="applyFilter()"
@@ -63,7 +66,11 @@
           </td>
           <td class="border-b border-slate-200">
             @if (!record.deliveryDate) {
-            <p-button label="Record Delivery" [text]="true" size="small" (onClick)="openDeliveryModal(record)"></p-button>
+              @if (canManage) {
+              <p-button label="Record Delivery" [text]="true" size="small" (onClick)="openDeliveryModal(record)"></p-button>
+              } @else {
+              <span class="text-xs text-slate-400">View only</span>
+              }
             }
           </td>
         </tr>
@@ -87,26 +94,26 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Patient ID</label>
-      <input pInputText [ngModel]="createForm().patientId" (ngModelChange)="createForm.set({ ...createForm(), patientId: $event })" class="w-full" />
+      <label for="maternityCreatePatientId" class="text-sm font-medium text-slate-700">Patient ID</label>
+      <input pInputText id="maternityCreatePatientId" [ngModel]="createForm().patientId" (ngModelChange)="createForm.set({ ...createForm(), patientId: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Admission ID</label>
-      <input pInputText [ngModel]="createForm().admissionId" (ngModelChange)="createForm.set({ ...createForm(), admissionId: $event })" class="w-full" />
+      <label for="maternityCreateAdmissionId" class="text-sm font-medium text-slate-700">Admission ID</label>
+      <input pInputText id="maternityCreateAdmissionId" [ngModel]="createForm().admissionId" (ngModelChange)="createForm.set({ ...createForm(), admissionId: $event })" class="w-full" />
     </div>
     <div class="flex flex-col sm:flex-row gap-4">
       <div class="flex flex-col gap-2 flex-1">
-        <label class="text-sm font-medium text-slate-700">Gravida</label>
-        <p-inputNumber [ngModel]="createForm().gravida" (ngModelChange)="createForm.set({ ...createForm(), gravida: $event })" [min]="0" styleClass="w-full" />
+        <label for="maternityGravida" class="text-sm font-medium text-slate-700">Gravida</label>
+        <p-inputNumber inputId="maternityGravida" [ngModel]="createForm().gravida" (ngModelChange)="createForm.set({ ...createForm(), gravida: $event })" [min]="0" styleClass="w-full" />
       </div>
       <div class="flex flex-col gap-2 flex-1">
-        <label class="text-sm font-medium text-slate-700">Para</label>
-        <p-inputNumber [ngModel]="createForm().para" (ngModelChange)="createForm.set({ ...createForm(), para: $event })" [min]="0" styleClass="w-full" />
+        <label for="maternityPara" class="text-sm font-medium text-slate-700">Para</label>
+        <p-inputNumber inputId="maternityPara" [ngModel]="createForm().para" (ngModelChange)="createForm.set({ ...createForm(), para: $event })" [min]="0" styleClass="w-full" />
       </div>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">EDD</label>
-      <input pInputText type="date" [ngModel]="createForm().edd" (ngModelChange)="createForm.set({ ...createForm(), edd: $event })" class="w-full" />
+      <label for="maternityEdd" class="text-sm font-medium text-slate-700">EDD</label>
+      <input pInputText id="maternityEdd" type="date" [ngModel]="createForm().edd" (ngModelChange)="createForm.set({ ...createForm(), edd: $event })" class="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -132,26 +139,31 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Delivery Date</label>
-      <input pInputText type="date" [ngModel]="deliveryForm().deliveryDate" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), deliveryDate: $event })" class="w-full" />
+      <label for="deliveryDate" class="text-sm font-medium text-slate-700">Delivery Date</label>
+      <input pInputText id="deliveryDate" type="date" [ngModel]="deliveryForm().deliveryDate" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), deliveryDate: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Delivery Type</label>
-      <p-select [options]="deliveryTypes" [ngModel]="deliveryForm().deliveryType" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), deliveryType: $event })" styleClass="w-full"></p-select>
+      <label for="deliveryType" class="text-sm font-medium text-slate-700">Delivery Type</label>
+      <p-select inputId="deliveryType" [options]="deliveryTypes" [ngModel]="deliveryForm().deliveryType" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), deliveryType: $event })" styleClass="w-full"></p-select>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Baby Count</label>
-      <p-inputNumber [ngModel]="deliveryForm().babyCount" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), babyCount: $event })" [min]="1" styleClass="w-full" />
+      <label for="babyCount" class="text-sm font-medium text-slate-700">Baby Count</label>
+      <p-inputNumber inputId="babyCount" [ngModel]="deliveryForm().babyCount" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), babyCount: $event })" [min]="1" styleClass="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Complications</label>
-      <input pInputText [ngModel]="deliveryForm().complications" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), complications: $event })" class="w-full" />
+      <label for="deliveryComplications" class="text-sm font-medium text-slate-700">Complications</label>
+      <input pInputText id="deliveryComplications" [ngModel]="deliveryForm().complications" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), complications: $event })" class="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">
     <div class="flex justify-end gap-2 mt-4">
       <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showDeliveryModal.set(false)"></p-button>
-      <p-button label="Save" [loading]="deliverySaving()" (onClick)="submitDelivery()"></p-button>
+      <p-button
+        label="Save"
+        [loading]="deliverySaving()"
+        [disabled]="!deliveryForm().deliveryDate || !deliveryForm().babyCount || deliveryForm().babyCount < 1"
+        (onClick)="submitDelivery()"
+      ></p-button>
     </div>
   </ng-template>
 </p-dialog>

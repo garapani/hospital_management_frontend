@@ -37,5 +37,10 @@ export interface RecordDeliveryDto {
 
 export interface MaternityListResult {
   data: MaternityRecord[];
-  total: number;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

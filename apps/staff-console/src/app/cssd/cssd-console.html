@@ -14,9 +14,11 @@
       <p-tabpanels styleClass="p-0">
         <p-tabpanel value="0">
           <div class="p-4 flex flex-col gap-4">
+            @if (canManage) {
             <div class="flex justify-end">
               <p-button label="Add Instrument" icon="pi pi-plus" size="small" (onClick)="openInstrumentModal()"></p-button>
             </div>
+            }
             <p-table [value]="instruments()" [loading]="instrumentsLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
               <ng-template pTemplate="header">
                 <tr>
@@ -38,12 +40,17 @@
                     <p-tag [value]="instrument.isActive ? 'Active' : 'Inactive'" [severity]="instrument.isActive ? 'success' : 'warn'"></p-tag>
                   </td>
                   <td>
+                    @if (canManage) {
                     <p-button
                       [label]="instrument.isActive ? 'Deactivate' : 'Reactivate'"
                       [text]="true"
                       size="small"
+                      [loading]="instrumentActionId() === instrument.id"
                       (onClick)="toggleInstrumentActive(instrument)"
                     ></p-button>
+                    } @else {
+                    <span class="text-xs text-slate-400">View only</span>
+                    }
                   </td>
                 </tr>
               </ng-template>
@@ -58,10 +65,25 @@
 
         <p-tabpanel value="1">
           <div class="p-4 flex flex-col gap-4">
+            @if (canManage) {
             <div class="flex justify-end">
               <p-button label="Start Cycle" icon="pi pi-plus" size="small" (onClick)="openCycleModal()"></p-button>
             </div>
-            <p-table [value]="cycles()" [loading]="cyclesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
+            }
+            <p-table
+              [value]="cycles()"
+              [lazy]="true"
+              [lazyLoadOnInit]="false"
+              (onLazyLoad)="onCyclesLazyLoad($event)"
+              [paginator]="true"
+              [rows]="cyclesPageSize()"
+              [first]="cyclesFirstRecord()"
+              [totalRecords]="cyclesTotalRecords()"
+              [loading]="cyclesLoading()"
+              [rowHover]="true"
+              dataKey="id"
+              styleClass="p-datatable-sm p-datatable-gridlines"
+            >
               <ng-template pTemplate="header">
                 <tr>
                   <th class="table-header-cell">Instrument</th>
@@ -85,9 +107,13 @@
                     ></p-tag>
                   </td>
                   <td class="flex gap-2">
-                    @if (cycle.status === 'InProgress') {
-                    <p-button label="Complete" [text]="true" size="small" (onClick)="openCompleteModal(cycle)"></p-button>
-                    <p-button label="Fail" severity="danger" [text]="true" size="small" (onClick)="openFailModal(cycle)"></p-button>
+                    @if (canManage) {
+                      @if (cycle.status === 'InProgress') {
+                      <p-button label="Complete" [text]="true" size="small" (onClick)="openCompleteModal(cycle)"></p-button>
+                      <p-button label="Fail" severity="danger" [text]="true" size="small" (onClick)="openFailModal(cycle)"></p-button>
+                      }
+                    } @else {
+                    <span class="text-xs text-slate-400">View only</span>
                     }
                   </td>
                 </tr>
@@ -115,20 +141,20 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Code</label>
-      <input pInputText [ngModel]="instrumentForm().code" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), code: $event })" class="w-full" />
+      <label for="cssdInstrumentCode" class="text-sm font-medium text-slate-700">Code</label>
+      <input pInputText id="cssdInstrumentCode" [ngModel]="instrumentForm().code" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), code: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Name</label>
-      <input pInputText [ngModel]="instrumentForm().name" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), name: $event })" class="w-full" />
+      <label for="cssdInstrumentName" class="text-sm font-medium text-slate-700">Name</label>
+      <input pInputText id="cssdInstrumentName" [ngModel]="instrumentForm().name" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), name: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Category</label>
-      <input pInputText [ngModel]="instrumentForm().category" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), category: $event })" class="w-full" />
+      <label for="cssdInstrumentCategory" class="text-sm font-medium text-slate-700">Category</label>
+      <input pInputText id="cssdInstrumentCategory" [ngModel]="instrumentForm().category" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), category: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Quantity</label>
-      <p-inputNumber [ngModel]="instrumentForm().quantity" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), quantity: $event })" [min]="0" styleClass="w-full" />
+      <label for="cssdInstrumentQuantity" class="text-sm font-medium text-slate-700">Quantity</label>
+      <p-inputNumber inputId="cssdInstrumentQuantity" [ngModel]="instrumentForm().quantity" (ngModelChange)="instrumentForm.set({ ...instrumentForm(), quantity: $event })" [min]="0" styleClass="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -154,12 +180,12 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Instrument</label>
-      <p-select [options]="instrumentOptions" [ngModel]="cycleForm().instrumentId" (ngModelChange)="cycleForm.set({ ...cycleForm(), instrumentId: $event })" styleClass="w-full"></p-select>
+      <label for="cssdCycleInstrument" class="text-sm font-medium text-slate-700">Instrument</label>
+      <p-select inputId="cssdCycleInstrument" [options]="instrumentOptions()" [ngModel]="cycleForm().instrumentId" (ngModelChange)="cycleForm.set({ ...cycleForm(), instrumentId: $event })" styleClass="w-full"></p-select>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Method</label>
-      <p-select [options]="sterilizationMethods" [ngModel]="cycleForm().method" (ngModelChange)="cycleForm.set({ ...cycleForm(), method: $event })" styleClass="w-full"></p-select>
+      <label for="cssdCycleMethod" class="text-sm font-medium text-slate-700">Method</label>
+      <p-select inputId="cssdCycleMethod" [options]="sterilizationMethods" [ngModel]="cycleForm().method" (ngModelChange)="cycleForm.set({ ...cycleForm(), method: $event })" styleClass="w-full"></p-select>
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -174,14 +200,19 @@
 <p-dialog header="Complete Cycle" [(visible)]="showCompleteModal" [modal]="true" [style]="{ width: '360px' }" styleClass="surface-modal">
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Sterile Hours</label>
-      <p-inputNumber [ngModel]="sterileHours()" (ngModelChange)="sterileHours.set($event)" [min]="1" styleClass="w-full" />
+      <label for="cssdSterileHours" class="text-sm font-medium text-slate-700">Sterile Hours</label>
+      <p-inputNumber inputId="cssdSterileHours" [ngModel]="sterileHours()" (ngModelChange)="sterileHours.set($event)" [min]="1" styleClass="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">
     <div class="flex justify-end gap-2 mt-4">
       <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCompleteModal.set(false)"></p-button>
-      <p-button label="Complete" [loading]="completeSaving()" (onClick)="submitComplete()"></p-button>
+      <p-button
+        label="Complete"
+        [loading]="completeSaving()"
+        [disabled]="!sterileHours() || sterileHours()! < 1"
+        (onClick)="submitComplete()"
+      ></p-button>
     </div>
   </ng-template>
 </p-dialog>
@@ -190,8 +221,8 @@
 <p-dialog header="Mark Cycle Failed" [(visible)]="showFailModal" [modal]="true" [style]="{ width: '360px' }" styleClass="surface-modal">
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Failure Reason</label>
-      <input pInputText [ngModel]="failureReason()" (ngModelChange)="failureReason.set($event)" class="w-full" />
+      <label for="cssdFailureReason" class="text-sm font-medium text-slate-700">Failure Reason</label>
+      <input pInputText id="cssdFailureReason" [ngModel]="failureReason()" (ngModelChange)="failureReason.set($event)" class="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">

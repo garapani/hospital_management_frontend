@@ -1,14 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
-import { MessageService } from 'primeng/api';
+import { MessageService, ConfirmationService, Confirmation } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { OtList } from './ot-list.js';
 import { OtApiService } from './ot-api.service.js';
 
 describe('OtList', () => {
-  function setup() {
+  function setup(canManage = true) {
     const api = {
-      list: jest.fn().mockReturnValue(of({ data: [], total: 0 })),
+      list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
       findOne: jest.fn().mockReturnValue(of({})),
       schedule: jest.fn().mockReturnValue(of({ id: 's1', surgeryNumber: 'OT-0001' })),
       start: jest.fn().mockReturnValue(of({})),
@@ -16,17 +17,23 @@ describe('OtList', () => {
       cancel: jest.fn().mockReturnValue(of({})),
     } as unknown as OtApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
+    const confirmationService = {
+      confirm: jest.fn((c: Confirmation) => c.accept?.()),
+    } as unknown as ConfirmationService;
+    const auth = { hasPermission: () => canManage } as unknown as AuthService;
 
     TestBed.configureTestingModule({
       imports: [OtList],
       providers: [
         { provide: OtApiService, useValue: api },
         { provide: MessageService, useValue: messageService },
+        { provide: ConfirmationService, useValue: confirmationService },
+        { provide: AuthService, useValue: auth },
       ],
     });
 
     const fixture = TestBed.createComponent(OtList);
-    return { fixture, api, messageService };
+    return { fixture, api, messageService, confirmationService };
   }
 
   it('loads surgeries on init', async () => {
@@ -47,13 +54,13 @@ describe('OtList', () => {
     fixture.componentInstance.submitSchedule();
     await fixture.whenStable();
 
-    expect(api.schedule).toHaveBeenCalledWith({ patientId: 'p1', procedureName: 'Appendectomy' });
+    expect(api.schedule).toHaveBeenCalledWith(expect.objectContaining({ patientId: 'p1', procedureName: 'Appendectomy' }));
     expect(fixture.componentInstance.showScheduleModal()).toBe(false);
     expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success', summary: 'Surgery scheduled' }));
   });
 
-  it('starts and completes a surgery', async () => {
-    const { fixture, api, messageService } = setup();
+  it('starts a surgery, and confirms before completing it', async () => {
+    const { fixture, api, messageService, confirmationService } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -61,10 +68,23 @@ describe('OtList', () => {
     await fixture.whenStable();
     expect(api.start).toHaveBeenCalledWith('s1');
 
-    fixture.componentInstance.complete({ id: 's1' } as never);
+    fixture.componentInstance.complete({ id: 's1', surgeryNumber: 'OT-0001', procedureName: 'Appendectomy' } as never);
     await fixture.whenStable();
+    expect(confirmationService.confirm).toHaveBeenCalled();
     expect(api.complete).toHaveBeenCalledWith('s1');
     expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success', summary: 'Surgery completed' }));
+  });
+
+  it('confirms before cancelling a surgery', async () => {
+    const { fixture, api, confirmationService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.cancel({ id: 's1', surgeryNumber: 'OT-0001', procedureName: 'Appendectomy' } as never);
+    await fixture.whenStable();
+
+    expect(confirmationService.confirm).toHaveBeenCalled();
+    expect(api.cancel).toHaveBeenCalledWith('s1');
   });
 
   it('shows an error toast when scheduling fails', async () => {
@@ -81,5 +101,29 @@ describe('OtList', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.scheduleError()).toBe('Invalid patient');
+  });
+
+  it('shows an error toast and a detail error state when viewing a surgery fails', async () => {
+    const { fixture, api, messageService } = setup();
+    (api.findOne as jest.Mock).mockReturnValue({
+      subscribe: (handlers: { error: (err: ApiError) => void }) =>
+        handlers.error({ status: 500, message: 'Server error', body: null }),
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.viewSurgery({ id: 's1' } as never);
+
+    expect(fixture.componentInstance.detailError()).toBe(true);
+    expect(fixture.componentInstance.detailLoading()).toBe(false);
+    expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error' }));
+  });
+
+  it('hides mutating actions for a read-only user', async () => {
+    const { fixture } = setup(false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.canManage).toBe(false);
   });
 });
