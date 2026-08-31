@@ -69,26 +69,26 @@
     >
       <h2 class="text-lg font-semibold text-slate-800">Account Info</h2>
       <div class="flex flex-col gap-3 text-sm">
-        <div>
+        <div class="surface-card p-3">
           <div class="text-slate-500 mb-1">Created At</div>
           <div class="font-medium text-slate-900">
             {{ data.account.createdAt | date: 'medium' }}
           </div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-slate-500 mb-1">Needs Password Update</div>
           <div class="font-medium text-slate-900">
             {{ data.account.needsPasswordUpdate ? 'Yes' : 'No' }}
           </div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-slate-500 mb-1">Failed Login Attempts</div>
           <div class="font-medium text-slate-900">
             {{ data.account.failedLoginAttempts }}
           </div>
         </div>
         @if (data.account.lockedUntil) {
-        <div>
+        <div class="surface-card p-3">
           <div class="text-slate-500 mb-1 text-red-600">Locked Until</div>
           <div class="font-medium text-slate-900">
             {{ data.account.lockedUntil | date: 'medium' }}
