@@ -7,7 +7,12 @@
   @if (sidebarOpen()) {
   <div
     class="fixed inset-0 bg-slate-900/40 z-30 lg:hidden"
+    role="button"
+    tabindex="0"
+    aria-label="Close menu"
     (click)="closeSidebar()"
+    (keydown.enter)="closeSidebar()"
+    (keydown.space)="closeSidebar(); $event.preventDefault()"
   ></div>
   }
 
@@ -104,7 +109,8 @@
                         <p class="text-xs text-slate-400 mt-1">{{ notification.createdAt | date:'short' }}</p>
                       </div>
                       @if (!notification.isRead) {
-                        <span class="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1"></span>
+                        <span class="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1" aria-hidden="true"></span>
+                        <span class="sr-only">Unread</span>
                       }
                     </a>
                   }
