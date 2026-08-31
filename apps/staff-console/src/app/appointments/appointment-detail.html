@@ -31,20 +31,20 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Details</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Contact Number</div>
           <div class="font-medium text-slate-900">{{ a.contactNumber }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Doctor ID</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ a.doctorId || 'N/A' }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Department ID</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ a.departmentId || 'N/A' }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Patient Record</div>
           @if (a.patientId) {
           <a [routerLink]="['/clinical/patients', a.patientId]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View Patient</a>
@@ -53,7 +53,7 @@
           }
         </div>
         @if (a.cancelledRemarks) {
-        <div class="col-span-1 sm:col-span-2">
+        <div class="surface-card p-3 col-span-1 sm:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Cancellation Remarks</div>
           <div class="font-medium text-slate-900">{{ a.cancelledRemarks }}</div>
         </div>
@@ -93,12 +93,12 @@
         ></p-button>
       </div>
       } @else {
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Appointment Type</div>
           <div class="font-medium text-slate-900">{{ a.appointmentType }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Reason</div>
           <div class="font-medium text-slate-900">{{ a.reason || 'N/A' }}</div>
         </div>
