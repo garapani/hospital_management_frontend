@@ -25,49 +25,49 @@
   } @else if (dispensing(); as d) {
   <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
     <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Details</h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="surface-card p-3">
         <div class="text-xs text-slate-500 mb-1">Item</div>
         <div class="font-medium text-slate-900">{{ d.orderItem?.itemDescription ?? 'N/A' }}</div>
       </div>
-      <div>
+      <div class="surface-card p-3">
         <div class="text-xs text-slate-500 mb-1">Quantity</div>
         <div class="font-medium text-slate-900">{{ d.quantity }}</div>
       </div>
-      <div>
+      <div class="surface-card p-3">
         <div class="text-xs text-slate-500 mb-1">Order Item ID</div>
         <div class="font-medium text-slate-900 font-mono text-xs">{{ d.orderItemId }}</div>
       </div>
-      <div>
+      <div class="surface-card p-3">
         <div class="text-xs text-slate-500 mb-1">Inventory Item ID</div>
         <div class="font-medium text-slate-900 font-mono text-xs">{{ d.inventoryItemId }}</div>
       </div>
       @if (d.dispensedBy) {
-      <div>
+      <div class="surface-card p-3">
         <div class="text-xs text-slate-500 mb-1">Dispensed By</div>
         <div class="font-medium text-slate-900 font-mono text-xs">{{ d.dispensedBy }}</div>
       </div>
       }
       @if (d.dispensedAt) {
-      <div>
+      <div class="surface-card p-3">
         <div class="text-xs text-slate-500 mb-1">Dispensed At</div>
         <div class="font-medium text-slate-900">{{ d.dispensedAt | date }}</div>
       </div>
       }
       @if (d.cancelReason) {
-      <div class="md:col-span-2">
+      <div class="surface-card p-3 sm:col-span-2 lg:col-span-4">
         <div class="text-xs text-slate-500 mb-1">Cancel Reason</div>
         <div class="font-medium text-slate-900">{{ d.cancelReason }}</div>
       </div>
       }
       @if (d.reversalReason) {
-      <div class="md:col-span-2">
+      <div class="surface-card p-3 sm:col-span-2 lg:col-span-4">
         <div class="text-xs text-slate-500 mb-1">Reversal Reason</div>
         <div class="font-medium text-slate-900">{{ d.reversalReason }}</div>
       </div>
       }
       @if (d.reversedAt) {
-      <div>
+      <div class="surface-card p-3">
         <div class="text-xs text-slate-500 mb-1">Reversed At</div>
         <div class="font-medium text-slate-900">{{ d.reversedAt | date }}</div>
       </div>
