@@ -118,8 +118,9 @@
   <div class="flex flex-col gap-4 py-4">
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium">Month</label>
+        <label for="payrollMonth" class="text-sm font-medium">Month</label>
         <p-select
+          inputId="payrollMonth"
           [options]="months"
           [ngModel]="runForm().month"
           (ngModelChange)="runForm.update(v => ({...v, month: $event}))"
@@ -127,8 +128,9 @@
         ></p-select>
       </div>
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium">Year</label>
+        <label for="payrollYear" class="text-sm font-medium">Year</label>
         <p-inputNumber
+          inputId="payrollYear"
           [ngModel]="runForm().year"
           (ngModelChange)="runForm.update(v => ({...v, year: $event}))"
           [min]="2000"
@@ -138,8 +140,9 @@
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium">Allowance (%)</label>
+        <label for="payrollAllowance" class="text-sm font-medium">Allowance (%)</label>
         <p-inputNumber
+          inputId="payrollAllowance"
           [ngModel]="runForm().allowancePercent"
           (ngModelChange)="runForm.update(v => ({...v, allowancePercent: $event}))"
           [min]="0"
@@ -147,8 +150,9 @@
         />
       </div>
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium">Deduction (%)</label>
+        <label for="payrollDeduction" class="text-sm font-medium">Deduction (%)</label>
         <p-inputNumber
+          inputId="payrollDeduction"
           [ngModel]="runForm().deductionPercent"
           (ngModelChange)="runForm.update(v => ({...v, deductionPercent: $event}))"
           [min]="0"

@@ -67,8 +67,9 @@
           <div class="p-4 flex flex-col gap-4">
             <div class="flex flex-wrap justify-between items-end gap-3">
               <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-slate-700">Status</label>
+                <label for="journalStatusFilter" class="text-sm font-medium text-slate-700">Status</label>
                 <p-select
+                  inputId="journalStatusFilter"
                   [options]="journalStatusOptions"
                   [ngModel]="journalStatusFilter()"
                   (ngModelChange)="setJournalStatusFilter($event)"
@@ -138,8 +139,9 @@
           <div class="p-4 flex flex-col gap-4">
             <div class="flex items-end gap-3 flex-wrap">
               <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-slate-700">Report</label>
+                <label for="reportKind" class="text-sm font-medium text-slate-700">Report</label>
                 <p-select
+                  inputId="reportKind"
                   [options]="reportKindOptions"
                   [ngModel]="reportKind()"
                   (ngModelChange)="setReportKind($event)"
@@ -148,13 +150,13 @@
               </div>
               @if (reportKind() !== 'balance-sheet') {
               <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-slate-700">From</label>
-                <p-datepicker [ngModel]="reportFrom()" (ngModelChange)="reportFrom.set($event)" dateFormat="yy-mm-dd" styleClass="w-40" />
+                <label for="reportFrom" class="text-sm font-medium text-slate-700">From</label>
+                <p-datepicker inputId="reportFrom" [ngModel]="reportFrom()" (ngModelChange)="reportFrom.set($event)" dateFormat="yy-mm-dd" styleClass="w-40" />
               </div>
               }
               <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-slate-700">{{ reportKind() === 'balance-sheet' ? 'As of' : 'To' }}</label>
-                <p-datepicker [ngModel]="reportTo()" (ngModelChange)="reportTo.set($event)" dateFormat="yy-mm-dd" styleClass="w-40" />
+                <label for="reportTo" class="text-sm font-medium text-slate-700">{{ reportKind() === 'balance-sheet' ? 'As of' : 'To' }}</label>
+                <p-datepicker inputId="reportTo" [ngModel]="reportTo()" (ngModelChange)="reportTo.set($event)" dateFormat="yy-mm-dd" styleClass="w-40" />
               </div>
               <p-button label="Run" size="small" [loading]="reportLoading()" (onClick)="runReport()"></p-button>
             </div>

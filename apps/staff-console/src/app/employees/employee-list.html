@@ -117,8 +117,9 @@
 >
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">First Name</label>
+      <label for="empFirstName" class="text-sm font-medium">First Name</label>
       <input
+        id="empFirstName"
         pInputText
         class="w-full"
         [ngModel]="editForm().firstName"
@@ -126,8 +127,9 @@
       />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Last Name</label>
+      <label for="empLastName" class="text-sm font-medium">Last Name</label>
       <input
+        id="empLastName"
         pInputText
         class="w-full"
         [ngModel]="editForm().lastName"
@@ -135,8 +137,9 @@
       />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Designation</label>
+      <label for="empDesignation" class="text-sm font-medium">Designation</label>
       <input
+        id="empDesignation"
         pInputText
         class="w-full"
         [ngModel]="editForm().designation"
@@ -144,8 +147,9 @@
       />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Department</label>
+      <label for="empDepartment" class="text-sm font-medium">Department</label>
       <p-select
+        inputId="empDepartment"
         [options]="departmentOptions()"
         [ngModel]="editForm().departmentId"
         (ngModelChange)="editForm.update(v => ({...v, departmentId: $event}))"
@@ -154,8 +158,9 @@
       ></p-select>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Employment Type</label>
+      <label for="empEmploymentType" class="text-sm font-medium">Employment Type</label>
       <p-select
+        inputId="empEmploymentType"
         [options]="employmentTypeOptions"
         [ngModel]="editForm().employmentType"
         (ngModelChange)="editForm.update(v => ({...v, employmentType: $event}))"
@@ -163,8 +168,9 @@
       ></p-select>
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Join Date</label>
+      <label for="empJoinDate" class="text-sm font-medium">Join Date</label>
       <p-datepicker
+        inputId="empJoinDate"
         [ngModel]="editForm().joinDate"
         (ngModelChange)="editForm.update(v => ({...v, joinDate: $event}))"
         dateFormat="yy-mm-dd"
@@ -172,8 +178,9 @@
       />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Phone</label>
+      <label for="empPhone" class="text-sm font-medium">Phone</label>
       <input
+        id="empPhone"
         pInputText
         class="w-full"
         [ngModel]="editForm().phone"
@@ -181,8 +188,9 @@
       />
     </div>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium">Email</label>
+      <label for="empEmail" class="text-sm font-medium">Email</label>
       <input
+        id="empEmail"
         pInputText
         class="w-full"
         [ngModel]="editForm().email"
@@ -190,8 +198,9 @@
       />
     </div>
     <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
-      <label class="text-sm font-medium">Monthly Basic Salary (₹)</label>
+      <label for="empSalary" class="text-sm font-medium">Monthly Basic Salary (₹)</label>
       <p-inputNumber
+        inputId="empSalary"
         [ngModel]="editForm().monthlyBasicSalary"
         (ngModelChange)="editForm.update(v => ({...v, monthlyBasicSalary: $event}))"
         [min]="0"

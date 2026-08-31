@@ -152,7 +152,7 @@
 
     <!-- Patient Picker Section -->
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Patient <span class="text-red-500">*</span></label>
+      <label for="ssuPatientSearch" class="text-sm font-medium text-slate-700">Patient <span class="text-red-500">*</span></label>
       @if (selectedPatient()) {
       <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
         <div>
@@ -168,6 +168,7 @@
       } @else {
       <div class="flex gap-2">
         <input
+          id="ssuPatientSearch"
           pInputText
           [ngModel]="patientSearchQuery()"
           (ngModelChange)="patientSearchQuery.set($event)"
@@ -219,8 +220,9 @@
 
     <!-- Case Type -->
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Case Type <span class="text-red-500">*</span></label>
+      <label for="ssuCaseType" class="text-sm font-medium text-slate-700">Case Type <span class="text-red-500">*</span></label>
       <input
+        id="ssuCaseType"
         pInputText
         [ngModel]="createForm().caseType"
         (ngModelChange)="createForm.set({ ...createForm(), caseType: $event })"
@@ -242,8 +244,9 @@
 
     <!-- Subsidy Percent -->
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Subsidy Percent (0 - 100%) <span class="text-red-500">*</span></label>
+      <label for="ssuSubsidyPercent" class="text-sm font-medium text-slate-700">Subsidy Percent (0 - 100%) <span class="text-red-500">*</span></label>
       <p-inputNumber
+        inputId="ssuSubsidyPercent"
         [ngModel]="createForm().subsidyPercent"
         (ngModelChange)="createForm.set({ ...createForm(), subsidyPercent: $event ?? 0 })"
         [min]="0"
@@ -255,8 +258,9 @@
 
     <!-- Eligibility Notes -->
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Eligibility Notes</label>
+      <label for="ssuEligibilityNotes" class="text-sm font-medium text-slate-700">Eligibility Notes</label>
       <textarea
+        id="ssuEligibilityNotes"
         pTextarea
         [ngModel]="createForm().eligibilityNotes"
         (ngModelChange)="createForm.set({ ...createForm(), eligibilityNotes: $event })"
@@ -295,8 +299,9 @@
       <span class="font-mono text-slate-800">{{ targetCase()?.patientId }}</span>.
     </p>
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Decision Notes (optional)</label>
+      <label for="ssuApproveNotes" class="text-sm font-medium text-slate-700">Decision Notes (optional)</label>
       <textarea
+        id="ssuApproveNotes"
         pTextarea
         [ngModel]="approveNotes()"
         (ngModelChange)="approveNotes.set($event)"
@@ -339,8 +344,9 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Rejection Reason / Notes <span class="text-red-500">*</span></label>
+      <label for="ssuRejectNotes" class="text-sm font-medium text-slate-700">Rejection Reason / Notes <span class="text-red-500">*</span></label>
       <textarea
+        id="ssuRejectNotes"
         pTextarea
         [ngModel]="rejectNotes()"
         (ngModelChange)="rejectNotes.set($event)"
