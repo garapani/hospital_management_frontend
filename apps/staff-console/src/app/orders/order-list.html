@@ -115,6 +115,7 @@
             (ngModelChange)="updateItem(i, { itemType: $event })"
             placeholder="Select"
             styleClass="w-full"
+            [appendTo]="'body'"
           ></p-select>
         </div>
         <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
@@ -136,6 +137,7 @@
             [ngModel]="item.priority"
             (ngModelChange)="updateItem(i, { priority: $event })"
             styleClass="w-full"
+            [appendTo]="'body'"
           ></p-select>
         </div>
       </div>

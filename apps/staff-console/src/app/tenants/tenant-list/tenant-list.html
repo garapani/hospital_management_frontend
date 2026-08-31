@@ -156,6 +156,7 @@
         (ngModelChange)="provisionForm.update(v => ({...v, packageCode: $event}))"
         placeholder="Select package"
         styleClass="w-full"
+        [appendTo]="'body'"
       ></p-select>
       <p class="text-xs text-slate-400">
         Roles are enabled automatically for the selected package (tunable later on the tenant

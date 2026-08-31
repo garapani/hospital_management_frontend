@@ -97,6 +97,7 @@
           (ngModelChange)="createVendorId.set($event)"
           placeholder="Select a vendor"
           styleClass="w-full"
+          [appendTo]="'body'"
         ></p-select>
       </div>
       <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
@@ -120,6 +121,7 @@
             placeholder="Select a category"
             [showClear]="true"
             styleClass="w-full"
+            [appendTo]="'body'"
           ></p-select>
         </div>
         <div class="flex flex-col gap-2">
@@ -135,6 +137,7 @@
             [showClear]="true"
             [disabled]="!lineCategoryId()"
             styleClass="w-full"
+            [appendTo]="'body'"
           ></p-select>
         </div>
         <div class="flex flex-col gap-2">
@@ -151,6 +154,7 @@
             [loading]="dialogItemsLoading()"
             [disabled]="!lineSubCategoryId()"
             styleClass="w-full"
+            [appendTo]="'body'"
           ></p-select>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

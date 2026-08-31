@@ -144,7 +144,7 @@
     </div>
     <div class="flex flex-col gap-2">
       <label for="deliveryType" class="text-sm font-medium text-slate-700">Delivery Type</label>
-      <p-select inputId="deliveryType" [options]="deliveryTypes" [ngModel]="deliveryForm().deliveryType" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), deliveryType: $event })" styleClass="w-full"></p-select>
+      <p-select inputId="deliveryType" [options]="deliveryTypes" [ngModel]="deliveryForm().deliveryType" (ngModelChange)="deliveryForm.set({ ...deliveryForm(), deliveryType: $event })" styleClass="w-full" [appendTo]="'body'"></p-select>
     </div>
     <div class="flex flex-col gap-2">
       <label for="babyCount" class="text-sm font-medium text-slate-700">Baby Count</label>

@@ -290,7 +290,7 @@
     </div>
     <div class="flex flex-col gap-2">
       <label for="accountType" class="text-sm font-medium text-slate-700">Type</label>
-      <p-select inputId="accountType" [options]="accountTypeOptions" [ngModel]="accountForm().type" (ngModelChange)="accountForm.set({ ...accountForm(), type: $event })" styleClass="w-full"></p-select>
+      <p-select inputId="accountType" [options]="accountTypeOptions" [ngModel]="accountForm().type" (ngModelChange)="accountForm.set({ ...accountForm(), type: $event })" styleClass="w-full" [appendTo]="'body'"></p-select>
     </div>
   </div>
   <ng-template pTemplate="footer">
@@ -339,6 +339,7 @@
           (ngModelChange)="updateJournalLine($index, { accountId: $event })"
           placeholder="Account"
           styleClass="flex-[2]"
+          [appendTo]="'body'"
         ></p-select>
         <p-inputNumber
           [ngModel]="line.debit"

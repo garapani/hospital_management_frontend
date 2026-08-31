@@ -181,11 +181,11 @@
     }
     <div class="flex flex-col gap-2">
       <label for="cssdCycleInstrument" class="text-sm font-medium text-slate-700">Instrument</label>
-      <p-select inputId="cssdCycleInstrument" [options]="instrumentOptions()" [ngModel]="cycleForm().instrumentId" (ngModelChange)="cycleForm.set({ ...cycleForm(), instrumentId: $event })" styleClass="w-full"></p-select>
+      <p-select inputId="cssdCycleInstrument" [options]="instrumentOptions()" [ngModel]="cycleForm().instrumentId" (ngModelChange)="cycleForm.set({ ...cycleForm(), instrumentId: $event })" styleClass="w-full" [appendTo]="'body'"></p-select>
     </div>
     <div class="flex flex-col gap-2">
       <label for="cssdCycleMethod" class="text-sm font-medium text-slate-700">Method</label>
-      <p-select inputId="cssdCycleMethod" [options]="sterilizationMethods" [ngModel]="cycleForm().method" (ngModelChange)="cycleForm.set({ ...cycleForm(), method: $event })" styleClass="w-full"></p-select>
+      <p-select inputId="cssdCycleMethod" [options]="sterilizationMethods" [ngModel]="cycleForm().method" (ngModelChange)="cycleForm.set({ ...cycleForm(), method: $event })" styleClass="w-full" [appendTo]="'body'"></p-select>
     </div>
   </div>
   <ng-template pTemplate="footer">
