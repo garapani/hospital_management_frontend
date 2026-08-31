@@ -29,40 +29,40 @@
     </div>
   </div>
   } @else if (order(); as o) {
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
+  <div class="flex flex-col gap-6">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Order Details</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Patient Record</div>
           <a [routerLink]="['/clinical/patients', o.patientId]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View Patient</a>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Ordered By</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ o.orderedBy }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Patient ID</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ o.patientId }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Ordered At</div>
           <div class="font-medium text-slate-900">{{ o.orderedAt | date: 'medium' }}</div>
         </div>
         @if (o.sourceAppointmentId) {
-        <div class="col-span-1 sm:col-span-2">
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Source Appointment</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ o.sourceAppointmentId }}</div>
         </div>
         }
         @if (o.sourceAdmissionId) {
-        <div class="col-span-1 sm:col-span-2">
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Source Admission</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ o.sourceAdmissionId }}</div>
         </div>
         }
         @if (o.notes) {
-        <div class="col-span-1 sm:col-span-2">
+        <div class="surface-card p-3 sm:col-span-3 lg:col-span-4">
           <div class="text-xs text-slate-500 mb-1">Notes</div>
           <div class="font-medium text-slate-900">{{ o.notes }}</div>
         </div>
@@ -70,7 +70,7 @@
       </div>
     </div>
 
-    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 flex flex-col gap-4">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Line Items ({{ o.items.length }})</h3>
       <p-table [value]="o.items" dataKey="id" styleClass="p-datatable-sm p-datatable-gridlines">
         <ng-template pTemplate="header">
