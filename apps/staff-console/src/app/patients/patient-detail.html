@@ -48,12 +48,12 @@
     <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
   </div>
   } @else if (patient(); as p) {
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <div class="flex flex-col gap-6">
     <!-- Demographics Card -->
-    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Demographics</h3>
-      
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Gender</div>
           <div class="font-medium text-slate-900">{{ p.gender }}</div>
@@ -75,11 +75,11 @@
           <div class="text-xs text-slate-500 mb-1">Phone Number</div>
           <div class="font-medium text-slate-900">{{ p.phoneNumber || 'N/A' }}</div>
         </div>
-        <div class="surface-card p-3 col-span-1 sm:col-span-2">
+        <div class="surface-card p-3 sm:col-span-3 lg:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Email Address</div>
           <div class="font-medium text-slate-900">{{ p.email || 'N/A' }}</div>
         </div>
-        <div class="surface-card p-3 col-span-1 sm:col-span-2">
+        <div class="surface-card p-3 sm:col-span-3 lg:col-span-6">
           <div class="text-xs text-slate-500 mb-1">Government ID ({{ p.governmentIdType || 'Type' }})</div>
           <div class="font-medium text-slate-900 font-mono">{{ p.governmentIdNumber || 'N/A' }}</div>
         </div>
@@ -87,7 +87,7 @@
     </div>
 
     <!-- Clinical Workspace (Tabs) -->
-    <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 overflow-hidden flex flex-col">
+    <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white overflow-hidden flex flex-col">
       <p-tabs [(value)]="activeTab" styleClass="w-full h-full flex flex-col">
         <p-tablist>
           @if (auth.hasPermission('appointment.read')) {
