@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
@@ -18,7 +18,7 @@ import { CreateFixedAssetDto, FixedAsset, FixedAssetCategory, FixedAssetValuatio
 const EMPTY_ASSET_FORM: CreateFixedAssetDto = { categoryId: '', name: '', purchaseDate: '', purchaseCost: 0 };
 
 @Component({
-  imports: [DecimalPipe, DatePipe, CurrencyPipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, SelectModule, TabsModule],
+  imports: [CurrencyPipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, SelectModule, TabsModule],
   selector: 'hms-fixed-assets-console',
   templateUrl: './fixed-assets-console.html',
 })

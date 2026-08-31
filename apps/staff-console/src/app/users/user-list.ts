@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { TableModule } from 'primeng/table';
+import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
@@ -81,9 +81,11 @@ export class UserList {
 
   /** Server-side page fetch, wired to PrimeNG's lazy p-table (lazyLoadOnInit=false; the first
    *  page is loaded explicitly from the constructor — see the frontend CLAUDE.md convention). */
-  loadPage(event: { first: number; rows: number }): void {
+  loadPage(event: TableLazyLoadEvent): void {
+    const first = event.first ?? 0;
+    const rows = event.rows ?? this.pageSize;
     this.loading.set(true);
-    this.usersApi.list(event.rows, event.first).subscribe({
+    this.usersApi.list(rows, first).subscribe({
       next: ({ items, total }) => {
         this.users.set(items);
         this.total.set(total);
