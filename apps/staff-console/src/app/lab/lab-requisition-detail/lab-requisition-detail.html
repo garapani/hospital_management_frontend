@@ -23,44 +23,44 @@
     <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
   </div>
   } @else if (requisition(); as r) {
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
+  <div class="flex flex-col gap-6">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Requisition Details</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="col-span-1 sm:col-span-2">
+      <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div class="surface-card p-3 sm:col-span-2 lg:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Requisition Number</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ r.requisitionNumber }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Order Item ID</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ r.orderItemId }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Test ID</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ r.testId }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Specimen Type</div>
           <div class="font-medium text-slate-900">{{ r.specimenType }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Status</div>
           <p-tag [value]="r.status" [severity]="statusSeverity(r.status)" [rounded]="true"></p-tag>
         </div>
         @if (r.sampleCollectedBy) {
-        <div class="col-span-1 sm:col-span-2">
+        <div class="surface-card p-3 sm:col-span-3 lg:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Sample Collected</div>
           <div class="font-medium text-slate-900">{{ r.sampleCollectedAt | date: 'medium' }} by {{ r.sampleCollectedBy }}</div>
         </div>
         }
         @if (r.verifiedBy) {
-        <div class="col-span-1 sm:col-span-2">
+        <div class="surface-card p-3 sm:col-span-3 lg:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Verified</div>
           <div class="font-medium text-slate-900">{{ r.verifiedAt | date: 'medium' }} by {{ r.verifiedBy }}</div>
         </div>
         }
         @if (r.cancelReason) {
-        <div class="col-span-1 sm:col-span-2">
+        <div class="surface-card p-3 sm:col-span-3 lg:col-span-5">
           <div class="text-xs text-slate-500 mb-1">Cancellation Reason</div>
           <div class="font-medium text-slate-900">{{ r.cancelReason }}</div>
         </div>
@@ -68,7 +68,7 @@
       </div>
     </div>
 
-    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 flex flex-col gap-4">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
       @if (r.status === 'ResultsEntered' || r.status === 'Verified') {
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Entered Results</h3>
       @if (resultsViewLoading()) {
