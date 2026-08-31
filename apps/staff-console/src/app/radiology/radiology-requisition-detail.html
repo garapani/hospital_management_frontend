@@ -23,40 +23,40 @@
     <i class="pi pi-spin pi-spinner text-4xl text-sky-600"></i>
   </div>
   } @else if (requisition(); as r) {
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
+  <div class="flex flex-col gap-6">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Requisition Details</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Order Item</div>
           <div class="font-medium text-slate-900">{{ r.orderItem?.itemDescription ?? r.orderItemId }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Priority</div>
           <div class="font-medium text-slate-900">{{ r.orderItem?.priority ?? 'N/A' }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Order Item ID</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ r.orderItemId }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Imaging Item ID</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ r.imagingItemId }}</div>
         </div>
         @if (r.scannedAt) {
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Scanned</div>
           <div class="font-medium text-slate-900">{{ r.scannedAt | date: 'medium' }}</div>
         </div>
         }
         @if (r.reportEnteredAt) {
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Report Entered</div>
           <div class="font-medium text-slate-900">{{ r.reportEnteredAt | date: 'medium' }}</div>
         </div>
         }
         @if (r.verifiedAt) {
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Verified</div>
           <div class="font-medium text-slate-900">{{ r.verifiedAt | date: 'medium' }}</div>
         </div>
@@ -82,25 +82,25 @@
       }
     </div>
 
-    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 flex flex-col gap-4">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Report</h3>
 
       @if (r.reportText) {
-      <div>
+      <div class="surface-card p-3">
         <div class="text-xs text-slate-500 mb-1">Report Text</div>
         <div class="font-medium text-slate-900 whitespace-pre-wrap">{{ r.reportText }}</div>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Indication</div>
           <div class="font-medium text-slate-900">{{ r.indication || 'N/A' }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Entered By</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ r.reportEnteredBy || 'N/A' }}</div>
         </div>
         @if (r.verifiedBy) {
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Verified By</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ r.verifiedBy }}</div>
         </div>
@@ -111,7 +111,7 @@
       }
 
       @if (r.cancelReason) {
-      <div class="border-t border-slate-200 pt-4">
+      <div class="surface-card p-3 mt-2">
         <div class="text-xs text-slate-500 mb-1">Cancellation Reason</div>
         <div class="font-medium text-slate-900">{{ r.cancelReason }}</div>
       </div>
