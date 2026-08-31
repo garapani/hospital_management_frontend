@@ -437,12 +437,24 @@
       <input id="editFirstName" pInputText [ngModel]="editForm().firstName" (ngModelChange)="editForm.set({ ...editForm(), firstName: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
+      <label for="editMiddleName" class="text-sm font-medium text-slate-700">Middle Name</label>
+      <input id="editMiddleName" pInputText [ngModel]="editForm().middleName" (ngModelChange)="editForm.set({ ...editForm(), middleName: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
       <label for="editLastName" class="text-sm font-medium text-slate-700">Last Name</label>
       <input id="editLastName" pInputText [ngModel]="editForm().lastName" (ngModelChange)="editForm.set({ ...editForm(), lastName: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
+      <label for="editGender" class="text-sm font-medium text-slate-700">Gender</label>
+      <p-select inputId="editGender" [options]="genderOptions" [ngModel]="editForm().gender" (ngModelChange)="editForm.set({ ...editForm(), gender: $event })" styleClass="w-full"></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
       <label for="editDob" class="text-sm font-medium text-slate-700">Date of Birth</label>
       <input id="editDob" pInputText type="date" [ngModel]="editForm().dateOfBirth" (ngModelChange)="editForm.set({ ...editForm(), dateOfBirth: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editBloodGroup" class="text-sm font-medium text-slate-700">Blood Group</label>
+      <p-select inputId="editBloodGroup" [options]="bloodGroupOptions" [ngModel]="editForm().bloodGroup" (ngModelChange)="editForm.set({ ...editForm(), bloodGroup: $event })" styleClass="w-full"></p-select>
     </div>
     <div class="flex flex-col gap-2">
       <label for="editPhone" class="text-sm font-medium text-slate-700">Phone Number</label>

@@ -15,6 +15,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { TextareaModule } from 'primeng/textarea';
 import { CheckboxModule } from 'primeng/checkbox';
 import { PaginatorModule } from 'primeng/paginator';
+import { SelectModule } from 'primeng/select';
 import { AuthService } from '@org/auth';
 
 import { PatientsApiService, Patient, CreatePatientDto } from './patients-api.service.js';
@@ -66,6 +67,7 @@ type PrescriptionFormState = Omit<CreatePrescriptionDto, 'patientId' | 'doctorId
     TextareaModule,
     CheckboxModule,
     PaginatorModule,
+    SelectModule,
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './patient-detail.html',
@@ -99,6 +101,23 @@ export class PatientDetail implements OnInit {
   readonly showEditModal = signal(false);
   readonly editForm = signal<EditFormState>({});
   readonly editSaving = signal(false);
+  readonly genderOptions = [
+    { label: 'Male', value: 'Male' },
+    { label: 'Female', value: 'Female' },
+    { label: 'Other', value: 'Other' },
+    { label: 'Unknown', value: 'Unknown' },
+  ];
+  readonly bloodGroupOptions = [
+    { label: 'A+', value: 'A+' },
+    { label: 'A-', value: 'A-' },
+    { label: 'B+', value: 'B+' },
+    { label: 'B-', value: 'B-' },
+    { label: 'O+', value: 'O+' },
+    { label: 'O-', value: 'O-' },
+    { label: 'AB+', value: 'AB+' },
+    { label: 'AB-', value: 'AB-' },
+    { label: 'Unknown', value: 'Unknown' },
+  ];
 
   readonly vitals = signal<Vital[]>([]);
   readonly vitalsLoading = signal(false);
@@ -258,7 +277,10 @@ export class PatientDetail implements OnInit {
         this.vitals.set(data);
         this.vitalsLoading.set(false);
       },
-      error: () => this.vitalsLoading.set(false),
+      error: () => {
+        this.vitalsLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load vitals' });
+      },
     });
   }
 
@@ -299,7 +321,10 @@ export class PatientDetail implements OnInit {
         this.notesFirst.set(0);
         this.notesLoading.set(false);
       },
-      error: () => this.notesLoading.set(false),
+      error: () => {
+        this.notesLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load clinical notes' });
+      },
     });
   }
 
@@ -335,7 +360,10 @@ export class PatientDetail implements OnInit {
         this.diagnoses.set(data);
         this.diagnosesLoading.set(false);
       },
-      error: () => this.diagnosesLoading.set(false),
+      error: () => {
+        this.diagnosesLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load diagnoses' });
+      },
     });
   }
 
@@ -391,7 +419,10 @@ export class PatientDetail implements OnInit {
         this.prescriptions.set(data);
         this.prescriptionsLoading.set(false);
       },
-      error: () => this.prescriptionsLoading.set(false),
+      error: () => {
+        this.prescriptionsLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load prescriptions' });
+      },
     });
   }
 
@@ -447,7 +478,10 @@ export class PatientDetail implements OnInit {
         this.appointments.set(result.data);
         this.appointmentsLoading.set(false);
       },
-      error: () => this.appointmentsLoading.set(false),
+      error: () => {
+        this.appointmentsLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load appointments' });
+      },
     });
   }
 
@@ -463,7 +497,10 @@ export class PatientDetail implements OnInit {
         this.admissions.set(result.data);
         this.admissionsLoading.set(false);
       },
-      error: () => this.admissionsLoading.set(false),
+      error: () => {
+        this.admissionsLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load admissions' });
+      },
     });
   }
 
@@ -479,7 +516,10 @@ export class PatientDetail implements OnInit {
         this.orders.set(result.data);
         this.ordersLoading.set(false);
       },
-      error: () => this.ordersLoading.set(false),
+      error: () => {
+        this.ordersLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load orders' });
+      },
     });
   }
 
@@ -495,7 +535,10 @@ export class PatientDetail implements OnInit {
         this.invoices.set(result.data);
         this.invoicesLoading.set(false);
       },
-      error: () => this.invoicesLoading.set(false),
+      error: () => {
+        this.invoicesLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load invoices' });
+      },
     });
   }
 
