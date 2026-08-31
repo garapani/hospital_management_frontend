@@ -33,14 +33,14 @@
         />
       </div>
 
-      <dl class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div class="bg-white border border-slate-200 p-4 rounded-xl">
+      <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div class="surface-card p-4">
           <dt class="text-sm font-medium text-slate-500">Tenant ID</dt>
           <dd class="mt-1 font-semibold text-slate-800">
             {{ tenant()?.hospitalId }}
           </dd>
         </div>
-        <div class="bg-white border border-slate-200 p-4 rounded-xl">
+        <div class="surface-card p-4">
           <dt class="text-sm font-medium text-slate-500">Package</dt>
           <dd class="mt-1">
             <p-tag
@@ -50,13 +50,13 @@
             />
           </dd>
         </div>
-        <div class="bg-white border border-slate-200 p-4 rounded-xl">
+        <div class="surface-card p-4">
           <dt class="text-sm font-medium text-slate-500">Created At</dt>
           <dd class="mt-1 font-semibold text-slate-800">
             {{ tenant()?.createdAt | date: 'medium' }}
           </dd>
         </div>
-        <div class="bg-white border border-slate-200 p-4 rounded-xl">
+        <div class="surface-card p-4">
           <dt class="text-sm font-medium text-slate-500">Last Updated</dt>
           <dd class="mt-1 font-semibold text-slate-800">
             {{ tenant()?.updatedAt | date: 'medium' }}
