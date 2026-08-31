@@ -185,7 +185,7 @@
           </div>
           <div class="flex items-center gap-3">
             <span class="font-mono text-sm text-slate-700">{{ line.orderedQuantity * line.unitCost }}</span>
-            <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" (onClick)="removeLine($index)"></p-button>
+            <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" ariaLabel="Remove line item" (onClick)="removeLine($index)"></p-button>
           </div>
         </div>
         }
