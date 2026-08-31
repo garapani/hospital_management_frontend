@@ -27,30 +27,30 @@
     <p-button label="Back to Requisitions" severity="secondary" (onClick)="goBack()"></p-button>
   </div>
   } @else if (requisition(); as r) {
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-1 flex flex-col gap-4">
+  <div class="flex flex-col gap-6">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Requisition Details</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="col-span-1 sm:col-span-2">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Department</div>
           <div class="font-medium text-slate-900">{{ departmentName(r.departmentId) }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Requested By</div>
           <div class="font-medium text-slate-900 font-mono text-xs">{{ r.requestedBy }}</div>
         </div>
-        <div>
+        <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Status</div>
           <p-tag [value]="r.status" [severity]="statusSeverity(r.status)" [rounded]="true"></p-tag>
         </div>
         @if (r.notes) {
-        <div class="col-span-1 sm:col-span-2">
+        <div class="surface-card p-3 sm:col-span-3">
           <div class="text-xs text-slate-500 mb-1">Notes</div>
           <div class="font-medium text-slate-900">{{ r.notes }}</div>
         </div>
         }
         @if (r.cancelReason) {
-        <div class="col-span-1 sm:col-span-2">
+        <div class="surface-card p-3 sm:col-span-3">
           <div class="text-xs text-slate-500 mb-1">Cancellation Reason</div>
           <div class="font-medium text-slate-900">{{ r.cancelReason }}</div>
         </div>
@@ -63,7 +63,7 @@
       }
     </div>
 
-    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white md:col-span-2 flex flex-col gap-4">
+    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Line Items</h3>
       <p-table [value]="r.items" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
         <ng-template pTemplate="header">
