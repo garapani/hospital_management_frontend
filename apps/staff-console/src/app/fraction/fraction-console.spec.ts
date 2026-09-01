@@ -2,11 +2,13 @@ import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { FractionConsole } from './fraction-console.js';
 import { FractionApiService } from './fraction-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 describe('FractionConsole', () => {
-  function setup() {
+  function setup(options: { canManage?: boolean } = {}) {
     const api = {
       listRules: jest.fn().mockReturnValue(of({ data: [], total: 0 })),
       createRule: jest.fn().mockReturnValue(of({})),
@@ -16,17 +18,21 @@ describe('FractionConsole', () => {
       recordEntry: jest.fn().mockReturnValue(of({})),
     } as unknown as FractionApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
+    const auth = { hasPermission: jest.fn().mockReturnValue(options.canManage ?? true) } as unknown as AuthService;
+    const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
 
     TestBed.configureTestingModule({
       imports: [FractionConsole],
       providers: [
         { provide: FractionApiService, useValue: api },
         { provide: MessageService, useValue: messageService },
+        { provide: AuthService, useValue: auth },
+        { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
     const fixture = TestBed.createComponent(FractionConsole);
-    return { fixture, api, messageService };
+    return { fixture, api, messageService, auth };
   }
 
   it('loads rules and entries on init', async () => {
@@ -64,6 +70,17 @@ describe('FractionConsole', () => {
 
     expect(api.recordEntry).toHaveBeenCalledWith({ invoiceId: 'inv1', doctorId: 'd1' });
     expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success', summary: 'Share recorded' }));
+  });
+
+  it('hides New Rule/Record Share/Deactivate for a caller without fraction.manage (e.g. Doctor with read-only access)', async () => {
+    const { fixture } = setup({ canManage: false });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.canManage).toBe(false);
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).not.toContain('New Rule');
+    expect(text).not.toContain('Record Share');
   });
 
   it('shows an error toast when creating a rule fails', async () => {

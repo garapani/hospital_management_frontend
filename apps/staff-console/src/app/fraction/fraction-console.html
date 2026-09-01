@@ -14,9 +14,11 @@
       <p-tabpanels styleClass="p-0">
         <p-tabpanel value="0">
           <div class="p-4 flex flex-col gap-4">
+            @if (canManage) {
             <div class="flex justify-end">
               <p-button label="New Rule" icon="pi pi-plus" size="small" (onClick)="openRuleModal()"></p-button>
             </div>
+            }
             <p-table [value]="rules()" [loading]="rulesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
               <ng-template pTemplate="header">
                 <tr>
@@ -36,12 +38,16 @@
                     <p-tag [value]="rule.isActive ? 'Active' : 'Inactive'" [severity]="rule.isActive ? 'success' : 'warn'"></p-tag>
                   </td>
                   <td>
+                    @if (canManage) {
                     <p-button
                       [label]="rule.isActive ? 'Deactivate' : 'Reactivate'"
                       [text]="true"
                       size="small"
                       (onClick)="toggleRuleActive(rule)"
                     ></p-button>
+                    } @else {
+                    <span class="text-xs text-slate-400">View only</span>
+                    }
                   </td>
                 </tr>
               </ng-template>
@@ -56,9 +62,11 @@
 
         <p-tabpanel value="1">
           <div class="p-4 flex flex-col gap-4">
+            @if (canManage) {
             <div class="flex justify-end">
               <p-button label="Record Share" icon="pi pi-plus" size="small" (onClick)="openEntryModal()"></p-button>
             </div>
+            }
             <p-table [value]="entries()" [loading]="entriesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
               <ng-template pTemplate="header">
                 <tr>

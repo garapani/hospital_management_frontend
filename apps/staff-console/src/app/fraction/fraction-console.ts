@@ -10,6 +10,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { TabsModule } from 'primeng/tabs';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { FractionApiService } from './fraction-api.service.js';
 import { CreateEntryDto, CreateRuleDto, FractionEntry, FractionRule } from './fraction.model.js';
 import { EntityName } from '../directory/entity-name.js';
@@ -25,6 +26,11 @@ const EMPTY_ENTRY_FORM: CreateEntryDto = { invoiceId: '', doctorId: '' };
 export class FractionConsole {
   private readonly api = inject(FractionApiService);
   private readonly messageService = inject(MessageService);
+  private readonly auth = inject(AuthService);
+
+  // Doctor holds fraction.read only (to see their own revenue share), not fraction.manage — the
+  // mutating controls below must stay hidden for that role, not just backend-rejected.
+  readonly canManage = this.auth.hasPermission('fraction.manage');
 
   readonly rules = signal<FractionRule[]>([]);
   readonly rulesLoading = signal(false);
