@@ -34,11 +34,20 @@
       <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div class="surface-card p-3 sm:col-span-3 lg:col-span-2">
           <div class="text-xs text-slate-500 mb-1">Patient Record</div>
-          @if (a.patientId) {
-          <a [routerLink]="['/clinical/patients', a.patientId]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View Patient</a>
-          } @else {
-          <span class="text-slate-400 text-sm">Not linked</span>
-          }
+          <div class="flex items-center gap-3 flex-wrap">
+            @if (a.patientId) {
+            <a [routerLink]="['/clinical/patients', a.patientId]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View Patient</a>
+            } @else {
+            <span class="text-slate-400 text-sm">Not linked</span>
+            }
+            @if (auth.hasPermission('nursing.read')) {
+            <a
+              [routerLink]="['/clinical/nursing']"
+              [queryParams]="{ admissionId: a.id }"
+              class="text-sky-600 hover:text-sky-800 text-sm font-medium"
+            >Nursing Tasks / MAR</a>
+            }
+          </div>
         </div>
         <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Patient ID</div>

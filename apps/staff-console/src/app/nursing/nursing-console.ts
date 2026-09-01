@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -32,6 +33,7 @@ const EMPTY_ADMIN_FORM: CreateAdministrationDto = { admissionId: '', drugName: '
 })
 export class NursingConsole {
   private readonly api = inject(NursingApiService);
+  private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
@@ -67,9 +69,19 @@ export class NursingConsole {
   readonly skipNotes = signal('');
   private skippingAdmin: MedicationAdministration | null = null;
 
+  // Arriving from an Admission's "Nursing Tasks / MAR" link (?admissionId=...) applies that
+  // filter immediately instead of landing on the unfiltered list — the nurse would otherwise have
+  // to copy the Admission ID off the admission screen and paste it in here by hand. Subscribes
+  // (not a one-time snapshot read) because Angular's route-reuse strategy keeps this component
+  // instance alive across a query-params-only navigation back to the same path — e.g. clicking
+  // the link again for a different admission without the page reloading in between.
   constructor() {
-    this.loadTasks(1, this.tasksPageSize());
-    this.loadAdministrations(1, this.administrationsPageSize());
+    this.route.queryParamMap.subscribe((params) => {
+      const admissionId = params.get('admissionId');
+      this.admissionIdFilter.set(admissionId ?? '');
+      this.loadTasks(1, this.tasksPageSize());
+      this.loadAdministrations(1, this.administrationsPageSize());
+    });
   }
 
   applyFilter(): void {
