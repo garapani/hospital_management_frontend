@@ -1,3 +1,5 @@
+import { toLocalDateString } from '../shared/date.util.js';
+
 export type InvoiceStatus = 'Unpaid' | 'PartiallyPaid' | 'Paid' | 'Cancelled';
 
 export interface Invoice {
@@ -67,8 +69,13 @@ export function outstandingBalance(invoice: Invoice): number {
   return Math.max(0, invoice.totalAmount - invoice.paidAmount);
 }
 
+// invoiceNumber is a per-financial-year sequence (see InvoicesService.generateInvoiceNumber), so
+// it alone isn't unique across years — the creation date disambiguates instead of financialYear
+// here, since it's what the reference is actually meant to convey to a human reader.
 export function invoiceReference(invoice: Invoice): string {
-  return `${invoice.financialYear}-${invoice.invoiceNumber}`;
+  const date = toLocalDateString(new Date(invoice.createdAt));
+  const sequence = String(invoice.invoiceNumber).padStart(5, '0');
+  return `INV-${date}-${sequence}`;
 }
 
 const STATUS_SEVERITY: Record<InvoiceStatus, 'success' | 'warn' | 'danger' | 'secondary'> = {
