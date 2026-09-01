@@ -63,4 +63,15 @@ describe('AppointmentsApiService', () => {
     expect(req.request.body).toEqual({ cancelledRemarks: 'Patient rescheduled' });
     req.flush({ id: 'appt-1', status: 'Cancelled' });
   });
+
+  it('checks in an appointment', () => {
+    let result: unknown;
+    service.checkIn('appt-1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('https://gateway.example/api/appointments/appt-1/check-in');
+    expect(req.request.method).toBe('POST');
+    const checkedIn = { id: 'appt-1', status: 'CheckedIn' };
+    req.flush(checkedIn);
+    expect(result).toEqual(checkedIn);
+  });
 });

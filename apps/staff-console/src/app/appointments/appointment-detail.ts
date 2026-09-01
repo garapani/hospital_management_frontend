@@ -6,18 +6,17 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
-import { SelectModule } from 'primeng/select';
 import { DialogModule } from 'primeng/dialog';
 import { AuthService } from '@org/auth';
 import { ApiError } from '@org/api-client';
 
 import { AppointmentsApiService, Appointment } from './appointments-api.service.js';
-import { appointmentDisplayName, appointmentStatusSeverity, APPOINTMENT_STATUSES } from './appointment.model.js';
+import { appointmentDisplayName, appointmentStatusSeverity } from './appointment.model.js';
 
 @Component({
   selector: 'hms-appointment-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, SelectModule, DialogModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, DialogModule],
   templateUrl: './appointment-detail.html',
 })
 export class AppointmentDetail implements OnInit {
@@ -32,18 +31,15 @@ export class AppointmentDetail implements OnInit {
   readonly saving = signal(false);
 
   readonly appointmentType = signal('');
-  readonly status = signal('');
   readonly reason = signal('');
 
   readonly showCancelModal = signal(false);
   readonly cancelRemarks = signal('');
   readonly cancelling = signal(false);
+  readonly checkingIn = signal(false);
 
   readonly displayName = appointmentDisplayName;
   readonly statusSeverity = appointmentStatusSeverity;
-  // Excludes 'Cancelled' — that transition must go through confirmCancel(), which enforces
-  // the backend's required cancelledRemarks; this general edit form has no remarks field.
-  readonly statuses = APPOINTMENT_STATUSES.filter((s) => s !== 'Cancelled').map((s) => ({ label: s, value: s }));
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
@@ -61,7 +57,6 @@ export class AppointmentDetail implements OnInit {
       next: (data) => {
         this.appointment.set(data);
         this.appointmentType.set(data.appointmentType);
-        this.status.set(data.status);
         this.reason.set(data.reason ?? '');
         this.loading.set(false);
       },
@@ -86,7 +81,6 @@ export class AppointmentDetail implements OnInit {
     this.appointmentsApi
       .update(id, {
         appointmentType: this.appointmentType(),
-        status: this.status(),
         reason: this.reason() || undefined,
       })
       .subscribe({
@@ -112,11 +106,24 @@ export class AppointmentDetail implements OnInit {
     this.appointmentsApi.cancel(id, remarks).subscribe({
       next: (updated) => {
         this.appointment.set(updated);
-        this.status.set(updated.status);
         this.cancelling.set(false);
         this.showCancelModal.set(false);
       },
       error: () => this.cancelling.set(false),
+    });
+  }
+
+  checkIn() {
+    const id = this.appointment()?.id;
+    if (!id) return;
+
+    this.checkingIn.set(true);
+    this.appointmentsApi.checkIn(id).subscribe({
+      next: (updated) => {
+        this.appointment.set(updated);
+        this.checkingIn.set(false);
+      },
+      error: () => this.checkingIn.set(false),
     });
   }
 }

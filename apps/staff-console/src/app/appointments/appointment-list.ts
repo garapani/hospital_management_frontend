@@ -46,6 +46,8 @@ export class AppointmentList {
   readonly doctorIdFilter = signal('');
   readonly departmentIdFilter = signal('');
 
+  readonly checkInActionId = signal<string | null>(null);
+
   readonly showCreateModal = signal(false);
   readonly createForm = signal<CreateAppointmentDto>({
     firstName: '',
@@ -123,6 +125,17 @@ export class AppointmentList {
       appointmentType: '',
     });
     this.showCreateModal.set(true);
+  }
+
+  checkIn(appt: Appointment): void {
+    this.checkInActionId.set(appt.id);
+    this.appointmentsApi.checkIn(appt.id).subscribe({
+      next: () => {
+        this.checkInActionId.set(null);
+        this.load(this.firstRecord());
+      },
+      error: () => this.checkInActionId.set(null),
+    });
   }
 
   submitCreate(): void {

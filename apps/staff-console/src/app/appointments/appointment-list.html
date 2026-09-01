@@ -58,7 +58,7 @@
           <th class="table-header-cell">Time</th>
           <th class="table-header-cell">Type</th>
           <th class="table-header-cell">Status</th>
-          <th class="table-header-cell w-24">Actions</th>
+          <th class="table-header-cell w-40">Actions</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-appt>
@@ -68,7 +68,16 @@
           <td>{{ appt.appointmentTime }}</td>
           <td>{{ appt.appointmentType }}</td>
           <td><p-tag [value]="appt.status" [severity]="statusSeverity(appt.status)" [rounded]="true"></p-tag></td>
-          <td>
+          <td class="flex items-center gap-3">
+            @if (appt.status === 'Scheduled' && auth.hasPermission('appointment.manage')) {
+            <p-button
+              label="Check In"
+              [text]="true"
+              size="small"
+              [loading]="checkInActionId() === appt.id"
+              (onClick)="checkIn(appt)"
+            ></p-button>
+            }
             <a [routerLink]="['/clinical/appointments', appt.id]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View</a>
           </td>
         </tr>

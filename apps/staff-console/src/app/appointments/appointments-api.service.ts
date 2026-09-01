@@ -99,4 +99,8 @@ export class AppointmentsApiService {
   cancel(id: string, cancelledRemarks: string) {
     return this.apiClient.post<Appointment>(`/appointments/${id}/cancel`, { cancelledRemarks });
   }
+
+  checkIn(id: string) {
+    return this.apiClient.post<Appointment>(`/appointments/${id}/check-in`, {});
+  }
 }

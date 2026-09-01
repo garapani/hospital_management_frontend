@@ -60,8 +60,15 @@
         }
       </div>
 
-      @if (auth.hasPermission('appointment.manage') && a.status !== 'Cancelled') {
-      <p-button label="Cancel Appointment" icon="pi pi-ban" severity="danger" [text]="true" (onClick)="openCancelModal()"></p-button>
+      @if (auth.hasPermission('appointment.manage')) {
+      <div class="flex flex-wrap gap-2">
+        @if (a.status === 'Scheduled') {
+        <p-button label="Check In" icon="pi pi-check" [loading]="checkingIn()" (onClick)="checkIn()"></p-button>
+        }
+        @if (a.status !== 'Cancelled') {
+        <p-button label="Cancel Appointment" icon="pi pi-ban" severity="danger" [text]="true" (onClick)="openCancelModal()"></p-button>
+        }
+      </div>
       }
     </div>
 
@@ -73,10 +80,6 @@
         <div class="flex flex-col gap-2">
           <label for="apptEditType" class="text-sm font-medium text-slate-700">Appointment Type</label>
           <input id="apptEditType" pInputText [ngModel]="appointmentType()" (ngModelChange)="appointmentType.set($event)" class="w-full" />
-        </div>
-        <div class="flex flex-col gap-2">
-          <label for="apptEditStatus" class="text-sm font-medium text-slate-700">Status</label>
-          <p-select inputId="apptEditStatus" [options]="statuses" [ngModel]="status()" (ngModelChange)="status.set($event)" styleClass="w-full"></p-select>
         </div>
         <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
           <label for="apptEditReason" class="text-sm font-medium text-slate-700">Reason</label>

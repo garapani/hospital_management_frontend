@@ -27,8 +27,9 @@ describe('AppointmentDetail', () => {
   function setup() {
     const appointmentsApi = {
       getById: jest.fn().mockReturnValue(of(appointment)),
-      update: jest.fn().mockReturnValue(of({ ...appointment, status: 'Completed' })),
+      update: jest.fn().mockReturnValue(of({ ...appointment, reason: 'Updated reason' })),
       cancel: jest.fn().mockReturnValue(of({ ...appointment, status: 'Cancelled', cancelledRemarks: 'No show' })),
+      checkIn: jest.fn().mockReturnValue(of({ ...appointment, status: 'CheckedIn' })),
     } as unknown as AppointmentsApiService;
     const auth = { hasPermission: () => true } as unknown as AuthService;
     const activatedRoute = { paramMap: of(convertToParamMap({ id: 'appt-1' })) } as unknown as ActivatedRoute;
@@ -54,12 +55,6 @@ describe('AppointmentDetail', () => {
 
     expect(fixture.componentInstance.appointment()).toEqual(appointment);
     expect(fixture.componentInstance.appointmentType()).toBe('New Visit');
-    expect(fixture.componentInstance.status()).toBe('Scheduled');
-  });
-
-  it('excludes Cancelled from the general edit form status options', () => {
-    const { fixture } = setup();
-    expect(fixture.componentInstance.statuses.map((s) => s.value)).not.toContain('Cancelled');
   });
 
   it('clears the loading flag when the initial load errors', async () => {
@@ -90,14 +85,14 @@ describe('AppointmentDetail', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
-    fixture.componentInstance.status.set('Completed');
+    fixture.componentInstance.reason.set('Updated reason');
     fixture.componentInstance.saveChanges();
 
     expect(appointmentsApi.update).toHaveBeenCalledWith(
       'appt-1',
-      expect.objectContaining({ status: 'Completed', appointmentType: 'New Visit' }),
+      expect.objectContaining({ appointmentType: 'New Visit', reason: 'Updated reason' }),
     );
-    expect(fixture.componentInstance.appointment()?.status).toBe('Completed');
+    expect(fixture.componentInstance.appointment()?.reason).toBe('Updated reason');
   });
 
   it('clears the saving flag when update errors', async () => {
@@ -136,5 +131,28 @@ describe('AppointmentDetail', () => {
 
     expect(fixture.componentInstance.cancelling()).toBe(false);
     expect(fixture.componentInstance.showCancelModal()).toBe(true);
+  });
+
+  it('checks in the appointment and updates the signal', async () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.checkIn();
+
+    expect(appointmentsApi.checkIn).toHaveBeenCalledWith('appt-1');
+    expect(fixture.componentInstance.appointment()?.status).toBe('CheckedIn');
+    expect(fixture.componentInstance.checkingIn()).toBe(false);
+  });
+
+  it('clears the checkingIn flag when check-in errors', async () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (appointmentsApi.checkIn as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));
+
+    fixture.componentInstance.checkIn();
+
+    expect(fixture.componentInstance.checkingIn()).toBe(false);
   });
 });
