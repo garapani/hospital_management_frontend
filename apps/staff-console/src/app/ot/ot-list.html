@@ -59,7 +59,7 @@
       <ng-template pTemplate="body" let-surgery>
         <tr class="hover:bg-slate-100 transition-colors">
           <td class="font-mono font-semibold text-slate-700 border-b border-slate-200">{{ surgery.surgeryNumber }}</td>
-          <td class="font-mono text-slate-600 border-b border-slate-200">{{ surgery.patientId }}</td>
+          <td class="border-b border-slate-200"><hms-entity-name type="patient" [id]="surgery.patientId"></hms-entity-name></td>
           <td class="border-b border-slate-200">{{ surgery.procedureName }}</td>
           <td class="border-b border-slate-200">{{ surgery.otRoom || '—' }}</td>
           <td class="border-b border-slate-200">{{ surgery.scheduledAt ? (surgery.scheduledAt | date: 'short') : '—' }}</td>

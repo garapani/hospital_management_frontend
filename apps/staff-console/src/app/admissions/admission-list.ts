@@ -13,6 +13,7 @@ import { AuthService } from '@org/auth';
 
 import { AdmissionsApiService, Admission, CreateAdmissionDto } from './admissions-api.service.js';
 import { admissionSourceSeverity, admissionStatusSeverity, ADMISSION_SOURCES, ADMISSION_STATUSES } from './admission.model.js';
+import { EntityName } from '../directory/entity-name.js';
 
 export type AdmissionView = 'All' | 'Active';
 
@@ -30,6 +31,7 @@ export type AdmissionView = 'All' | 'Active';
     InputTextModule,
     SelectModule,
     SelectButtonModule,
+    EntityName,
   ],
   templateUrl: './admission-list.html',
 })

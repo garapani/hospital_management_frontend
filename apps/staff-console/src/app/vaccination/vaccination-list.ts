@@ -12,12 +12,13 @@ import { AuthService } from '@org/auth';
 import { VaccinationApiService } from './vaccination-api.service.js';
 import { CreateVaccinationRecordDto, VaccinationRecord } from './vaccination.model.js';
 import { todayLocal } from '../shared/date.util.js';
+import { EntityName } from '../directory/entity-name.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 const EMPTY_FORM: CreateVaccinationRecordDto = { patientId: '', vaccine: '', administeredDate: '' };
 
 @Component({
-  imports: [DatePipe, FormsModule, TableModule, ButtonModule, DialogModule, InputTextModule, InputNumberModule],
+  imports: [DatePipe, FormsModule, TableModule, ButtonModule, DialogModule, InputTextModule, InputNumberModule, EntityName],
   selector: 'hms-vaccination-list',
   templateUrl: './vaccination-list.html',
 })

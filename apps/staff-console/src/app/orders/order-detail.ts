@@ -15,12 +15,14 @@ import { ApiError } from '@org/api-client';
 
 import { OrdersApiService, OrderItem, OrderWithItems } from './orders-api.service.js';
 import { orderItemStatusSeverity, orderItemTypeSeverity, orderPrioritySeverity } from './order.model.js';
+import { EntityName } from '../directory/entity-name.js';
 
 @Component({
   selector: 'hms-order-detail',
   standalone: true,
   imports: [
     CommonModule,
+    EntityName,
     RouterModule,
     FormsModule,
     ButtonModule,

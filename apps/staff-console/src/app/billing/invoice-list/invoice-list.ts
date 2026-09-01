@@ -10,11 +10,12 @@ import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { InvoicesApiService } from '../invoices-api.service.js';
 import { Invoice, invoiceReference, statusSeverity } from '../invoice.model.js';
+import { EntityName } from '../../directory/entity-name.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 
 @Component({
-  imports: [DecimalPipe, DatePipe, FormsModule, RouterModule, TableModule, InputTextModule, ButtonModule, TagModule, ToastModule],
+  imports: [DecimalPipe, DatePipe, FormsModule, RouterModule, TableModule, InputTextModule, ButtonModule, TagModule, ToastModule, EntityName],
   providers: [MessageService],
   selector: 'hms-invoice-list',
   templateUrl: './invoice-list.html',

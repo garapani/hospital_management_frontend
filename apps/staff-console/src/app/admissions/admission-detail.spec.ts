@@ -6,6 +6,7 @@ import { ApiError } from '@org/api-client';
 import { AdmissionDetail } from './admission-detail.js';
 import { AdmissionsApiService, Admission, DischargeSummary } from './admissions-api.service.js';
 import { MasterDataApiService } from '../master-data/master-data-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 describe('AdmissionDetail', () => {
   const admission: Admission = {
@@ -65,9 +66,8 @@ describe('AdmissionDetail', () => {
     const masterDataApi = {
       listWards: jest.fn().mockReturnValue(of([{ id: 'ward-1', wardName: 'ICU', isActive: true }, { id: 'ward-2', wardName: 'General', isActive: true }])),
       listBedsByWard: jest.fn().mockReturnValue(of([{ id: 'bed-2', wardId: 'ward-2', bedNumber: '2', status: 'Available', isActive: true }])),
-      getWard: jest.fn().mockReturnValue(of({ id: 'ward-1', wardName: 'ICU', isActive: true })),
-      getBed: jest.fn().mockReturnValue(of({ id: 'bed-1', wardId: 'ward-1', bedNumber: '1', status: 'Occupied', isActive: true })),
     } as unknown as MasterDataApiService;
+    const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
 
     TestBed.configureTestingModule({
       imports: [AdmissionDetail],
@@ -77,11 +77,12 @@ describe('AdmissionDetail', () => {
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
         { provide: MasterDataApiService, useValue: masterDataApi },
+        { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
     const fixture = TestBed.createComponent(AdmissionDetail);
-    return { fixture, admissionsApi, masterDataApi };
+    return { fixture, admissionsApi, masterDataApi, directoryResolver };
   }
 
   it('loads the admission and its discharge summary', async () => {
@@ -113,6 +114,7 @@ describe('AdmissionDetail', () => {
       listWards: jest.fn().mockReturnValue(of([])),
       listBedsByWard: jest.fn().mockReturnValue(of([])),
     } as unknown as MasterDataApiService;
+    const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
 
     TestBed.configureTestingModule({
       imports: [AdmissionDetail],
@@ -122,6 +124,7 @@ describe('AdmissionDetail', () => {
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
         { provide: MasterDataApiService, useValue: masterDataApi },
+        { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
     const fixture = TestBed.createComponent(AdmissionDetail);
@@ -149,15 +152,15 @@ describe('AdmissionDetail', () => {
     expect(fixture.componentInstance.showTransferModal()).toBe(false);
   });
 
-  it('resolves the ward and bed names for display instead of leaving raw UUIDs on screen', async () => {
-    const { fixture, masterDataApi } = setup();
+  it('resolves patient/doctor/ward/bed names for display instead of leaving raw UUIDs on screen', async () => {
+    const { fixture, directoryResolver } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(masterDataApi.getWard).toHaveBeenCalledWith('ward-1');
-    expect(masterDataApi.getBed).toHaveBeenCalledWith('bed-1');
-    expect(fixture.componentInstance.wardName()).toBe('ICU');
-    expect(fixture.componentInstance.bedNumber()).toBe('1');
+    expect(directoryResolver.resolve).toHaveBeenCalledWith('patient', 'patient-1');
+    expect(directoryResolver.resolve).toHaveBeenCalledWith('doctor', 'doctor-1');
+    expect(directoryResolver.resolve).toHaveBeenCalledWith('ward', 'ward-1');
+    expect(directoryResolver.resolve).toHaveBeenCalledWith('bed', 'bed-1');
   });
 
   it('opens the transfer modal defaulted to the current ward, and reloads beds when the ward changes', async () => {

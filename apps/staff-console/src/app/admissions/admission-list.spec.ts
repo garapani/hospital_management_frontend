@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { AuthService } from '@org/auth';
 import { AdmissionList } from './admission-list.js';
 import { AdmissionsApiService } from './admissions-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 describe('AdmissionList', () => {
   function setup() {
@@ -13,6 +14,7 @@ describe('AdmissionList', () => {
       create: jest.fn().mockReturnValue(of({ id: 'admission-1' })),
     } as unknown as AdmissionsApiService;
     const auth = { hasPermission: () => true } as unknown as AuthService;
+    const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
 
     TestBed.configureTestingModule({
       imports: [AdmissionList],
@@ -20,6 +22,7 @@ describe('AdmissionList', () => {
         provideRouter([]),
         { provide: AdmissionsApiService, useValue: admissionsApi },
         { provide: AuthService, useValue: auth },
+        { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 

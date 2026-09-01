@@ -5,8 +5,13 @@ import { ConfirmationService, Confirmation } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { OrderDetail } from './order-detail.js';
 import { OrdersApiService, OrderWithItems } from './orders-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 const auth = { hasPermission: () => true } as unknown as AuthService;
+const directoryResolverProvider = {
+  provide: DirectoryResolverService,
+  useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
+};
 
 describe('OrderDetail', () => {
   const order: OrderWithItems = {
@@ -65,6 +70,7 @@ describe('OrderDetail', () => {
         { provide: OrdersApiService, useValue: ordersApi },
         { provide: ActivatedRoute, useValue: activatedRoute },
         { provide: AuthService, useValue: auth },
+        directoryResolverProvider,
       ],
     });
 
@@ -95,6 +101,7 @@ describe('OrderDetail', () => {
         { provide: OrdersApiService, useValue: ordersApi },
         { provide: ActivatedRoute, useValue: activatedRoute },
         { provide: AuthService, useValue: auth },
+        directoryResolverProvider,
       ],
     });
     const fixture = TestBed.createComponent(OrderDetail);
@@ -117,6 +124,7 @@ describe('OrderDetail', () => {
         { provide: OrdersApiService, useValue: ordersApi },
         { provide: ActivatedRoute, useValue: activatedRoute },
         { provide: AuthService, useValue: auth },
+        directoryResolverProvider,
       ],
     });
     const fixture = TestBed.createComponent(OrderDetail);

@@ -15,11 +15,12 @@ import { AdmissionsApiService, Admission, CreateDischargeSummaryDto, DischargeSu
 import { admissionSourceSeverity, admissionStatusSeverity, summaryReviewSeverity } from './admission.model.js';
 import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 import { Ward, Bed } from '../master-data/master-data.model.js';
+import { EntityName } from '../directory/entity-name.js';
 
 @Component({
   selector: 'hms-admission-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, DialogModule, SelectModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, DialogModule, SelectModule, EntityName],
   templateUrl: './admission-detail.html',
 })
 export class AdmissionDetail implements OnInit {
@@ -32,11 +33,6 @@ export class AdmissionDetail implements OnInit {
   readonly admission = signal<Admission | null>(null);
   readonly loading = signal(true);
   readonly notFound = signal(false);
-
-  // Resolved display names for the raw wardId/bedId FKs — the "ward and bed are raw UUIDs"
-  // finding covers this Details panel too, not just the transfer picker.
-  readonly wardName = signal<string | null>(null);
-  readonly bedNumber = signal<string | null>(null);
 
   // Transfer — ward + bed pickers (not a free-text bed UUID field), scoped to beds actually
   // available right now so a nurse can't pick an occupied/maintenance bed by mistake.
@@ -90,7 +86,6 @@ export class AdmissionDetail implements OnInit {
         this.admission.set(data);
         this.loading.set(false);
         this.loadSummary(data.id);
-        this.loadWardAndBedNames(data.wardId, data.bedId);
       },
       error: (err: ApiError) => {
         this.loading.set(false);
@@ -98,19 +93,6 @@ export class AdmissionDetail implements OnInit {
           this.notFound.set(true);
         }
       },
-    });
-  }
-
-  private loadWardAndBedNames(wardId: string, bedId: string): void {
-    this.wardName.set(null);
-    this.bedNumber.set(null);
-    this.masterDataApi.getWard(wardId).subscribe({
-      next: (ward) => this.wardName.set(ward.wardName),
-      error: () => {},
-    });
-    this.masterDataApi.getBed(bedId).subscribe({
-      next: (bed) => this.bedNumber.set(bed.bedNumber),
-      error: () => {},
     });
   }
 

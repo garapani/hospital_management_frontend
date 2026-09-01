@@ -70,7 +70,7 @@
       <ng-template pTemplate="body" let-ssuCase>
         <tr class="hover:bg-slate-100 transition-colors">
           <td class="font-mono font-semibold text-slate-700 border-b border-slate-200">{{ ssuCase.caseNumber }}</td>
-          <td class="font-mono text-slate-600 border-b border-slate-200">{{ ssuCase.patientId }}</td>
+          <td class="border-b border-slate-200"><hms-entity-name type="patient" [id]="ssuCase.patientId"></hms-entity-name></td>
           <td class="border-b border-slate-200">{{ ssuCase.caseType }}</td>
           <td class="border-b border-slate-200 font-semibold text-slate-700">{{ ssuCase.subsidyPercent }}%</td>
           <td class="border-b border-slate-200">

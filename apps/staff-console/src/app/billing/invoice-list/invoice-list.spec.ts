@@ -4,6 +4,12 @@ import { of, throwError } from 'rxjs';
 import { InvoiceList } from './invoice-list.js';
 import { InvoicesApiService } from '../invoices-api.service.js';
 import { Invoice, InvoiceListResult } from '../invoice.model.js';
+import { DirectoryResolverService } from '../../directory/directory-resolver.service.js';
+
+const directoryResolverProvider = {
+  provide: DirectoryResolverService,
+  useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
+};
 
 describe('InvoiceList', () => {
   function setup() {
@@ -12,7 +18,7 @@ describe('InvoiceList', () => {
 
     TestBed.configureTestingModule({
       imports: [InvoiceList],
-      providers: [provideRouter([]), { provide: InvoicesApiService, useValue: invoicesApi }],
+      providers: [provideRouter([]), { provide: InvoicesApiService, useValue: invoicesApi }, directoryResolverProvider],
     });
 
     const fixture = TestBed.createComponent(InvoiceList);
@@ -34,7 +40,7 @@ describe('InvoiceList', () => {
     } as unknown as InvoicesApiService;
     TestBed.configureTestingModule({
       imports: [InvoiceList],
-      providers: [provideRouter([]), { provide: InvoicesApiService, useValue: invoicesApi }],
+      providers: [provideRouter([]), { provide: InvoicesApiService, useValue: invoicesApi }, directoryResolverProvider],
     });
     const fixture = TestBed.createComponent(InvoiceList);
 
@@ -89,7 +95,7 @@ describe('InvoiceList', () => {
     const invoicesApi = { list: jest.fn().mockReturnValue(of(result)) } as unknown as InvoicesApiService;
     TestBed.configureTestingModule({
       imports: [InvoiceList],
-      providers: [provideRouter([]), { provide: InvoicesApiService, useValue: invoicesApi }],
+      providers: [provideRouter([]), { provide: InvoicesApiService, useValue: invoicesApi }, directoryResolverProvider],
     });
     const fixture = TestBed.createComponent(InvoiceList);
 

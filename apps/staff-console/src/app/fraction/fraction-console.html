@@ -29,7 +29,7 @@
               </ng-template>
               <ng-template pTemplate="body" let-rule>
                 <tr>
-                  <td class="font-mono">{{ rule.doctorId }}</td>
+                  <td><hms-entity-name type="doctor" [id]="rule.doctorId"></hms-entity-name></td>
                   <td class="font-mono">{{ rule.departmentId || 'All' }}</td>
                   <td class="text-right font-mono">{{ rule.fractionPercent | number: '1.2-2' }}%</td>
                   <td>
@@ -73,7 +73,7 @@
               <ng-template pTemplate="body" let-entry>
                 <tr>
                   <td class="font-mono">{{ entry.invoiceId }}</td>
-                  <td class="font-mono">{{ entry.doctorId }}</td>
+                  <td><hms-entity-name type="doctor" [id]="entry.doctorId"></hms-entity-name></td>
                   <td class="text-right font-mono">{{ entry.fractionPercent | number: '1.2-2' }}%</td>
                   <td class="text-right font-mono">{{ entry.baseAmount | number: '1.2-2' }}</td>
                   <td class="text-right font-mono font-semibold">{{ entry.shareAmount | number: '1.2-2' }}</td>

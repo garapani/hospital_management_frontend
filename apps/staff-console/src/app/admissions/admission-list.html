@@ -60,7 +60,7 @@
     >
       <ng-template pTemplate="header">
         <tr>
-          <th class="table-header-cell">Patient ID</th>
+          <th class="table-header-cell">Patient</th>
           <th class="table-header-cell">Source</th>
           <th class="table-header-cell">Admitting Doctor</th>
           <th class="table-header-cell">Ward</th>
@@ -72,11 +72,11 @@
       </ng-template>
       <ng-template pTemplate="body" let-admission>
         <tr [class]="'status-rail-' + statusSeverity(admission.status)">
-          <td class="font-mono text-xs">{{ admission.patientId }}</td>
+          <td><hms-entity-name type="patient" [id]="admission.patientId"></hms-entity-name></td>
           <td><p-tag [value]="admission.admissionSource" [severity]="sourceSeverity(admission.admissionSource)" [rounded]="true"></p-tag></td>
-          <td class="font-mono text-xs">{{ admission.admittingDoctorId }}</td>
-          <td class="font-mono text-xs">{{ admission.wardId }}</td>
-          <td class="font-mono text-xs">{{ admission.bedId }}</td>
+          <td><hms-entity-name type="doctor" [id]="admission.admittingDoctorId"></hms-entity-name></td>
+          <td><hms-entity-name type="ward" [id]="admission.wardId"></hms-entity-name></td>
+          <td><hms-entity-name type="bed" [id]="admission.bedId"></hms-entity-name></td>
           <td>{{ admission.admissionDate | date: 'short' }}</td>
           <td><p-tag [value]="admission.status" [severity]="statusSeverity(admission.status)" [rounded]="true"></p-tag></td>
           <td>

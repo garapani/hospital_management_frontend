@@ -5,6 +5,7 @@ import { AuthService } from '@org/auth';
 import { InsuranceDashboard } from './insurance-dashboard.js';
 import { InsuranceApiService } from '../insurance-api.service.js';
 import { InsuranceClaim, InsurancePayer, PatientPolicy } from '../insurance.model.js';
+import { DirectoryResolverService } from '../../directory/directory-resolver.service.js';
 
 describe('InsuranceDashboard', () => {
   const payer: InsurancePayer = {
@@ -89,6 +90,7 @@ describe('InsuranceDashboard', () => {
     } as unknown as InsuranceApiService;
     const auth = { hasPermission: jest.fn().mockReturnValue(true) } as unknown as AuthService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
+    const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
 
     TestBed.configureTestingModule({
       imports: [InsuranceDashboard],
@@ -96,6 +98,7 @@ describe('InsuranceDashboard', () => {
         { provide: InsuranceApiService, useValue: insuranceApi },
         { provide: AuthService, useValue: auth },
         { provide: MessageService, useValue: messageService },
+        { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 

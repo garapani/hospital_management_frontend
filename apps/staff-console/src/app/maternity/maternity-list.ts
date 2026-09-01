@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -14,13 +15,14 @@ import { AuthService } from '@org/auth';
 import { MaternityApiService } from './maternity-api.service.js';
 import { CreateMaternityRecordDto, DELIVERY_TYPES, DeliveryType, MaternityRecord, RecordDeliveryDto } from './maternity.model.js';
 import { todayLocal } from '../shared/date.util.js';
+import { EntityName } from '../directory/entity-name.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 const EMPTY_CREATE_FORM: CreateMaternityRecordDto = { admissionId: '', patientId: '' };
 const EMPTY_DELIVERY_FORM: RecordDeliveryDto = { deliveryDate: '', deliveryType: 'Normal', babyCount: 1 };
 
 @Component({
-  imports: [DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, SelectModule],
+  imports: [DatePipe, RouterModule, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, SelectModule, EntityName],
   selector: 'hms-maternity-list',
   templateUrl: './maternity-list.html',
 })

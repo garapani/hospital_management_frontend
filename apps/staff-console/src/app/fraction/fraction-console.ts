@@ -12,12 +12,13 @@ import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { FractionApiService } from './fraction-api.service.js';
 import { CreateEntryDto, CreateRuleDto, FractionEntry, FractionRule } from './fraction.model.js';
+import { EntityName } from '../directory/entity-name.js';
 
 const EMPTY_RULE_FORM: CreateRuleDto = { doctorId: '', fractionPercent: 0 };
 const EMPTY_ENTRY_FORM: CreateEntryDto = { invoiceId: '', doctorId: '' };
 
 @Component({
-  imports: [DecimalPipe, DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, TabsModule],
+  imports: [DecimalPipe, DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, TabsModule, EntityName],
   selector: 'hms-fraction-console',
   templateUrl: './fraction-console.html',
 })

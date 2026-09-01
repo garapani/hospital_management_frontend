@@ -7,6 +7,7 @@ import { SsuList } from './ssu-list.js';
 import { SsuApiService } from './ssu-api.service.js';
 import { PatientsApiService, Patient } from '../patients/patients-api.service.js';
 import { SsuCase } from './ssu.model.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 describe('SsuList', () => {
   const sampleCases: SsuCase[] = [
@@ -105,6 +106,8 @@ describe('SsuList', () => {
       currentUser: jest.fn().mockReturnValue({ sub: 'user-1' }),
     } as unknown as AuthService;
 
+    const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
+
     TestBed.configureTestingModule({
       imports: [SsuList],
       providers: [
@@ -112,6 +115,7 @@ describe('SsuList', () => {
         { provide: PatientsApiService, useValue: patientsApi },
         { provide: MessageService, useValue: messageService },
         { provide: AuthService, useValue: auth },
+        { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 

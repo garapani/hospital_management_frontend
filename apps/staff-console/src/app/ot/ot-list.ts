@@ -13,12 +13,13 @@ import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { OtApiService } from './ot-api.service.js';
 import { CreateSurgeryDto, OtSurgery, OtSurgeryStatus } from './ot.model.js';
+import { EntityName } from '../directory/entity-name.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 const EMPTY_FORM: CreateSurgeryDto = { patientId: '', procedureName: '' };
 
 @Component({
-  imports: [DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, SelectModule],
+  imports: [DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, SelectModule, EntityName],
   selector: 'hms-ot-list',
   templateUrl: './ot-list.html',
 })

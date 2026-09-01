@@ -28,6 +28,7 @@ import {
   PatientPolicy,
   UpdatePayerDto,
 } from '../insurance.model.js';
+import { EntityName } from '../../directory/entity-name.js';
 
 const PAGE_SIZE = 20;
 
@@ -90,6 +91,7 @@ const EMPTY_CLAIM_FORM: ClaimFormState = { patientId: '', policyId: '', invoiceI
     SelectModule,
     TabsModule,
     MessageModule,
+    EntityName,
   ],
   templateUrl: './insurance-dashboard.html',
 })

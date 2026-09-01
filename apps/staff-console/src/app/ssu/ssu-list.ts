@@ -20,6 +20,7 @@ import {
   ssuStatusSeverity,
 } from './ssu.model.js';
 import { PatientsApiService, Patient, PaginatedResponse } from '../patients/patients-api.service.js';
+import { EntityName } from '../directory/entity-name.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 const EMPTY_CREATE_FORM: CreateCaseDto = {
@@ -51,6 +52,7 @@ export const COMMON_CASE_TYPES: string[] = [
     InputNumberModule,
     SelectModule,
     TextareaModule,
+    EntityName,
   ],
   templateUrl: './ssu-list.html',
 })

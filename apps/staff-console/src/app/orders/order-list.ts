@@ -13,6 +13,7 @@ import { AuthService } from '@org/auth';
 
 import { OrdersApiService, Order, CreateOrderDto, CreateOrderItemDto } from './orders-api.service.js';
 import { ORDER_ITEM_TYPES, ORDER_PRIORITIES } from './order.model.js';
+import { EntityName } from '../directory/entity-name.js';
 
 function emptyItemRow(): CreateOrderItemDto {
   return { itemType: '', itemDescription: '', priority: 'Routine' };
@@ -32,6 +33,7 @@ function emptyItemRow(): CreateOrderItemDto {
     InputTextModule,
     SelectModule,
     TextareaModule,
+    EntityName,
   ],
   templateUrl: './order-list.html',
 })

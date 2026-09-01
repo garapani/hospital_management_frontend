@@ -126,7 +126,7 @@
               <ng-template pTemplate="body" let-policy>
                 <tr>
                   <td class="font-medium">{{ policy.policyNumber }}</td>
-                  <td class="font-mono text-xs text-slate-600">{{ policy.patientId }}</td>
+                  <td class="text-xs text-slate-600"><hms-entity-name type="patient" [id]="policy.patientId"></hms-entity-name></td>
                   <td>{{ payerNameById().get(policy.payerId) ?? policy.payerId }}</td>
                   <td>{{ policy.coverageStartDate }} – {{ policy.coverageEndDate }}</td>
                   <td class="text-right font-mono">{{ policy.sumInsured | currency: 'INR' : 'symbol-narrow' : '1.2-2' }}</td>
@@ -223,7 +223,7 @@
               <ng-template pTemplate="body" let-claim>
                 <tr>
                   <td class="font-medium">{{ claim.claimNumber }}</td>
-                  <td class="font-mono text-xs text-slate-600">{{ claim.patientId }}</td>
+                  <td class="text-xs text-slate-600"><hms-entity-name type="patient" [id]="claim.patientId"></hms-entity-name></td>
                   <td class="text-right font-mono">{{ claim.amountClaimed | currency: 'INR' : 'symbol-narrow' : '1.2-2' }}</td>
                   <td class="text-right font-mono">{{ claim.amountApproved !== null ? (claim.amountApproved | currency: 'INR' : 'symbol-narrow' : '1.2-2') : '—' }}</td>
                   <td><p-tag [value]="claim.status" [severity]="claimStatusSeverity(claim.status)" [rounded]="true"></p-tag></td>
