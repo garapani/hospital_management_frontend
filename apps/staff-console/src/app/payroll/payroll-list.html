@@ -32,6 +32,7 @@
       placeholder="Year"
       [min]="2000"
       [max]="2100"
+      [useGrouping]="false"
     />
     <p-button
       label="Apply"
@@ -136,6 +137,7 @@
           (ngModelChange)="runForm.update(v => ({...v, year: $event}))"
           [min]="2000"
           [max]="2100"
+          [useGrouping]="false"
         />
       </div>
     </div>
