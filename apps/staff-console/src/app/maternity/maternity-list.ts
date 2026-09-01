@@ -88,7 +88,10 @@ export class MaternityList {
   submitCreate(): void {
     this.createSaving.set(true);
     this.createError.set(null);
-    this.api.create(this.createForm()).subscribe({
+    const form = this.createForm();
+    // @IsOptional() on the backend's `edd` (@IsDateString) only skips undefined/null, not '' — a
+    // cleared date field must not be sent as an empty string or it 400s.
+    this.api.create({ ...form, edd: form.edd || undefined }).subscribe({
       next: () => {
         this.createSaving.set(false);
         this.showCreateModal.set(false);

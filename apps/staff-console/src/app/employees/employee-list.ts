@@ -165,7 +165,9 @@ export class EmployeeList {
     this.saving.set(true);
     this.saveError.set(null);
     const form = this.editForm();
-    const dto: CreateEmployeeDto = { ...form, joinDate: toLocalDateString(form.joinDate) };
+    // @IsOptional() on the backend's `email` (@IsEmail) only skips undefined/null, not '' — a
+    // cleared Email field must not be sent as an empty string or it 400s.
+    const dto: CreateEmployeeDto = { ...form, joinDate: toLocalDateString(form.joinDate), email: form.email || undefined };
     const request = this.editingId()
       ? this.employeesApi.update(this.editingId()!, dto)
       : this.employeesApi.create(dto);

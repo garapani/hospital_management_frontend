@@ -102,6 +102,27 @@ describe('EmployeeList', () => {
     );
   });
 
+  it('sends email as undefined, not empty string, when typed then cleared before saving', async () => {
+    // Regression test: the backend's @IsOptional() on `email` (@IsEmail) only skips
+    // undefined/null, not '' — a cleared Email field must never reach the API as ''.
+    const { fixture, employeesApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openCreateModal();
+    fixture.componentInstance.editForm.update((v) => ({
+      ...v,
+      firstName: 'Priya',
+      lastName: 'Menon',
+      email: '',
+    }));
+    fixture.componentInstance.submitSave();
+    await fixture.whenStable();
+
+    const payload = (employeesApi.create as jest.Mock).mock.calls[0][0];
+    expect(payload.email).toBeUndefined();
+  });
+
   it('confirms before deactivating an employee, but not before reactivating one, and toasts success', async () => {
     const { fixture, employeesApi, confirmationService } = setup();
     fixture.detectChanges();

@@ -57,6 +57,22 @@ describe('MaternityList', () => {
     expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success', summary: 'Maternity record created' }));
   });
 
+  it('sends edd as undefined, not empty string, when picked then cleared before saving', async () => {
+    // Regression test: the backend's @IsOptional() on `edd` (@IsDateString) only skips
+    // undefined/null, not '' — a cleared date field must never reach the API as ''.
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openCreateModal();
+    fixture.componentInstance.createForm.set({ admissionId: 'adm-1', patientId: 'p1', edd: '' });
+    fixture.componentInstance.submitCreate();
+    await fixture.whenStable();
+
+    const payload = (api.create as jest.Mock).mock.calls[0][0];
+    expect(payload.edd).toBeUndefined();
+  });
+
   it('confirms before recording a delivery, and toasts success', async () => {
     const { fixture, api, messageService, confirmationService } = setup();
     fixture.detectChanges();
