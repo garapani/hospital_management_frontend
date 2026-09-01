@@ -316,9 +316,9 @@ export class PatientDetail implements OnInit {
   // --- Notes ---
   loadNotes(patientId: string) {
     this.notesLoading.set(true);
-    this.encountersApi.getNotesByPatient(patientId).subscribe({
-      next: (data) => {
-        this.notes.set(data);
+    this.encountersApi.getNotesByPatient(patientId, PATIENT_CHART_TAB_LIMIT).subscribe({
+      next: (result) => {
+        this.notes.set(result.data);
         this.notesFirst.set(0);
         this.notesLoading.set(false);
       },
@@ -356,9 +356,9 @@ export class PatientDetail implements OnInit {
   // --- Diagnoses ---
   loadDiagnoses(patientId: string) {
     this.diagnosesLoading.set(true);
-    this.encountersApi.getDiagnosesByPatient(patientId).subscribe({
-      next: (data) => {
-        this.diagnoses.set(data);
+    this.encountersApi.getDiagnosesByPatient(patientId, PATIENT_CHART_TAB_LIMIT).subscribe({
+      next: (result) => {
+        this.diagnoses.set(result.data);
         this.diagnosesLoading.set(false);
       },
       error: () => {
@@ -415,9 +415,9 @@ export class PatientDetail implements OnInit {
   // --- Prescriptions ---
   loadPrescriptions(patientId: string) {
     this.prescriptionsLoading.set(true);
-    this.encountersApi.getPrescriptionsByPatient(patientId).subscribe({
-      next: (data) => {
-        this.prescriptions.set(data);
+    this.encountersApi.getPrescriptionsByPatient(patientId, PATIENT_CHART_TAB_LIMIT).subscribe({
+      next: (result) => {
+        this.prescriptions.set(result.data);
         this.prescriptionsLoading.set(false);
       },
       error: () => {

@@ -40,9 +40,9 @@ describe('PatientDetail', () => {
       ...vitalsApiOverrides,
     } as unknown as VitalsApiService;
     const encountersApi = {
-      getNotesByPatient: jest.fn().mockReturnValue(of([])),
-      getDiagnosesByPatient: jest.fn().mockReturnValue(of([])),
-      getPrescriptionsByPatient: jest.fn().mockReturnValue(of([])),
+      getNotesByPatient: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 200, totalPages: 0 } })),
+      getDiagnosesByPatient: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 200, totalPages: 0 } })),
+      getPrescriptionsByPatient: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 200, totalPages: 0 } })),
       deleteDiagnosis: jest.fn().mockReturnValue(of({ success: true })),
       deletePrescription: jest.fn().mockReturnValue(of({ success: true })),
     } as unknown as EncountersApiService;
@@ -89,9 +89,9 @@ describe('PatientDetail', () => {
     await fixture.whenStable();
 
     expect(vitalsApi.listByPatient).toHaveBeenCalledWith('patient-1');
-    expect(encountersApi.getNotesByPatient).toHaveBeenCalledWith('patient-1');
-    expect(encountersApi.getDiagnosesByPatient).toHaveBeenCalledWith('patient-1');
-    expect(encountersApi.getPrescriptionsByPatient).toHaveBeenCalledWith('patient-1');
+    expect(encountersApi.getNotesByPatient).toHaveBeenCalledWith('patient-1', 200);
+    expect(encountersApi.getDiagnosesByPatient).toHaveBeenCalledWith('patient-1', 200);
+    expect(encountersApi.getPrescriptionsByPatient).toHaveBeenCalledWith('patient-1', 200);
   });
 
   it('skips vitals/encounter loads when the user lacks read permission', async () => {
@@ -220,9 +220,9 @@ describe('PatientDetail', () => {
       updatedAt: '2026-08-01T00:00:00Z',
     }));
     const encountersApi = {
-      getNotesByPatient: jest.fn().mockReturnValue(of(manyNotes)),
-      getDiagnosesByPatient: jest.fn().mockReturnValue(of([])),
-      getPrescriptionsByPatient: jest.fn().mockReturnValue(of([])),
+      getNotesByPatient: jest.fn().mockReturnValue(of({ data: manyNotes, meta: { total: 12, page: 1, limit: 200, totalPages: 1 } })),
+      getDiagnosesByPatient: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 200, totalPages: 0 } })),
+      getPrescriptionsByPatient: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 200, totalPages: 0 } })),
     } as unknown as EncountersApiService;
     TestBed.configureTestingModule({
       imports: [PatientDetail],

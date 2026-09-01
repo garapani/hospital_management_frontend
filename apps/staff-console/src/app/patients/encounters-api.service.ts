@@ -82,6 +82,16 @@ export interface CreatePrescriptionDto {
   notes?: string;
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class EncountersApiService {
   private apiClient = inject(ApiClientService);
@@ -94,8 +104,12 @@ export class EncountersApiService {
     return this.apiClient.patch<ClinicalNote>(`/encounters/notes/${id}`, data);
   }
 
-  getNotesByPatient(patientId: string) {
-    return this.apiClient.get<ClinicalNote[]>(`/encounters/notes/patient/${patientId}`);
+  // Backend paginates this endpoint (PaginatedResponseDto<ClinicalNote>) — matching the shape
+  // every other patient-chart tab's list endpoint returns, not a raw array.
+  getNotesByPatient(patientId: string, limit?: number) {
+    return this.apiClient.get<PaginatedResponse<ClinicalNote>>(`/encounters/notes/patient/${patientId}`, {
+      params: limit !== undefined ? { limit } : {},
+    });
   }
 
   createDiagnosis(data: CreateDiagnosisDto) {
@@ -106,8 +120,10 @@ export class EncountersApiService {
     return this.apiClient.delete<{ success: boolean }>(`/encounters/diagnoses/${id}`);
   }
 
-  getDiagnosesByPatient(patientId: string) {
-    return this.apiClient.get<Diagnosis[]>(`/encounters/diagnoses/patient/${patientId}`);
+  getDiagnosesByPatient(patientId: string, limit?: number) {
+    return this.apiClient.get<PaginatedResponse<Diagnosis>>(`/encounters/diagnoses/patient/${patientId}`, {
+      params: limit !== undefined ? { limit } : {},
+    });
   }
 
   createPrescription(data: CreatePrescriptionDto) {
@@ -118,7 +134,9 @@ export class EncountersApiService {
     return this.apiClient.delete<{ success: boolean }>(`/encounters/prescriptions/${id}`);
   }
 
-  getPrescriptionsByPatient(patientId: string) {
-    return this.apiClient.get<Prescription[]>(`/encounters/prescriptions/patient/${patientId}`);
+  getPrescriptionsByPatient(patientId: string, limit?: number) {
+    return this.apiClient.get<PaginatedResponse<Prescription>>(`/encounters/prescriptions/patient/${patientId}`, {
+      params: limit !== undefined ? { limit } : {},
+    });
   }
 }
