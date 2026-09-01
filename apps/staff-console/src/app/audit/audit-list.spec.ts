@@ -5,6 +5,12 @@ import { ApiError } from '@org/api-client';
 import { AuditList } from './audit-list.js';
 import { AuditApiService } from './audit-api.service.js';
 import { toLocalDateTimeString } from '../shared/date.util.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
+
+const directoryResolverProvider = {
+  provide: DirectoryResolverService,
+  useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
+};
 
 describe('AuditList', () => {
   function setup(searchResult: 'ok' | 'error') {
@@ -41,6 +47,7 @@ describe('AuditList', () => {
       providers: [
         { provide: AuditApiService, useValue: auditApi },
         { provide: MessageService, useValue: messageService },
+        directoryResolverProvider,
       ],
     });
 

@@ -11,6 +11,7 @@ import { MessageService } from 'primeng/api';
 import { AuditApiService } from './audit-api.service.js';
 import { AuditRecord } from './audit.model.js';
 import { toLocalDateTimeString } from '../shared/date.util.js';
+import { EntityName } from '../directory/entity-name.js';
 
 @Component({
   imports: [
@@ -23,6 +24,7 @@ import { toLocalDateTimeString } from '../shared/date.util.js';
     FormsModule,
     InputTextModule,
     SelectModule,
+    EntityName,
   ],
   selector: 'hms-audit-list',
   templateUrl: './audit-list.html',
