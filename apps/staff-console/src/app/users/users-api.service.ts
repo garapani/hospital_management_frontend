@@ -66,4 +66,17 @@ export class UsersApiService {
   getRoles(): Observable<RoleDto[]> {
     return this.api.get<RoleDto[]>('/accounts/roles');
   }
+
+  /** Minimal-field staff lookup (id/displayName/username) gated on identity.accounts.directory,
+   *  not identity.accounts.manage — usable by roles like Receptionist/Doctor that need to pick a
+   *  staff member (e.g. "which doctor") without holding full account-management access. */
+  listDirectory(role: string): Observable<DirectoryEntry[]> {
+    return this.api.get<DirectoryEntry[]>('/accounts/directory', { params: { role } });
+  }
+}
+
+export interface DirectoryEntry {
+  id: string;
+  displayName: string;
+  username: string | null;
 }

@@ -13,6 +13,8 @@ import { AuthService } from '@org/auth';
 import { AppointmentsApiService, Appointment, CreateAppointmentDto } from './appointments-api.service.js';
 import { appointmentDisplayName, appointmentStatusSeverity, APPOINTMENT_STATUSES } from './appointment.model.js';
 import { todayLocal as today } from '../shared/date.util.js';
+import { UsersApiService } from '../users/users-api.service.js';
+import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 
 @Component({
   selector: 'hms-appointment-list',
@@ -32,6 +34,8 @@ import { todayLocal as today } from '../shared/date.util.js';
 })
 export class AppointmentList {
   private readonly appointmentsApi = inject(AppointmentsApiService);
+  private readonly usersApi = inject(UsersApiService);
+  private readonly masterDataApi = inject(MasterDataApiService);
   private readonly route = inject(ActivatedRoute);
   readonly auth = inject(AuthService);
 
@@ -63,8 +67,25 @@ export class AppointmentList {
   readonly displayName = appointmentDisplayName;
   readonly statusSeverity = appointmentStatusSeverity;
 
+  // Name pickers for Doctor/Department, replacing raw-UUID text filters — a receptionist doesn't
+  // know a doctor's UUID by heart. Loaded once; failures leave the picker empty rather than
+  // blocking the rest of the screen.
+  readonly doctorOptions = signal<{ label: string; value: string }[]>([]);
+  readonly departmentOptions = signal<{ label: string; value: string }[]>([]);
+
   constructor() {
     this.load(0);
+    this.usersApi.listDirectory('Doctor').subscribe({
+      next: (doctors) => this.doctorOptions.set(doctors.map((d) => ({ label: d.displayName, value: d.id }))),
+      error: () => this.doctorOptions.set([]),
+    });
+    this.masterDataApi.listDepartments().subscribe({
+      next: (departments) =>
+        this.departmentOptions.set(
+          departments.filter((d) => d.isAppointmentApplicable).map((d) => ({ label: d.departmentName, value: d.id })),
+        ),
+      error: () => this.departmentOptions.set([]),
+    });
 
     this.route.queryParamMap.subscribe((params) => {
       const patientId = params.get('patientId');
