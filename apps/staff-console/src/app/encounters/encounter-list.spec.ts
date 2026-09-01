@@ -11,9 +11,9 @@ const EMPTY_PAGE = { data: [], meta: { total: 0, page: 1, limit: 20, totalPages:
 describe('EncounterList', () => {
   function setup() {
     const encountersApi = {
-      notesByPatient: jest.fn().mockReturnValue(of(EMPTY_PAGE)),
-      diagnosesByPatient: jest.fn().mockReturnValue(of(EMPTY_PAGE)),
-      prescriptionsByPatient: jest.fn().mockReturnValue(of(EMPTY_PAGE)),
+      getNotesByPatient: jest.fn().mockReturnValue(of(EMPTY_PAGE)),
+      getDiagnosesByPatient: jest.fn().mockReturnValue(of(EMPTY_PAGE)),
+      getPrescriptionsByPatient: jest.fn().mockReturnValue(of(EMPTY_PAGE)),
       createNote: jest.fn().mockReturnValue(of({})),
       updateNote: jest.fn().mockReturnValue(of({})),
       createDiagnosis: jest.fn().mockReturnValue(of({})),
@@ -67,9 +67,9 @@ describe('EncounterList', () => {
     fixture.componentInstance.selectPatient(patient);
     await fixture.whenStable();
 
-    expect(encountersApi.notesByPatient).toHaveBeenCalledWith('p1');
-    expect(encountersApi.diagnosesByPatient).toHaveBeenCalledWith('p1');
-    expect(encountersApi.prescriptionsByPatient).toHaveBeenCalledWith('p1');
+    expect(encountersApi.getNotesByPatient).toHaveBeenCalledWith('p1');
+    expect(encountersApi.getDiagnosesByPatient).toHaveBeenCalledWith('p1');
+    expect(encountersApi.getPrescriptionsByPatient).toHaveBeenCalledWith('p1');
   });
 
   it('creates a clinical note with the current user as doctorId', async () => {
@@ -103,7 +103,7 @@ describe('EncounterList', () => {
     await fixture.whenStable();
 
     expect(encountersApi.updateNote).toHaveBeenCalledWith('note-1', { status: 'Signed' });
-    expect(encountersApi.notesByPatient).toHaveBeenCalledWith('p1');
+    expect(encountersApi.getNotesByPatient).toHaveBeenCalledWith('p1');
   });
 
   it('refuses to open the edit form for an already-signed note', async () => {

@@ -5,8 +5,8 @@ import { ConfirmationService } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { PatientDetail } from './patient-detail.js';
 import { PatientsApiService, Patient } from './patients-api.service.js';
-import { VitalsApiService, Vital } from './vitals-api.service.js';
-import { EncountersApiService, ClinicalNote, Diagnosis } from './encounters-api.service.js';
+import { VitalsApiService, Vital } from '../vitals/vitals-api.service.js';
+import { EncountersApiService, ClinicalNote, Diagnosis } from '../encounters/encounters-api.service.js';
 import { AppointmentsApiService } from '../appointments/appointments-api.service.js';
 import { AdmissionsApiService } from '../admissions/admissions-api.service.js';
 import { OrdersApiService } from '../orders/orders-api.service.js';
@@ -326,7 +326,6 @@ describe('PatientDetail', () => {
       triageNotes: 'Stable',
       recordedAt: '2026-08-01T00:00:00Z',
       createdAt: '2026-08-01T00:00:00Z',
-      updatedAt: '2026-08-01T00:00:00Z',
     };
     const { fixture } = setup(['vitals.read', 'vitals.manage'], {}, {
       listByPatient: jest.fn().mockReturnValue(of([latestVital])),

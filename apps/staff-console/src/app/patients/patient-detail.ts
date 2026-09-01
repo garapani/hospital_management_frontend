@@ -20,7 +20,7 @@ import { AuthService } from '@org/auth';
 
 import { PatientsApiService, Patient, CreatePatientDto } from './patients-api.service.js';
 import { calculateAge, isValidEmail, isValidPhoneNumber } from './patient.model.js';
-import { VitalsApiService, Vital, CreateVitalDto } from './vitals-api.service.js';
+import { VitalsApiService, Vital, CreateVitalDto } from '../vitals/vitals-api.service.js';
 import {
   EncountersApiService,
   ClinicalNote,
@@ -29,7 +29,7 @@ import {
   CreateNoteDto,
   CreateDiagnosisDto,
   CreatePrescriptionDto,
-} from './encounters-api.service.js';
+} from '../encounters/encounters-api.service.js';
 import { AppointmentsApiService, Appointment } from '../appointments/appointments-api.service.js';
 import { appointmentStatusSeverity } from '../appointments/appointment.model.js';
 import { AdmissionsApiService, Admission } from '../admissions/admissions-api.service.js';
@@ -309,7 +309,7 @@ export class PatientDetail implements OnInit {
     // (temperature, pulse, BP, respiratory rate, SpO2, pain score) and free-text notes must not
     // carry forward: pre-filling them produced fabricated vitals a nurse could save unmodified.
     const latest = this.vitals()[0];
-    this.vitalForm.set(latest ? { height: latest.height, weight: latest.weight } : {});
+    this.vitalForm.set(latest ? { height: latest.height ?? undefined, weight: latest.weight ?? undefined } : {});
     this.showVitalModal.set(true);
   }
 

@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 export interface ClinicalNote {
   id: string;
   patientId: string;
+  appointmentId?: string | null;
   doctorId: string;
   chiefComplaint?: string | null;
   historyOfPresentingIllness?: string | null;
@@ -15,31 +16,9 @@ export interface ClinicalNote {
   updatedAt: string;
 }
 
-export interface Diagnosis {
-  id: string;
-  patientId: string;
-  doctorId: string;
-  icd10Code?: string | null;
-  description: string;
-  isPrimary: boolean;
-  createdAt: string;
-}
-
-export interface Prescription {
-  id: string;
-  patientId: string;
-  doctorId: string;
-  medicationName: string;
-  dosage: string;
-  frequency: string;
-  route: string;
-  durationDays: number;
-  notes?: string | null;
-  createdAt: string;
-}
-
 export interface CreateNoteDto {
   patientId: string;
+  appointmentId?: string;
   doctorId: string;
   chiefComplaint?: string;
   historyOfPresentingIllness?: string;
@@ -55,6 +34,55 @@ export interface UpdateNoteDto {
   status?: string;
 }
 
+export interface Diagnosis {
+  id: string;
+  patientId: string;
+  appointmentId?: string | null;
+  doctorId: string;
+  icd10Code?: string | null;
+  description: string;
+  isPrimary: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDiagnosisDto {
+  patientId: string;
+  appointmentId?: string;
+  doctorId: string;
+  icd10Code?: string;
+  description: string;
+  isPrimary?: boolean;
+}
+
+export interface Prescription {
+  id: string;
+  patientId: string;
+  appointmentId?: string | null;
+  doctorId: string;
+  medicationName: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  durationDays: number;
+  notes?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePrescriptionDto {
+  patientId: string;
+  appointmentId?: string;
+  doctorId: string;
+  medicationName: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  durationDays: number;
+  notes?: string;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   meta: {
@@ -63,25 +91,6 @@ export interface PaginatedResponse<T> {
     limit: number;
     totalPages: number;
   };
-}
-
-export interface CreateDiagnosisDto {
-  patientId: string;
-  doctorId: string;
-  icd10Code?: string;
-  description: string;
-  isPrimary?: boolean;
-}
-
-export interface CreatePrescriptionDto {
-  patientId: string;
-  doctorId: string;
-  medicationName: string;
-  dosage: string;
-  frequency: string;
-  route: string;
-  durationDays: number;
-  notes?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -99,8 +108,10 @@ export class EncountersApiService {
   // Backend paginates this endpoint (PaginatedResponseDto<ClinicalNote>), matching every other
   // patient-chart list endpoint — not a raw array (see the "Patient Edit Profile" finding for the
   // earlier instance of this exact mismatch breaking a different screen).
-  notesByPatient(patientId: string): Observable<PaginatedResponse<ClinicalNote>> {
-    return this.api.get<PaginatedResponse<ClinicalNote>>(`/encounters/notes/patient/${patientId}`);
+  getNotesByPatient(patientId: string, limit?: number): Observable<PaginatedResponse<ClinicalNote>> {
+    return this.api.get<PaginatedResponse<ClinicalNote>>(`/encounters/notes/patient/${patientId}`, {
+      params: limit !== undefined ? { limit } : {},
+    });
   }
 
   createDiagnosis(dto: CreateDiagnosisDto): Observable<Diagnosis> {
@@ -111,8 +122,10 @@ export class EncountersApiService {
     return this.api.delete<{ success: boolean }>(`/encounters/diagnoses/${id}`);
   }
 
-  diagnosesByPatient(patientId: string): Observable<PaginatedResponse<Diagnosis>> {
-    return this.api.get<PaginatedResponse<Diagnosis>>(`/encounters/diagnoses/patient/${patientId}`);
+  getDiagnosesByPatient(patientId: string, limit?: number): Observable<PaginatedResponse<Diagnosis>> {
+    return this.api.get<PaginatedResponse<Diagnosis>>(`/encounters/diagnoses/patient/${patientId}`, {
+      params: limit !== undefined ? { limit } : {},
+    });
   }
 
   createPrescription(dto: CreatePrescriptionDto): Observable<Prescription> {
@@ -123,7 +136,9 @@ export class EncountersApiService {
     return this.api.delete<{ success: boolean }>(`/encounters/prescriptions/${id}`);
   }
 
-  prescriptionsByPatient(patientId: string): Observable<PaginatedResponse<Prescription>> {
-    return this.api.get<PaginatedResponse<Prescription>>(`/encounters/prescriptions/patient/${patientId}`);
+  getPrescriptionsByPatient(patientId: string, limit?: number): Observable<PaginatedResponse<Prescription>> {
+    return this.api.get<PaginatedResponse<Prescription>>(`/encounters/prescriptions/patient/${patientId}`, {
+      params: limit !== undefined ? { limit } : {},
+    });
   }
 }

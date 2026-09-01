@@ -126,7 +126,7 @@ export class EncounterList {
 
   private loadNotes(patientId: string): Promise<void> {
     return new Promise((resolve) => {
-      this.encountersApi.notesByPatient(patientId).subscribe({
+      this.encountersApi.getNotesByPatient(patientId).subscribe({
         next: (result) => {
           this.notes.set(result.data);
           resolve();
@@ -138,7 +138,7 @@ export class EncounterList {
 
   private loadDiagnoses(patientId: string): Promise<void> {
     return new Promise((resolve) => {
-      this.encountersApi.diagnosesByPatient(patientId).subscribe({
+      this.encountersApi.getDiagnosesByPatient(patientId).subscribe({
         next: (result) => {
           this.diagnoses.set(result.data);
           resolve();
@@ -150,7 +150,7 @@ export class EncounterList {
 
   private loadPrescriptions(patientId: string): Promise<void> {
     return new Promise((resolve) => {
-      this.encountersApi.prescriptionsByPatient(patientId).subscribe({
+      this.encountersApi.getPrescriptionsByPatient(patientId).subscribe({
         next: (result) => {
           this.prescriptions.set(result.data);
           resolve();

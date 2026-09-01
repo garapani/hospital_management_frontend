@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 export interface Vital {
   id: string;
   patientId: string;
+  appointmentId?: string | null;
   height?: number | null;
   weight?: number | null;
   bmi?: number | null;
@@ -22,6 +23,7 @@ export interface Vital {
 
 export interface CreateVitalDto {
   patientId: string;
+  appointmentId?: string;
   height?: number;
   weight?: number;
   temperature?: number;
@@ -32,7 +34,10 @@ export interface CreateVitalDto {
   spO2?: number;
   painScale?: number;
   triageNotes?: string;
+  recordedAt?: string;
 }
+
+export type UpdateVitalDto = Omit<CreateVitalDto, 'patientId'>;
 
 @Injectable({ providedIn: 'root' })
 export class VitalsApiService {
@@ -44,6 +49,10 @@ export class VitalsApiService {
 
   create(dto: CreateVitalDto): Observable<Vital> {
     return this.api.post<Vital>('/vitals', dto);
+  }
+
+  update(id: string, dto: UpdateVitalDto): Observable<Vital> {
+    return this.api.patch<Vital>(`/vitals/${id}`, dto);
   }
 
   voidVital(id: string): Observable<{ success: boolean }> {

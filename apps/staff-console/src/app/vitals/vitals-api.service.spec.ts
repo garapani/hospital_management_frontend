@@ -50,4 +50,27 @@ describe('VitalsApiService', () => {
     req.flush([]);
     expect(result).toEqual([]);
   });
+
+  it('updates a vital record', () => {
+    let result: unknown;
+    service.update('vital-1', { pulse: 90 }).subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('https://gateway.example/api/vitals/vital-1');
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ pulse: 90 });
+
+    const vital = { id: 'vital-1', patientId: 'patient-1', pulse: 90 };
+    req.flush(vital);
+    expect(result).toEqual(vital);
+  });
+
+  it('voids a vital record', () => {
+    let result: unknown;
+    service.voidVital('vital-1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('https://gateway.example/api/vitals/vital-1');
+    expect(req.request.method).toBe('DELETE');
+    req.flush({ success: true });
+    expect(result).toEqual({ success: true });
+  });
 });
