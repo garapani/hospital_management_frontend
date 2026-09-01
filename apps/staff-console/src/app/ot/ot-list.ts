@@ -14,9 +14,15 @@ import { AuthService } from '@org/auth';
 import { OtApiService } from './ot-api.service.js';
 import { CreateSurgeryDto, OtSurgery, OtSurgeryStatus } from './ot.model.js';
 import { EntityName } from '../directory/entity-name.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
 
 const DEFAULT_PAGE_SIZE = 20;
+const PATIENT_SEARCH_DEBOUNCE_MS = 300;
 const EMPTY_FORM: CreateSurgeryDto = { patientId: '', procedureName: '' };
+
+function patientLabel(p: { firstName: string; lastName: string; patientNo: string }): string {
+  return `${p.firstName} ${p.lastName} (${p.patientNo})`;
+}
 
 @Component({
   imports: [DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, SelectModule, EntityName],
@@ -27,6 +33,7 @@ export class OtList {
   private readonly api = inject(OtApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly patientsApi = inject(PatientsApiService);
   readonly auth = inject(AuthService);
   readonly canManage = this.auth.hasPermission('ot.manage');
 
@@ -37,6 +44,13 @@ export class OtList {
   readonly firstRecord = signal(0);
   readonly patientIdFilter = signal('');
   readonly statusFilter = signal<OtSurgeryStatus | null>(null);
+  // Name pickers, replacing raw-UUID "Patient ID" text fields.
+  readonly patientOptions = signal<{ label: string; value: string }[]>([]);
+  readonly patientSearching = signal(false);
+  private patientSearchTimer?: ReturnType<typeof setTimeout>;
+  readonly schedulePatientOptions = signal<{ label: string; value: string }[]>([]);
+  readonly schedulePatientSearching = signal(false);
+  private schedulePatientSearchTimer?: ReturnType<typeof setTimeout>;
 
   readonly statusOptions: { label: string; value: OtSurgeryStatus | null }[] = [
     { label: 'All', value: null },
@@ -91,10 +105,49 @@ export class OtList {
       });
   }
 
+  onPatientFilterSearch(query: string): void {
+    clearTimeout(this.patientSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) {
+      this.patientOptions.set([]);
+      return;
+    }
+    this.patientSearchTimer = setTimeout(() => {
+      this.patientSearching.set(true);
+      this.patientsApi.search({ page: 1, limit: 10, q }).subscribe({
+        next: (res) => {
+          this.patientOptions.set(res.data.map((p) => ({ label: patientLabel(p), value: p.id })));
+          this.patientSearching.set(false);
+        },
+        error: () => this.patientSearching.set(false),
+      });
+    }, PATIENT_SEARCH_DEBOUNCE_MS);
+  }
+
+  onSchedulePatientSearch(query: string): void {
+    clearTimeout(this.schedulePatientSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) {
+      this.schedulePatientOptions.set([]);
+      return;
+    }
+    this.schedulePatientSearchTimer = setTimeout(() => {
+      this.schedulePatientSearching.set(true);
+      this.patientsApi.search({ page: 1, limit: 10, q }).subscribe({
+        next: (res) => {
+          this.schedulePatientOptions.set(res.data.map((p) => ({ label: patientLabel(p), value: p.id })));
+          this.schedulePatientSearching.set(false);
+        },
+        error: () => this.schedulePatientSearching.set(false),
+      });
+    }, PATIENT_SEARCH_DEBOUNCE_MS);
+  }
+
   openScheduleModal(): void {
     this.scheduleForm.set(EMPTY_FORM);
     this.scheduleScheduledAt.set('');
     this.scheduleError.set(null);
+    this.schedulePatientOptions.set([]);
     this.showScheduleModal.set(true);
   }
 

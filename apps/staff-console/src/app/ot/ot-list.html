@@ -12,16 +12,20 @@
 
     <div class="flex items-end gap-3 flex-wrap">
       <label for="otPatientIdFilter" class="flex flex-col gap-2">
-        <span class="text-sm font-medium text-slate-700">Patient ID</span>
-        <input
-          pInputText
-          id="otPatientIdFilter"
+        <span class="text-sm font-medium text-slate-700">Patient</span>
+        <p-select
+          inputId="otPatientIdFilter"
+          [options]="patientOptions()"
           [ngModel]="patientIdFilter()"
-          (ngModelChange)="patientIdFilter.set($event)"
-          (keyup.enter)="applyFilters()"
-          placeholder="Filter by patient ID"
-          class="w-64"
-        />
+          (ngModelChange)="patientIdFilter.set($event); applyFilters()"
+          [filter]="true"
+          (onFilter)="onPatientFilterSearch($event.filter)"
+          [loading]="patientSearching()"
+          filterPlaceholder="Search by name, number or phone"
+          emptyFilterMessage="Type at least 2 characters to search"
+          placeholder="Search for a patient"
+          styleClass="w-80"
+        ></p-select>
       </label>
       <label for="otStatusFilter" class="flex flex-col gap-2">
         <span class="text-sm font-medium text-slate-700">Status</span>
@@ -105,8 +109,21 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label for="otSchedulePatientId" class="text-sm font-medium text-slate-700">Patient ID</label>
-      <input pInputText id="otSchedulePatientId" [ngModel]="scheduleForm().patientId" (ngModelChange)="scheduleForm.set({ ...scheduleForm(), patientId: $event })" class="w-full" />
+      <label for="otSchedulePatientId" class="text-sm font-medium text-slate-700">Patient</label>
+      <p-select
+        inputId="otSchedulePatientId"
+        [options]="schedulePatientOptions()"
+        [ngModel]="scheduleForm().patientId"
+        (ngModelChange)="scheduleForm.set({ ...scheduleForm(), patientId: $event })"
+        [filter]="true"
+        (onFilter)="onSchedulePatientSearch($event.filter)"
+        [loading]="schedulePatientSearching()"
+        filterPlaceholder="Search by name, number or phone"
+        emptyFilterMessage="Type at least 2 characters to search"
+        placeholder="Search for a patient"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
     </div>
     <div class="flex flex-col gap-2">
       <label for="otScheduleProcedure" class="text-sm font-medium text-slate-700">Procedure Name</label>

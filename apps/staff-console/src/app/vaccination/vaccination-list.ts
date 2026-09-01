@@ -6,6 +6,7 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
@@ -13,18 +14,25 @@ import { VaccinationApiService } from './vaccination-api.service.js';
 import { CreateVaccinationRecordDto, VaccinationRecord } from './vaccination.model.js';
 import { todayLocal } from '../shared/date.util.js';
 import { EntityName } from '../directory/entity-name.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
 
 const DEFAULT_PAGE_SIZE = 20;
+const PATIENT_SEARCH_DEBOUNCE_MS = 300;
 const EMPTY_FORM: CreateVaccinationRecordDto = { patientId: '', vaccine: '', administeredDate: '' };
 
+function patientLabel(p: { firstName: string; lastName: string; patientNo: string }): string {
+  return `${p.firstName} ${p.lastName} (${p.patientNo})`;
+}
+
 @Component({
-  imports: [DatePipe, FormsModule, TableModule, ButtonModule, DialogModule, InputTextModule, InputNumberModule, EntityName],
+  imports: [DatePipe, FormsModule, TableModule, ButtonModule, DialogModule, InputTextModule, InputNumberModule, SelectModule, EntityName],
   selector: 'hms-vaccination-list',
   templateUrl: './vaccination-list.html',
 })
 export class VaccinationList {
   private readonly api = inject(VaccinationApiService);
   private readonly messageService = inject(MessageService);
+  private readonly patientsApi = inject(PatientsApiService);
   readonly auth = inject(AuthService);
   readonly canManage = this.auth.hasPermission('vaccination.manage');
 
@@ -34,6 +42,13 @@ export class VaccinationList {
   readonly pageSize = signal(DEFAULT_PAGE_SIZE);
   readonly firstRecord = signal(0);
   readonly patientIdFilter = signal('');
+  // Name pickers, replacing raw-UUID "Patient ID" text fields.
+  readonly patientOptions = signal<{ label: string; value: string }[]>([]);
+  readonly patientSearching = signal(false);
+  private patientSearchTimer?: ReturnType<typeof setTimeout>;
+  readonly formPatientOptions = signal<{ label: string; value: string }[]>([]);
+  readonly formPatientSearching = signal(false);
+  private formPatientSearchTimer?: ReturnType<typeof setTimeout>;
 
   readonly showModal = signal(false);
   readonly form = signal<CreateVaccinationRecordDto>(EMPTY_FORM);
@@ -66,9 +81,48 @@ export class VaccinationList {
     });
   }
 
+  onPatientFilterSearch(query: string): void {
+    clearTimeout(this.patientSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) {
+      this.patientOptions.set([]);
+      return;
+    }
+    this.patientSearchTimer = setTimeout(() => {
+      this.patientSearching.set(true);
+      this.patientsApi.search({ page: 1, limit: 10, q }).subscribe({
+        next: (res) => {
+          this.patientOptions.set(res.data.map((p) => ({ label: patientLabel(p), value: p.id })));
+          this.patientSearching.set(false);
+        },
+        error: () => this.patientSearching.set(false),
+      });
+    }, PATIENT_SEARCH_DEBOUNCE_MS);
+  }
+
+  onFormPatientSearch(query: string): void {
+    clearTimeout(this.formPatientSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) {
+      this.formPatientOptions.set([]);
+      return;
+    }
+    this.formPatientSearchTimer = setTimeout(() => {
+      this.formPatientSearching.set(true);
+      this.patientsApi.search({ page: 1, limit: 10, q }).subscribe({
+        next: (res) => {
+          this.formPatientOptions.set(res.data.map((p) => ({ label: patientLabel(p), value: p.id })));
+          this.formPatientSearching.set(false);
+        },
+        error: () => this.formPatientSearching.set(false),
+      });
+    }, PATIENT_SEARCH_DEBOUNCE_MS);
+  }
+
   openModal(): void {
     this.form.set({ ...EMPTY_FORM, administeredDate: todayLocal() });
     this.error.set(null);
+    this.formPatientOptions.set([]);
     this.showModal.set(true);
   }
 

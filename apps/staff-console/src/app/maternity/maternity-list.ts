@@ -16,10 +16,17 @@ import { MaternityApiService } from './maternity-api.service.js';
 import { CreateMaternityRecordDto, DELIVERY_TYPES, DeliveryType, MaternityRecord, RecordDeliveryDto } from './maternity.model.js';
 import { todayLocal } from '../shared/date.util.js';
 import { EntityName } from '../directory/entity-name.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
+import { AdmissionsApiService, Admission } from '../admissions/admissions-api.service.js';
 
 const DEFAULT_PAGE_SIZE = 20;
+const PATIENT_SEARCH_DEBOUNCE_MS = 300;
 const EMPTY_CREATE_FORM: CreateMaternityRecordDto = { admissionId: '', patientId: '' };
 const EMPTY_DELIVERY_FORM: RecordDeliveryDto = { deliveryDate: '', deliveryType: 'Normal', babyCount: 1 };
+
+function patientLabel(p: { firstName: string; lastName: string; patientNo: string }): string {
+  return `${p.firstName} ${p.lastName} (${p.patientNo})`;
+}
 
 @Component({
   imports: [DatePipe, RouterModule, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, SelectModule, EntityName],
@@ -30,6 +37,8 @@ export class MaternityList {
   private readonly api = inject(MaternityApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly patientsApi = inject(PatientsApiService);
+  private readonly admissionsApi = inject(AdmissionsApiService);
   readonly auth = inject(AuthService);
   readonly canManage = this.auth.hasPermission('maternity.manage');
 
@@ -41,11 +50,23 @@ export class MaternityList {
   readonly pageSize = signal(DEFAULT_PAGE_SIZE);
   readonly firstRecord = signal(0);
   readonly patientIdFilter = signal('');
+  // Name picker, replacing a raw-UUID "Patient ID" text filter.
+  readonly patientOptions = signal<{ label: string; value: string }[]>([]);
+  readonly patientSearching = signal(false);
+  private patientSearchTimer?: ReturnType<typeof setTimeout>;
 
   readonly showCreateModal = signal(false);
   readonly createForm = signal<CreateMaternityRecordDto>(EMPTY_CREATE_FORM);
   readonly createSaving = signal(false);
   readonly createError = signal<string | null>(null);
+  // A maternity record needs a real admissionId, not just a patientId — selecting a patient in
+  // the create dialog resolves straight to their current active admission (mirroring
+  // NursingConsole.onPatientSelected), rather than asking the user for an admission UUID.
+  readonly createPatientOptions = signal<{ label: string; value: string }[]>([]);
+  readonly createPatientSearching = signal(false);
+  private createPatientSearchTimer?: ReturnType<typeof setTimeout>;
+  readonly resolvedAdmission = signal<Admission | null>(null);
+  readonly resolvingAdmission = signal(false);
 
   readonly showDeliveryModal = signal(false);
   readonly deliveryRecordId = signal<string | null>(null);
@@ -79,8 +100,79 @@ export class MaternityList {
     });
   }
 
+  onPatientFilterSearch(query: string): void {
+    clearTimeout(this.patientSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) {
+      this.patientOptions.set([]);
+      return;
+    }
+    this.patientSearchTimer = setTimeout(() => {
+      this.patientSearching.set(true);
+      this.patientsApi.search({ page: 1, limit: 10, q }).subscribe({
+        next: (res) => {
+          this.patientOptions.set(res.data.map((p) => ({ label: patientLabel(p), value: p.id })));
+          this.patientSearching.set(false);
+        },
+        error: () => this.patientSearching.set(false),
+      });
+    }, PATIENT_SEARCH_DEBOUNCE_MS);
+  }
+
+  onCreatePatientSearch(query: string): void {
+    clearTimeout(this.createPatientSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) {
+      this.createPatientOptions.set([]);
+      return;
+    }
+    this.createPatientSearchTimer = setTimeout(() => {
+      this.createPatientSearching.set(true);
+      this.patientsApi.search({ page: 1, limit: 10, q }).subscribe({
+        next: (res) => {
+          this.createPatientOptions.set(res.data.map((p) => ({ label: patientLabel(p), value: p.id })));
+          this.createPatientSearching.set(false);
+        },
+        error: () => this.createPatientSearching.set(false),
+      });
+    }, PATIENT_SEARCH_DEBOUNCE_MS);
+  }
+
+  /** A patient can only have one active admission at a time (backend-enforced), so selecting a
+   *  patient resolves straight to it — no separate "pick which admission" step needed. */
+  onCreatePatientSelected(patientId: string | null): void {
+    this.createForm.set({ ...this.createForm(), patientId: patientId ?? '', admissionId: '' });
+    this.resolvedAdmission.set(null);
+
+    if (!patientId) return;
+
+    this.resolvingAdmission.set(true);
+    this.admissionsApi.list({ patientId, status: 'Admitted', page: 1, limit: 1 }).subscribe({
+      next: (result) => {
+        this.resolvingAdmission.set(false);
+        const admission = result.data[0];
+        if (!admission) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'No active admission',
+            detail: 'This patient has no active admission right now.',
+          });
+          return;
+        }
+        this.resolvedAdmission.set(admission);
+        this.createForm.set({ ...this.createForm(), admissionId: admission.id });
+      },
+      error: () => {
+        this.resolvingAdmission.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: "Could not look up this patient's admission." });
+      },
+    });
+  }
+
   openCreateModal(): void {
     this.createForm.set(EMPTY_CREATE_FORM);
+    this.createPatientOptions.set([]);
+    this.resolvedAdmission.set(null);
     this.createError.set(null);
     this.showCreateModal.set(true);
   }

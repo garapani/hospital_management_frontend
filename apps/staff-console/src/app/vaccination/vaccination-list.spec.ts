@@ -5,6 +5,7 @@ import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { VaccinationList } from './vaccination-list.js';
 import { VaccinationApiService } from './vaccination-api.service.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
 
 describe('VaccinationList', () => {
   function setup(canManage = true) {
@@ -14,6 +15,9 @@ describe('VaccinationList', () => {
     } as unknown as VaccinationApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
     const auth = { hasPermission: () => canManage } as unknown as AuthService;
+    const patientsApi = {
+      search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+    } as unknown as PatientsApiService;
 
     TestBed.configureTestingModule({
       imports: [VaccinationList],
@@ -21,11 +25,12 @@ describe('VaccinationList', () => {
         { provide: VaccinationApiService, useValue: api },
         { provide: MessageService, useValue: messageService },
         { provide: AuthService, useValue: auth },
+        { provide: PatientsApiService, useValue: patientsApi },
       ],
     });
 
     const fixture = TestBed.createComponent(VaccinationList);
-    return { fixture, api, messageService };
+    return { fixture, api, messageService, patientsApi };
   }
 
   it('loads records on init', async () => {
@@ -65,6 +70,24 @@ describe('VaccinationList', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.error()).toBe('Invalid patient');
+  });
+
+  it('debounces and searches patients as the filter/form pickers are typed', () => {
+    jest.useFakeTimers();
+    const { fixture, patientsApi } = setup();
+    (patientsApi.search as jest.Mock).mockReturnValue(
+      of({ data: [{ id: 'p1', firstName: 'John', lastName: 'Smith', patientNo: 'PAT-2' }], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } }),
+    );
+
+    fixture.componentInstance.onPatientFilterSearch('jo');
+    fixture.componentInstance.onFormPatientSearch('jo');
+    expect(patientsApi.search).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(300);
+
+    expect(patientsApi.search).toHaveBeenCalledWith({ page: 1, limit: 10, q: 'jo' });
+    expect(fixture.componentInstance.patientOptions()).toEqual([{ label: 'John Smith (PAT-2)', value: 'p1' }]);
+    expect(fixture.componentInstance.formPatientOptions()).toEqual([{ label: 'John Smith (PAT-2)', value: 'p1' }]);
+    jest.useRealTimers();
   });
 
   it('hides the record action for a read-only user', async () => {

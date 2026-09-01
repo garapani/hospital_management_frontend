@@ -5,6 +5,7 @@ import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { OtList } from './ot-list.js';
 import { OtApiService } from './ot-api.service.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
 
 describe('OtList', () => {
   function setup(canManage = true) {
@@ -21,6 +22,9 @@ describe('OtList', () => {
       confirm: jest.fn((c: Confirmation) => c.accept?.()),
     } as unknown as ConfirmationService;
     const auth = { hasPermission: () => canManage } as unknown as AuthService;
+    const patientsApi = {
+      search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+    } as unknown as PatientsApiService;
 
     TestBed.configureTestingModule({
       imports: [OtList],
@@ -29,11 +33,12 @@ describe('OtList', () => {
         { provide: MessageService, useValue: messageService },
         { provide: ConfirmationService, useValue: confirmationService },
         { provide: AuthService, useValue: auth },
+        { provide: PatientsApiService, useValue: patientsApi },
       ],
     });
 
     const fixture = TestBed.createComponent(OtList);
-    return { fixture, api, messageService, confirmationService };
+    return { fixture, api, messageService, confirmationService, patientsApi };
   }
 
   it('loads surgeries on init', async () => {
@@ -117,6 +122,24 @@ describe('OtList', () => {
     expect(fixture.componentInstance.detailError()).toBe(true);
     expect(fixture.componentInstance.detailLoading()).toBe(false);
     expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error' }));
+  });
+
+  it('debounces and searches patients as the filter/schedule pickers are typed', () => {
+    jest.useFakeTimers();
+    const { fixture, patientsApi } = setup();
+    (patientsApi.search as jest.Mock).mockReturnValue(
+      of({ data: [{ id: 'p1', firstName: 'John', lastName: 'Smith', patientNo: 'PAT-2' }], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } }),
+    );
+
+    fixture.componentInstance.onPatientFilterSearch('jo');
+    fixture.componentInstance.onSchedulePatientSearch('jo');
+    expect(patientsApi.search).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(300);
+
+    expect(patientsApi.search).toHaveBeenCalledWith({ page: 1, limit: 10, q: 'jo' });
+    expect(fixture.componentInstance.patientOptions()).toEqual([{ label: 'John Smith (PAT-2)', value: 'p1' }]);
+    expect(fixture.componentInstance.schedulePatientOptions()).toEqual([{ label: 'John Smith (PAT-2)', value: 'p1' }]);
+    jest.useRealTimers();
   });
 
   it('hides mutating actions for a read-only user', async () => {
