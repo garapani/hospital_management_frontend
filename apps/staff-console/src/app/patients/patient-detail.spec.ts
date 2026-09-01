@@ -212,6 +212,30 @@ describe('PatientDetail', () => {
     expect(fixture.componentInstance.patient()?.allergies).toBe('No known allergies');
   });
 
+  it('sends dateOfBirth/phoneNumber/email as undefined, not empty string, when cleared to blank', async () => {
+    // Regression test: the backend's @IsOptional() on these fields only skips undefined/null,
+    // not '' — UpdatePatientDto's @IsDateString/@Matches/@IsEmail reject an empty string with a
+    // 400, so clearing a previously-filled field must never reach the API as ''.
+    const withContact: Patient = { ...patient, dateOfBirth: '1990-01-01', phoneNumber: '9812345670', email: 'jane@example.com' };
+    const { fixture, patientsApi } = setup([], { getById: jest.fn().mockReturnValue(of(withContact)) });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openEditModal();
+    fixture.componentInstance.editForm.set({
+      ...fixture.componentInstance.editForm(),
+      dateOfBirth: '',
+      phoneNumber: '',
+      email: '',
+    });
+    fixture.componentInstance.submitEdit();
+
+    const payload = (patientsApi.update as jest.Mock).mock.calls[0][1];
+    expect(payload.dateOfBirth).toBeUndefined();
+    expect(payload.phoneNumber).toBeUndefined();
+    expect(payload.email).toBeUndefined();
+  });
+
   it('clears the saving flag and keeps the modal open when the edit save fails', async () => {
     const { fixture } = setup([], { update: jest.fn().mockReturnValue(throwError(() => new Error('boom'))) });
     fixture.detectChanges();

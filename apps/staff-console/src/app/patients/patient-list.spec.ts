@@ -77,4 +77,65 @@ describe('PatientList', () => {
     expect(payload.insuranceProvider).toBeUndefined();
     expect(payload.insurancePolicyNumber).toBeUndefined();
   });
+
+  it('sends dateOfBirth/phoneNumber/email as undefined, not empty string, when left blank', async () => {
+    // Regression test: the backend's @IsOptional() on these fields only skips undefined/null,
+    // not '' — CreatePatientDto's @IsDateString/@Matches/@IsEmail reject an empty string with a
+    // 400, so a blank form field must never reach the API as ''.
+    const { fixture, patientsApi } = setup();
+    fixture.detectChanges();
+
+    fixture.componentInstance.patientForm.set({
+      firstName: 'Ravi',
+      lastName: 'Sharma',
+      gender: 'Male',
+      dateOfBirth: '',
+      phoneNumber: '',
+      email: '',
+      allowDuplicate: true,
+    });
+    await fixture.componentInstance.checkAndSubmit();
+
+    const payload = (patientsApi.create as jest.Mock).mock.calls[0][0];
+    expect(payload.dateOfBirth).toBeUndefined();
+    expect(payload.phoneNumber).toBeUndefined();
+    expect(payload.email).toBeUndefined();
+  });
+
+  it('checks for duplicates using a family-shared phone number and lists the existing match without blocking registration', async () => {
+    const existingMatch = {
+      id: 'patient-1',
+      patientNo: 'PAT-1',
+      firstName: 'Ravi',
+      lastName: 'Sharma',
+      phoneNumber: '9812345670',
+    } as Patient;
+    const { fixture, patientsApi } = setup({
+      checkDuplicates: jest.fn().mockReturnValue(of([existingMatch])),
+    });
+    fixture.detectChanges();
+
+    fixture.componentInstance.patientForm.set({
+      firstName: 'Kiran',
+      lastName: 'Sharma',
+      gender: 'Male',
+      phoneNumber: '9812345670',
+      allowDuplicate: false,
+    });
+    await fixture.componentInstance.checkAndSubmit();
+
+    expect(patientsApi.checkDuplicates).toHaveBeenCalledWith(
+      expect.objectContaining({ firstName: 'Kiran', lastName: 'Sharma', phoneNumber: '9812345670' }),
+    );
+    expect(fixture.componentInstance.showDuplicateWarning()).toBe(true);
+    expect(fixture.componentInstance.duplicateMatches()).toEqual([existingMatch]);
+    expect(patientsApi.create).not.toHaveBeenCalled();
+
+    fixture.componentInstance.proceedWithDuplicate();
+    await fixture.whenStable();
+
+    expect(patientsApi.create).toHaveBeenCalledWith(
+      expect.objectContaining({ firstName: 'Kiran', lastName: 'Sharma', phoneNumber: '9812345670', allowDuplicate: true }),
+    );
+  });
 });

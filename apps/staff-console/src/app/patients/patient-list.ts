@@ -163,8 +163,8 @@ export class PatientList implements OnInit {
           this.api.checkDuplicates({
             firstName: form.firstName,
             lastName: form.lastName,
-            phoneNumber: form.phoneNumber,
-            dateOfBirth: form.dateOfBirth,
+            phoneNumber: form.phoneNumber || undefined,
+            dateOfBirth: form.dateOfBirth || undefined,
           }),
         );
 
@@ -190,9 +190,19 @@ export class PatientList implements OnInit {
   private submitRegistration() {
     const form = this.patientForm();
     // Unchecking "Has Insurance?" after typing something shouldn't silently resurrect it.
-    const payload: CreatePatientDto = this.hasInsurance()
-      ? form
-      : { ...form, insuranceProvider: undefined, insurancePolicyNumber: undefined };
+    const insuranceOverrides = this.hasInsurance()
+      ? {}
+      : { insuranceProvider: undefined, insurancePolicyNumber: undefined };
+    // dateOfBirth/phoneNumber/email carry format validators server-side (@IsDateString,
+    // @Matches, @IsEmail); @IsOptional() only skips undefined/null, not '', so a blank form
+    // field must become undefined here rather than being sent as an empty string.
+    const payload: CreatePatientDto = {
+      ...form,
+      dateOfBirth: form.dateOfBirth || undefined,
+      phoneNumber: form.phoneNumber || undefined,
+      email: form.email || undefined,
+      ...insuranceOverrides,
+    };
 
     this.api.create(payload).subscribe({
       next: () => {

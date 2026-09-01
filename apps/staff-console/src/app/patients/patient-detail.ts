@@ -264,7 +264,17 @@ export class PatientDetail implements OnInit {
     if (!patientId) return;
 
     this.editSaving.set(true);
-    this.api.update(patientId, this.editForm()).subscribe({
+    const form = this.editForm();
+    // dateOfBirth/phoneNumber/email carry format validators server-side (@IsDateString,
+    // @Matches, @IsEmail); @IsOptional() only skips undefined/null, not '', so clearing one of
+    // these fields down to blank must send undefined, not an empty string.
+    const payload = {
+      ...form,
+      dateOfBirth: form.dateOfBirth || undefined,
+      phoneNumber: form.phoneNumber || undefined,
+      email: form.email || undefined,
+    };
+    this.api.update(patientId, payload).subscribe({
       next: (updated) => {
         this.patient.set(updated);
         this.editSaving.set(false);
