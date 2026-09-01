@@ -5,6 +5,7 @@ import { MessageService, ConfirmationService, Confirmation } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { UserDetail } from './user-detail.js';
 import { UsersApiService } from './users-api.service.js';
+import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 
 describe('UserDetail', () => {
   const accountWithRoles = {
@@ -19,6 +20,7 @@ describe('UserDetail', () => {
       failedLoginAttempts: 0,
       lockedUntil: null,
       createdAt: '2026-08-01T00:00:00Z',
+      wardId: null,
     },
     roleIds: ['role-1'],
     roleNames: ['Super Admin'],
@@ -33,6 +35,7 @@ describe('UserDetail', () => {
       reactivate: jest.fn().mockReturnValue(of({})),
       unlock: jest.fn().mockReturnValue(of({})),
       resetPassword: jest.fn().mockReturnValue(of({ success: true, initialPassword: 'Gen3rated-Pass' })),
+      setWard: jest.fn().mockReturnValue(of({})),
       assignRole:
         options.assignError === undefined
           ? jest.fn().mockReturnValue(of({ id: 'role-assignment-1' }))
@@ -42,6 +45,9 @@ describe('UserDetail', () => {
           ? jest.fn().mockReturnValue(of({ revoked: true }))
           : jest.fn().mockReturnValue(options.revokeError),
     } as unknown as UsersApiService;
+    const masterDataApi = {
+      listWards: jest.fn().mockReturnValue(of([{ id: 'ward-1', wardName: 'ICU', isActive: true }])),
+    } as unknown as MasterDataApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
     const router = { navigate: jest.fn() } as unknown as Router;
     const confirmationService = {
@@ -53,6 +59,7 @@ describe('UserDetail', () => {
       providers: [
         { provide: ActivatedRoute, useValue: { paramMap: of({ get: () => 'acc-1' }) } },
         { provide: UsersApiService, useValue: usersApi },
+        { provide: MasterDataApiService, useValue: masterDataApi },
         { provide: MessageService, useValue: messageService },
         { provide: Router, useValue: router },
         { provide: ConfirmationService, useValue: confirmationService },
@@ -60,7 +67,7 @@ describe('UserDetail', () => {
     });
 
     const fixture = TestBed.createComponent(UserDetail);
-    return { fixture, usersApi, messageService, router, confirmationService };
+    return { fixture, usersApi, masterDataApi, messageService, router, confirmationService };
   }
 
   it('loads the account and its role options on construction', async () => {
@@ -155,6 +162,32 @@ describe('UserDetail', () => {
     );
   });
 
+  it('assigns a ward and toasts success', async () => {
+    const { fixture, usersApi, messageService } = setup();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openWardEdit();
+    fixture.componentInstance.selectedWardId.set('ward-1');
+    fixture.componentInstance.saveWard();
+
+    expect(usersApi.setWard).toHaveBeenCalledWith('acc-1', 'ward-1');
+    expect(fixture.componentInstance.editingWard()).toBe(false);
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Ward assignment updated' }),
+    );
+  });
+
+  it('clears a ward assignment', async () => {
+    const { fixture, usersApi } = setup();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openWardEdit();
+    fixture.componentInstance.selectedWardId.set(null);
+    fixture.componentInstance.saveWard();
+
+    expect(usersApi.setWard).toHaveBeenCalledWith('acc-1', null);
+  });
+
   it('reset with no temporary password shows the generated password once', async () => {
     const { fixture, usersApi } = setup();
     await fixture.whenStable();
@@ -178,12 +211,16 @@ describe('UserDetail', () => {
       getRoles: jest.fn().mockReturnValue(of([])),
       resetPassword: jest.fn().mockReturnValue(of({ success: true })),
     } as unknown as UsersApiService;
+    const masterDataApi = {
+      listWards: jest.fn().mockReturnValue(of([])),
+    } as unknown as MasterDataApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
     TestBed.configureTestingModule({
       imports: [UserDetail],
       providers: [
         { provide: ActivatedRoute, useValue: { paramMap: of({ get: () => 'acc-1' }) } },
         { provide: UsersApiService, useValue: usersApi },
+        { provide: MasterDataApiService, useValue: masterDataApi },
         { provide: MessageService, useValue: messageService },
         { provide: Router, useValue: { navigate: jest.fn() } },
         { provide: ConfirmationService, useValue: { confirm: jest.fn() } },

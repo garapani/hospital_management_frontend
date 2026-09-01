@@ -9,6 +9,9 @@ export interface User {
   failedLoginAttempts: number;
   lockedUntil: string | null;
   createdAt: string;
+  /** Ward-scoped access for Nursing/Vitals (PRD §6.2). Null means unrestricted, tenant-wide
+   *  access — the default until an admin assigns a ward. */
+  wardId: string | null;
 }
 
 export interface UserRole {

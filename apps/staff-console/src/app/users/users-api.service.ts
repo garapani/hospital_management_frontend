@@ -43,6 +43,11 @@ export class UsersApiService {
     return this.api.patch<User>(`/accounts/${id}/unlock`, {});
   }
 
+  /** wardId: null clears the assignment (restores tenant-wide access). */
+  setWard(id: string, wardId: string | null): Observable<User> {
+    return this.api.patch<User>(`/accounts/${id}/ward`, { wardId });
+  }
+
   /** Admin-initiated password reset; when no password is supplied the backend generates one
    *  and returns it once (the account must change it on next login). */
   resetPassword(

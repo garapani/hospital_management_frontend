@@ -12,6 +12,8 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { UsersApiService } from './users-api.service.js';
 import { RoleDto, UserWithRoles, userStatusLabel, userStatusSeverity } from './user.model.js';
+import { MasterDataApiService } from '../master-data/master-data-api.service.js';
+import { Ward } from '../master-data/master-data.model.js';
 
 @Component({
   imports: [
@@ -32,6 +34,7 @@ export class UserDetail {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly usersApi = inject(UsersApiService);
+  private readonly masterDataApi = inject(MasterDataApiService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
 
@@ -55,6 +58,13 @@ export class UserDetail {
   /** Generated one-time password to display; null once the admin sets their own. */
   readonly resetResult = signal<string | null>(null);
 
+  // Ward Assignment. wardId scopes Nursing/Vitals access (PRD §6.2); unassigned (null) keeps
+  // today's tenant-wide access. Editable inline rather than via a modal — a single field.
+  readonly wards = signal<Ward[]>([]);
+  readonly editingWard = signal(false);
+  readonly selectedWardId = signal<string | null>(null);
+  readonly wardSaving = signal(false);
+
   constructor() {
     this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
@@ -69,6 +79,16 @@ export class UserDetail {
           severity: 'error',
           summary: 'Error',
           detail: 'Could not load the role list.',
+        });
+      },
+    });
+    this.masterDataApi.listWards().subscribe({
+      next: (wards) => this.wards.set(wards.filter((w) => w.isActive)),
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Could not load the ward list.',
         });
       },
     });
@@ -146,6 +166,42 @@ export class UserDetail {
           summary: 'Unlock failed',
           detail: 'Could not unlock the account. Please try again.',
         }),
+    });
+  }
+
+  wardName(wardId: string | null): string {
+    if (!wardId) return 'Unassigned (tenant-wide access)';
+    return this.wards().find((w) => w.id === wardId)?.wardName ?? 'Unknown ward';
+  }
+
+  openWardEdit(): void {
+    this.selectedWardId.set(this.accountData()?.account.wardId ?? null);
+    this.editingWard.set(true);
+  }
+
+  cancelWardEdit(): void {
+    this.editingWard.set(false);
+  }
+
+  saveWard(): void {
+    const id = this.accountData()?.account.id;
+    if (!id) return;
+
+    this.wardSaving.set(true);
+    this.usersApi.setWard(id, this.selectedWardId()).subscribe({
+      next: () => {
+        this.wardSaving.set(false);
+        this.editingWard.set(false);
+        this.afterAction('Ward assignment updated');
+      },
+      error: (error: ApiError) => {
+        this.wardSaving.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Ward assignment failed',
+          detail: error.message || 'Could not update the ward assignment. Please try again.',
+        });
+      },
     });
   }
 
