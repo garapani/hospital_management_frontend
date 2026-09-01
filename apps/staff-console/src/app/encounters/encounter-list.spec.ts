@@ -64,12 +64,15 @@ describe('EncounterList', () => {
     fixture.detectChanges();
     await fixture.whenStable();
 
+    fixture.componentInstance.searchQuery.set('Meera');
     fixture.componentInstance.selectPatient(patient);
     await fixture.whenStable();
 
     expect(encountersApi.getNotesByPatient).toHaveBeenCalledWith('p1');
     expect(encountersApi.getDiagnosesByPatient).toHaveBeenCalledWith('p1');
     expect(encountersApi.getPrescriptionsByPatient).toHaveBeenCalledWith('p1');
+    expect(fixture.componentInstance.searchQuery()).toBe('');
+    expect(fixture.componentInstance.patientResults()).toEqual([]);
   });
 
   it('creates a clinical note with the current user as doctorId', async () => {

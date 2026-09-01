@@ -112,6 +112,7 @@ export class EncounterList {
   selectPatient(patient: Patient): void {
     this.selectedPatient.set(patient);
     this.patientResults.set([]);
+    this.searchQuery.set('');
     this.reloadAll(patient.id);
   }
 

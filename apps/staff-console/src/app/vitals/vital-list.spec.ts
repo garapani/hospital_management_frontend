@@ -68,6 +68,8 @@ describe('VitalList', () => {
 
     expect(fixture.componentInstance.selectedPatient()).toBe(patient);
     expect(vitalsApi.listByPatient).toHaveBeenCalledWith('p1');
+    expect(fixture.componentInstance.searchQuery()).toBe('');
+    expect(fixture.componentInstance.patientResults()).toEqual([]);
   });
 
   it('creates a vital reading for the selected patient and reloads the list', async () => {

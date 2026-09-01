@@ -79,6 +79,7 @@ export class VitalList {
   selectPatient(patient: Patient): void {
     this.selectedPatient.set(patient);
     this.patientResults.set([]);
+    this.searchQuery.set('');
     this.loadVitals(patient.id);
   }
 
