@@ -33,6 +33,11 @@ export class AdmissionDetail implements OnInit {
   readonly loading = signal(true);
   readonly notFound = signal(false);
 
+  // Resolved display names for the raw wardId/bedId FKs — the "ward and bed are raw UUIDs"
+  // finding covers this Details panel too, not just the transfer picker.
+  readonly wardName = signal<string | null>(null);
+  readonly bedNumber = signal<string | null>(null);
+
   // Transfer — ward + bed pickers (not a free-text bed UUID field), scoped to beds actually
   // available right now so a nurse can't pick an occupied/maintenance bed by mistake.
   readonly showTransferModal = signal(false);
@@ -85,6 +90,7 @@ export class AdmissionDetail implements OnInit {
         this.admission.set(data);
         this.loading.set(false);
         this.loadSummary(data.id);
+        this.loadWardAndBedNames(data.wardId, data.bedId);
       },
       error: (err: ApiError) => {
         this.loading.set(false);
@@ -92,6 +98,19 @@ export class AdmissionDetail implements OnInit {
           this.notFound.set(true);
         }
       },
+    });
+  }
+
+  private loadWardAndBedNames(wardId: string, bedId: string): void {
+    this.wardName.set(null);
+    this.bedNumber.set(null);
+    this.masterDataApi.getWard(wardId).subscribe({
+      next: (ward) => this.wardName.set(ward.wardName),
+      error: () => {},
+    });
+    this.masterDataApi.getBed(bedId).subscribe({
+      next: (bed) => this.bedNumber.set(bed.bedNumber),
+      error: () => {},
     });
   }
 

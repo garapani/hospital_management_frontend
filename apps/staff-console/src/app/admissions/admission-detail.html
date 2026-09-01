@@ -62,12 +62,12 @@
           <div class="font-medium text-slate-900 font-mono text-xs">{{ a.admittingDoctorId }}</div>
         </div>
         <div class="surface-card p-3">
-          <div class="text-xs text-slate-500 mb-1">Ward ID</div>
-          <div class="font-medium text-slate-900 font-mono text-xs">{{ a.wardId }}</div>
+          <div class="text-xs text-slate-500 mb-1">Ward</div>
+          <div class="font-medium text-slate-900">{{ wardName() ?? a.wardId }}</div>
         </div>
         <div class="surface-card p-3">
-          <div class="text-xs text-slate-500 mb-1">Bed ID</div>
-          <div class="font-medium text-slate-900 font-mono text-xs">{{ a.bedId }}</div>
+          <div class="text-xs text-slate-500 mb-1">Bed</div>
+          <div class="font-medium text-slate-900">{{ bedNumber() ? 'Bed ' + bedNumber() : a.bedId }}</div>
         </div>
         <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Admission Date</div>

@@ -59,6 +59,10 @@ export class MasterDataApiService {
     return this.api.get<Bed[]>(`/wards/${wardId}/beds`);
   }
 
+  getBed(id: string): Observable<Bed> {
+    return this.api.get<Bed>(`/beds/${id}`);
+  }
+
   createBed(wardId: string, dto: Partial<Bed>): Observable<Bed> {
     return this.api.post<Bed>(`/wards/${wardId}/beds`, dto);
   }

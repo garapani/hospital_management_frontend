@@ -65,6 +65,8 @@ describe('AdmissionDetail', () => {
     const masterDataApi = {
       listWards: jest.fn().mockReturnValue(of([{ id: 'ward-1', wardName: 'ICU', isActive: true }, { id: 'ward-2', wardName: 'General', isActive: true }])),
       listBedsByWard: jest.fn().mockReturnValue(of([{ id: 'bed-2', wardId: 'ward-2', bedNumber: '2', status: 'Available', isActive: true }])),
+      getWard: jest.fn().mockReturnValue(of({ id: 'ward-1', wardName: 'ICU', isActive: true })),
+      getBed: jest.fn().mockReturnValue(of({ id: 'bed-1', wardId: 'ward-1', bedNumber: '1', status: 'Occupied', isActive: true })),
     } as unknown as MasterDataApiService;
 
     TestBed.configureTestingModule({
@@ -145,6 +147,17 @@ describe('AdmissionDetail', () => {
     );
     expect(fixture.componentInstance.admission()?.bedId).toBe('bed-2');
     expect(fixture.componentInstance.showTransferModal()).toBe(false);
+  });
+
+  it('resolves the ward and bed names for display instead of leaving raw UUIDs on screen', async () => {
+    const { fixture, masterDataApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(masterDataApi.getWard).toHaveBeenCalledWith('ward-1');
+    expect(masterDataApi.getBed).toHaveBeenCalledWith('bed-1');
+    expect(fixture.componentInstance.wardName()).toBe('ICU');
+    expect(fixture.componentInstance.bedNumber()).toBe('1');
   });
 
   it('opens the transfer modal defaulted to the current ward, and reloads beds when the ward changes', async () => {
