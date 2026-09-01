@@ -52,6 +52,17 @@ export interface UpdateNoteDto {
   historyOfPresentingIllness?: string;
   physicalExamination?: string;
   plan?: string;
+  status?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 export interface CreateDiagnosisDto {
@@ -85,8 +96,11 @@ export class EncountersApiService {
     return this.api.patch<ClinicalNote>(`/encounters/notes/${id}`, dto);
   }
 
-  notesByPatient(patientId: string): Observable<ClinicalNote[]> {
-    return this.api.get<ClinicalNote[]>(`/encounters/notes/patient/${patientId}`);
+  // Backend paginates this endpoint (PaginatedResponseDto<ClinicalNote>), matching every other
+  // patient-chart list endpoint — not a raw array (see the "Patient Edit Profile" finding for the
+  // earlier instance of this exact mismatch breaking a different screen).
+  notesByPatient(patientId: string): Observable<PaginatedResponse<ClinicalNote>> {
+    return this.api.get<PaginatedResponse<ClinicalNote>>(`/encounters/notes/patient/${patientId}`);
   }
 
   createDiagnosis(dto: CreateDiagnosisDto): Observable<Diagnosis> {
@@ -97,8 +111,8 @@ export class EncountersApiService {
     return this.api.delete<{ success: boolean }>(`/encounters/diagnoses/${id}`);
   }
 
-  diagnosesByPatient(patientId: string): Observable<Diagnosis[]> {
-    return this.api.get<Diagnosis[]>(`/encounters/diagnoses/patient/${patientId}`);
+  diagnosesByPatient(patientId: string): Observable<PaginatedResponse<Diagnosis>> {
+    return this.api.get<PaginatedResponse<Diagnosis>>(`/encounters/diagnoses/patient/${patientId}`);
   }
 
   createPrescription(dto: CreatePrescriptionDto): Observable<Prescription> {
@@ -109,7 +123,7 @@ export class EncountersApiService {
     return this.api.delete<{ success: boolean }>(`/encounters/prescriptions/${id}`);
   }
 
-  prescriptionsByPatient(patientId: string): Observable<Prescription[]> {
-    return this.api.get<Prescription[]>(`/encounters/prescriptions/patient/${patientId}`);
+  prescriptionsByPatient(patientId: string): Observable<PaginatedResponse<Prescription>> {
+    return this.api.get<PaginatedResponse<Prescription>>(`/encounters/prescriptions/patient/${patientId}`);
   }
 }

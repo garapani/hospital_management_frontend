@@ -265,8 +265,25 @@
                 @for (n of pagedNotes(); track n.id) {
                 <div class="surface-card p-4">
                   <div class="flex items-center justify-between mb-2">
-                    <p-tag [value]="n.status" severity="info" [rounded]="true"></p-tag>
-                    <span class="text-xs text-slate-400">{{ n.createdAt | date: 'medium' }}</span>
+                    <div class="flex items-center gap-2">
+                      <p-tag [value]="n.status" [severity]="noteStatusSeverity(n.status)" [rounded]="true"></p-tag>
+                      <span class="text-xs text-slate-400">{{ n.createdAt | date: 'medium' }}</span>
+                    </div>
+                    @if (auth.hasPermission('encounter.manage')) {
+                      @if (n.status === 'Draft') {
+                      <p-button
+                        label="Sign & Lock"
+                        icon="pi pi-lock"
+                        severity="success"
+                        [text]="true"
+                        size="small"
+                        [loading]="signingNoteId() === n.id"
+                        (onClick)="signNote(n)"
+                      ></p-button>
+                      } @else {
+                      <span class="text-xs text-slate-400 flex items-center gap-1"><i class="pi pi-lock"></i> Locked</span>
+                      }
+                    }
                   </div>
                   @if (n.chiefComplaint) {
                   <div class="text-sm"><span class="font-semibold text-slate-700">Chief Complaint:</span> {{ n.chiefComplaint }}</div>

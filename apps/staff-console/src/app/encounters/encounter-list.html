@@ -102,16 +102,34 @@
             } @else {
             @for (note of notes(); track note.id) {
             <div class="rounded-lg border border-slate-200 p-4">
-              <div class="flex items-center justify-between">
-                <span class="text-xs text-slate-500">{{ note.createdAt | date: 'short' }}</span>
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <p-tag [value]="note.status" [severity]="noteStatusSeverity(note.status)" [rounded]="true" />
+                  <span class="text-xs text-slate-500">{{ note.createdAt | date: 'short' }}</span>
+                </div>
                 @if (canManage) {
-                <p-button
-                  label="Edit"
-                  severity="secondary"
-                  [text]="true"
-                  size="small"
-                  (onClick)="openNoteModal(note)"
-                />
+                <div class="flex items-center gap-1">
+                  @if (note.status === 'Draft') {
+                  <p-button
+                    label="Sign & Lock"
+                    icon="pi pi-lock"
+                    severity="success"
+                    [text]="true"
+                    size="small"
+                    [loading]="signingNoteId() === note.id"
+                    (onClick)="signNote(note)"
+                  />
+                  <p-button
+                    label="Edit"
+                    severity="secondary"
+                    [text]="true"
+                    size="small"
+                    (onClick)="openNoteModal(note)"
+                  />
+                  } @else {
+                  <span class="text-xs text-slate-400 flex items-center gap-1"><i class="pi pi-lock"></i> Locked</span>
+                  }
+                </div>
                 }
               </div>
               @if (note.chiefComplaint) {

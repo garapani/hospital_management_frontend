@@ -43,6 +43,10 @@ import { Invoice, invoiceReference, statusSeverity as invoiceStatusSeverity } fr
 // second, server-side paginator, so the fix is one large-enough fetch rather than a lazy table.
 const PATIENT_CHART_TAB_LIMIT = 200;
 
+function noteStatusSeverity(status: string): 'success' | 'warn' | 'secondary' {
+  return status === 'Signed' ? 'success' : 'warn';
+}
+
 type EditFormState = Partial<CreatePatientDto>;
 type VitalFormState = Omit<CreateVitalDto, 'patientId'>;
 type NoteFormState = Omit<CreateNoteDto, 'patientId' | 'doctorId'>;
@@ -130,6 +134,8 @@ export class PatientDetail implements OnInit {
   readonly showNoteModal = signal(false);
   readonly noteForm = signal<NoteFormState>({});
   readonly noteSaving = signal(false);
+  readonly signingNoteId = signal<string | null>(null);
+  readonly noteStatusSeverity = noteStatusSeverity;
   readonly notesPageSize = 10;
   readonly notesFirst = signal(0);
   readonly pagedNotes = computed(() => this.notes().slice(this.notesFirst(), this.notesFirst() + this.notesPageSize));
@@ -349,6 +355,33 @@ export class PatientDetail implements OnInit {
       error: () => {
         this.noteSaving.set(false);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to save note' });
+      },
+    });
+  }
+
+  signNote(note: ClinicalNote): void {
+    const patientId = this.patient()?.id;
+    if (!patientId) return;
+
+    this.confirmationService.confirm({
+      header: 'Sign & Lock Note',
+      message: 'Signing locks this note permanently — it can no longer be edited. Continue?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Sign & Lock', severity: 'success' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.signingNoteId.set(note.id);
+        this.encountersApi.updateNote(note.id, { status: 'Signed' }).subscribe({
+          next: () => {
+            this.signingNoteId.set(null);
+            this.loadNotes(patientId);
+            this.messageService.add({ severity: 'success', summary: 'Note signed and locked' });
+          },
+          error: () => {
+            this.signingNoteId.set(null);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to sign the note' });
+          },
+        });
       },
     });
   }

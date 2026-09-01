@@ -9,6 +9,7 @@ import { TextareaModule } from 'primeng/textarea';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TabsModule } from 'primeng/tabs';
 import { CheckboxModule } from 'primeng/checkbox';
+import { TagModule } from 'primeng/tag';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { PatientsApiService, Patient, PaginatedResponse } from '../patients/patients-api.service.js';
@@ -24,6 +25,10 @@ import {
 
 type ActiveTab = 'notes' | 'diagnoses' | 'prescriptions';
 
+function noteStatusSeverity(status: string): 'success' | 'warn' | 'secondary' {
+  return status === 'Signed' ? 'success' : 'warn';
+}
+
 @Component({
   selector: 'hms-encounter-list',
   standalone: true,
@@ -38,6 +43,7 @@ type ActiveTab = 'notes' | 'diagnoses' | 'prescriptions';
     InputNumberModule,
     TabsModule,
     CheckboxModule,
+    TagModule,
   ],
   templateUrl: './encounter-list.html',
 })
@@ -85,6 +91,8 @@ export class EncounterList {
   readonly savingPrescription = signal(false);
 
   readonly canManage = this.auth.hasPermission('encounter.manage');
+  readonly noteStatusSeverity = noteStatusSeverity;
+  readonly signingNoteId = signal<string | null>(null);
 
   searchPatients(): void {
     const q = this.searchQuery().trim();
@@ -119,8 +127,8 @@ export class EncounterList {
   private loadNotes(patientId: string): Promise<void> {
     return new Promise((resolve) => {
       this.encountersApi.notesByPatient(patientId).subscribe({
-        next: (notes) => {
-          this.notes.set(notes);
+        next: (result) => {
+          this.notes.set(result.data);
           resolve();
         },
         error: () => resolve(),
@@ -131,8 +139,8 @@ export class EncounterList {
   private loadDiagnoses(patientId: string): Promise<void> {
     return new Promise((resolve) => {
       this.encountersApi.diagnosesByPatient(patientId).subscribe({
-        next: (diagnoses) => {
-          this.diagnoses.set(diagnoses);
+        next: (result) => {
+          this.diagnoses.set(result.data);
           resolve();
         },
         error: () => resolve(),
@@ -143,8 +151,8 @@ export class EncounterList {
   private loadPrescriptions(patientId: string): Promise<void> {
     return new Promise((resolve) => {
       this.encountersApi.prescriptionsByPatient(patientId).subscribe({
-        next: (prescriptions) => {
-          this.prescriptions.set(prescriptions);
+        next: (result) => {
+          this.prescriptions.set(result.data);
           resolve();
         },
         error: () => resolve(),
@@ -159,6 +167,11 @@ export class EncounterList {
   openNoteModal(note?: ClinicalNote): void {
     const patient = this.selectedPatient();
     if (!patient) {
+      return;
+    }
+    // A signed note is a locked clinical record — the backend rejects any further edit
+    // (ConflictException), so the edit form must never open for one.
+    if (note?.status === 'Signed') {
       return;
     }
     this.noteForm.set(
@@ -196,6 +209,33 @@ export class EncounterList {
         this.reloadAll(patientId);
       },
       error: () => this.savingNote.set(false),
+    });
+  }
+
+  signNote(note: ClinicalNote): void {
+    this.confirmationService.confirm({
+      header: 'Sign & Lock Note',
+      message: 'Signing locks this note permanently — it can no longer be edited. Continue?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonProps: { label: 'Sign & Lock', severity: 'success' },
+      rejectButtonProps: { label: 'Cancel', severity: 'secondary', outlined: true },
+      accept: () => {
+        this.signingNoteId.set(note.id);
+        this.encountersApi.updateNote(note.id, { status: 'Signed' }).subscribe({
+          next: () => {
+            this.signingNoteId.set(null);
+            const patientId = this.selectedPatient()?.id;
+            if (patientId) {
+              this.reloadAll(patientId);
+            }
+            this.messageService.add({ severity: 'success', summary: 'Note signed and locked' });
+          },
+          error: () => {
+            this.signingNoteId.set(null);
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to sign the note' });
+          },
+        });
+      },
     });
   }
 

@@ -43,6 +43,7 @@ describe('PatientDetail', () => {
       getNotesByPatient: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 200, totalPages: 0 } })),
       getDiagnosesByPatient: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 200, totalPages: 0 } })),
       getPrescriptionsByPatient: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 200, totalPages: 0 } })),
+      updateNote: jest.fn().mockReturnValue(of({})),
       deleteDiagnosis: jest.fn().mockReturnValue(of({ success: true })),
       deletePrescription: jest.fn().mockReturnValue(of({ success: true })),
     } as unknown as EncountersApiService;
@@ -324,5 +325,26 @@ describe('PatientDetail', () => {
     expect(encountersApi.deleteDiagnosis).toHaveBeenCalledWith('diag-1');
     // Called once on initial load, once more after the confirmed delete.
     expect(encountersApi.getDiagnosesByPatient).toHaveBeenCalledTimes(2);
+  });
+
+  it('asks for confirmation before signing a note, and reloads the list once confirmed', async () => {
+    const { fixture, encountersApi } = setup(['encounter.read', 'encounter.manage']);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
+    const confirmSpy = jest.spyOn(confirmationService, 'confirm');
+
+    const note = { id: 'note-1', status: 'Draft' } as ClinicalNote;
+    fixture.componentInstance.signNote(note);
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(encountersApi.updateNote).not.toHaveBeenCalled();
+
+    confirmSpy.mock.calls[0][0].accept?.();
+
+    expect(encountersApi.updateNote).toHaveBeenCalledWith('note-1', { status: 'Signed' });
+    // Called once on initial load, once more after the confirmed sign.
+    expect(encountersApi.getNotesByPatient).toHaveBeenCalledTimes(2);
   });
 });

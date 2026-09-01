@@ -3,16 +3,19 @@ import { of } from 'rxjs';
 import { MessageService, ConfirmationService, Confirmation } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { EncounterList } from './encounter-list.js';
-import { EncountersApiService } from './encounters-api.service.js';
+import { EncountersApiService, ClinicalNote } from './encounters-api.service.js';
 import { PatientsApiService, Patient } from '../patients/patients-api.service.js';
+
+const EMPTY_PAGE = { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } };
 
 describe('EncounterList', () => {
   function setup() {
     const encountersApi = {
-      notesByPatient: jest.fn().mockReturnValue(of([])),
-      diagnosesByPatient: jest.fn().mockReturnValue(of([])),
-      prescriptionsByPatient: jest.fn().mockReturnValue(of([])),
+      notesByPatient: jest.fn().mockReturnValue(of(EMPTY_PAGE)),
+      diagnosesByPatient: jest.fn().mockReturnValue(of(EMPTY_PAGE)),
+      prescriptionsByPatient: jest.fn().mockReturnValue(of(EMPTY_PAGE)),
       createNote: jest.fn().mockReturnValue(of({})),
+      updateNote: jest.fn().mockReturnValue(of({})),
       createDiagnosis: jest.fn().mockReturnValue(of({})),
       createPrescription: jest.fn().mockReturnValue(of({})),
       deleteDiagnosis: jest.fn().mockReturnValue(of({ success: true })),
@@ -83,6 +86,38 @@ describe('EncounterList', () => {
     expect(encountersApi.createNote).toHaveBeenCalledWith(
       expect.objectContaining({ patientId: 'p1', doctorId: 'doctor-1', chiefComplaint: 'Fever' }),
     );
+    expect(fixture.componentInstance.showNoteModal()).toBe(false);
+  });
+
+  it('signs a Draft note and reloads, after the user confirms', async () => {
+    const { fixture, encountersApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.selectedPatient.set(patient);
+
+    const draftNote: ClinicalNote = {
+      id: 'note-1', patientId: 'p1', doctorId: 'doctor-1', status: 'Draft',
+      createdAt: '', updatedAt: '',
+    };
+    fixture.componentInstance.signNote(draftNote);
+    await fixture.whenStable();
+
+    expect(encountersApi.updateNote).toHaveBeenCalledWith('note-1', { status: 'Signed' });
+    expect(encountersApi.notesByPatient).toHaveBeenCalledWith('p1');
+  });
+
+  it('refuses to open the edit form for an already-signed note', async () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.selectedPatient.set(patient);
+
+    const signedNote: ClinicalNote = {
+      id: 'note-1', patientId: 'p1', doctorId: 'doctor-1', status: 'Signed',
+      createdAt: '', updatedAt: '',
+    };
+    fixture.componentInstance.openNoteModal(signedNote);
+
     expect(fixture.componentInstance.showNoteModal()).toBe(false);
   });
 
