@@ -15,6 +15,7 @@ import { EMPTY, switchMap } from 'rxjs';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { InvoicesApiService } from '../invoices-api.service.js';
+import { PatientsApiService } from '../../patients/patients-api.service.js';
 import {
   InvoiceWithReturns,
   PAYMENT_MODES,
@@ -44,12 +45,16 @@ import {
 })
 export class InvoiceDetail {
   private readonly invoicesApi = inject(InvoicesApiService);
+  private readonly patientsApi = inject(PatientsApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
   readonly auth = inject(AuthService);
 
   readonly invoice = signal<InvoiceWithReturns | null>(null);
   readonly error = signal<string | null>(null);
+  // Falls back to the raw id in the template if the patient lookup fails — the invoice itself
+  // already loaded successfully, so a name-lookup failure shouldn't block the rest of the screen.
+  readonly patientName = signal<string | null>(null);
 
   readonly reference = invoiceReference;
   readonly statusSeverity = statusSeverity;
@@ -83,13 +88,20 @@ export class InvoiceDetail {
             return EMPTY;
           }
           this.invoice.set(null);
+          this.patientName.set(null);
           this.error.set(null);
           return this.invoicesApi.findOne(id);
         }),
         takeUntilDestroyed(),
       )
       .subscribe({
-        next: (invoice) => this.invoice.set(invoice),
+        next: (invoice) => {
+          this.invoice.set(invoice);
+          this.patientsApi.getById(invoice.patientId).subscribe({
+            next: (patient) => this.patientName.set(`${patient.firstName} ${patient.lastName}`.trim()),
+            error: () => this.patientName.set(null),
+          });
+        },
         error: () => this.error.set('Failed to load invoice.'),
       });
   }

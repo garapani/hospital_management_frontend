@@ -61,11 +61,15 @@
         </div>
         <div>
           <div class="text-xs font-bold uppercase tracking-wide text-slate-500">
-            Patient ID
+            Patient
           </div>
-          <div class="font-mono text-2xl font-bold text-slate-800 mt-1">
-            {{ inv.patientId }}
-          </div>
+          <a
+            [routerLink]="['/clinical/patients', inv.patientId]"
+            class="block text-2xl font-bold text-sky-600 hover:text-sky-800 mt-1 truncate"
+            [class.font-mono]="!patientName()"
+          >
+            {{ patientName() ?? inv.patientId }}
+          </a>
         </div>
       </div>
     </div>
@@ -76,7 +80,7 @@
         class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm bg-white border border-slate-200 p-6 rounded-xl"
       >
         <dt class="font-medium text-slate-500">Invoice ID</dt>
-        <dd class="font-semibold text-slate-800">{{ inv.id }}</dd>
+        <dd class="font-mono font-semibold text-slate-800">{{ reference(inv) }}</dd>
         <dt class="font-medium text-slate-500">Subtotal</dt>
         <dd class="font-semibold text-slate-800">
           {{ inv.subtotal | number: '1.2-2' }}

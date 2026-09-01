@@ -4,6 +4,7 @@ import { Subject, of, throwError } from 'rxjs';
 import { AuthService } from '@org/auth';
 import { InvoiceDetail } from './invoice-detail.js';
 import { InvoicesApiService } from '../invoices-api.service.js';
+import { PatientsApiService, Patient } from '../../patients/patients-api.service.js';
 import { InvoiceWithReturns } from '../invoice.model.js';
 
 function fakeInvoice(overrides: Partial<InvoiceWithReturns> = {}): InvoiceWithReturns {
@@ -28,8 +29,28 @@ function fakeInvoice(overrides: Partial<InvoiceWithReturns> = {}): InvoiceWithRe
   };
 }
 
+function fakePatient(overrides: Partial<Patient> = {}): Patient {
+  return {
+    id: 'patient-1',
+    patientNo: 'PAT-2026-00001',
+    firstName: 'Asha',
+    lastName: 'Rao',
+    gender: 'Female',
+    isActive: true,
+    createdAt: '2026-08-09T00:00:00Z',
+    updatedAt: '2026-08-09T00:00:00Z',
+    ...overrides,
+  };
+}
+
 function fakeAuth(canManage = true): AuthService {
   return { hasPermission: () => canManage } as unknown as AuthService;
+}
+
+function fakePatientsApi(patient: Patient | null = fakePatient()): PatientsApiService {
+  return {
+    getById: jest.fn().mockReturnValue(patient ? of(patient) : throwError(() => new Error('not found'))),
+  } as unknown as PatientsApiService;
 }
 
 describe('InvoiceDetail', () => {
@@ -41,6 +62,7 @@ describe('InvoiceDetail', () => {
       imports: [InvoiceDetail],
       providers: [
         { provide: InvoicesApiService, useValue: invoicesApi },
+        { provide: PatientsApiService, useValue: fakePatientsApi() },
         { provide: AuthService, useValue: fakeAuth() },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'invoice-1' })) } },
       ],
@@ -63,6 +85,7 @@ describe('InvoiceDetail', () => {
       imports: [InvoiceDetail],
       providers: [
         { provide: InvoicesApiService, useValue: invoicesApi },
+        { provide: PatientsApiService, useValue: fakePatientsApi() },
         { provide: AuthService, useValue: fakeAuth() },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'invoice-1' })) } },
       ],
@@ -87,6 +110,7 @@ describe('InvoiceDetail', () => {
       imports: [InvoiceDetail],
       providers: [
         { provide: InvoicesApiService, useValue: invoicesApi },
+        { provide: PatientsApiService, useValue: fakePatientsApi() },
         { provide: AuthService, useValue: fakeAuth() },
         { provide: ActivatedRoute, useValue: { paramMap: paramMap$ } },
       ],
@@ -105,6 +129,43 @@ describe('InvoiceDetail', () => {
     expect(fixture.componentInstance.invoice()).toEqual(invoiceTwo);
   });
 
+  describe('patient name resolution', () => {
+    function setUp(patient: Patient | null) {
+      const invoice = fakeInvoice({ patientId: 'patient-1' });
+      const invoicesApi = { findOne: jest.fn().mockReturnValue(of(invoice)) } as unknown as InvoicesApiService;
+      const patientsApi = fakePatientsApi(patient);
+
+      TestBed.configureTestingModule({
+        imports: [InvoiceDetail],
+        providers: [
+          { provide: InvoicesApiService, useValue: invoicesApi },
+          { provide: PatientsApiService, useValue: patientsApi },
+          { provide: AuthService, useValue: fakeAuth() },
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: invoice.id })) } },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(InvoiceDetail);
+      fixture.detectChanges();
+      return { fixture, patientsApi };
+    }
+
+    it('resolves and exposes the patient full name once the invoice loads', async () => {
+      const { fixture, patientsApi } = setUp(fakePatient({ firstName: 'Asha', lastName: 'Rao' }));
+      await fixture.whenStable();
+
+      expect(patientsApi.getById).toHaveBeenCalledWith('patient-1');
+      expect(fixture.componentInstance.patientName()).toBe('Asha Rao');
+    });
+
+    it('leaves the patient name null (falling back to the raw id in the template) if the lookup fails', async () => {
+      const { fixture } = setUp(null);
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.patientName()).toBeNull();
+    });
+  });
+
   describe('Record Payment', () => {
     function setUp(opts: { canManage?: boolean; invoice?: InvoiceWithReturns } = {}) {
       const invoice = opts.invoice ?? fakeInvoice({ totalAmount: 100, paidAmount: 40 });
@@ -116,6 +177,7 @@ describe('InvoiceDetail', () => {
         imports: [InvoiceDetail],
         providers: [
           { provide: InvoicesApiService, useValue: invoicesApi },
+          { provide: PatientsApiService, useValue: fakePatientsApi() },
           { provide: AuthService, useValue: fakeAuth(opts.canManage ?? true) },
           { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: invoice.id })) } },
         ],
@@ -190,6 +252,7 @@ describe('InvoiceDetail', () => {
         imports: [InvoiceDetail],
         providers: [
           { provide: InvoicesApiService, useValue: invoicesApi },
+          { provide: PatientsApiService, useValue: fakePatientsApi() },
           { provide: AuthService, useValue: fakeAuth() },
           { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: invoice.id })) } },
         ],
