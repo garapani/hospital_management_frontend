@@ -41,6 +41,32 @@ export interface InvoiceWithReturns extends Invoice {
   returns: InvoiceReturn[];
 }
 
+// Matches InvoicesService.PAYMENT_MODES (backend/code/apps/api/src/billing/invoices.service.ts) —
+// keep in sync if the backend list changes.
+export const PAYMENT_MODES = ['Cash', 'Card', 'UPI', 'Cheque', 'Deposit', 'Insurance'] as const;
+export type PaymentMode = (typeof PAYMENT_MODES)[number];
+
+export interface RecordPaymentDto {
+  amount: number;
+  paymentMode: PaymentMode;
+  sourceDepositId?: string;
+}
+
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  amount: number;
+  paymentMode: string;
+  sourceDepositId: string | null;
+  receivedBy: string;
+  receivedAt: string;
+  createdAt: string;
+}
+
+export function outstandingBalance(invoice: Invoice): number {
+  return Math.max(0, invoice.totalAmount - invoice.paidAmount);
+}
+
 export function invoiceReference(invoice: Invoice): string {
   return `${invoice.financialYear}-${invoice.invoiceNumber}`;
 }

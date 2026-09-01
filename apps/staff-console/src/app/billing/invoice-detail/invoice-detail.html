@@ -1,4 +1,6 @@
 <div class="flex flex-col gap-6">
+  <p-toast></p-toast>
+
   <p-button
     label="Back to invoices"
     icon="pi pi-arrow-left"
@@ -19,14 +21,19 @@
             {{ reference(inv) }}
           </h1>
         </div>
-        <p-tag
-          [value]="inv.status"
-          [severity]="statusSeverity(inv.status)"
-          styleClass="rounded-full px-3"
-        />
+        <div class="flex items-center gap-3">
+          <p-tag
+            [value]="inv.status"
+            [severity]="statusSeverity(inv.status)"
+            styleClass="rounded-full px-3"
+          />
+          @if (canRecordPayment()) {
+          <p-button label="Record Payment" icon="pi pi-wallet" size="small" (onClick)="openPaymentModal()"></p-button>
+          }
+        </div>
       </div>
       <div
-        class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-6 bg-white border border-slate-200 p-6 rounded-xl"
+        class="mt-8 grid grid-cols-1 sm:grid-cols-4 gap-6 bg-white border border-slate-200 p-6 rounded-xl"
       >
         <div>
           <div class="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -42,6 +49,14 @@
           </div>
           <div class="font-mono text-2xl font-bold text-slate-800 mt-1">
             {{ inv.paidAmount | number: '1.2-2' }}
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-bold uppercase tracking-wide text-slate-500">
+            Outstanding
+          </div>
+          <div class="font-mono text-2xl font-bold text-slate-800 mt-1">
+            {{ outstanding() | number: '1.2-2' }}
           </div>
         </div>
         <div>
@@ -125,3 +140,58 @@
   <p class="text-sm text-surface-500">Loading…</p>
   }
 </div>
+
+<p-dialog header="Record Payment" [(visible)]="showPaymentModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (paymentError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ paymentError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label for="paymentAmount" class="text-sm font-medium text-slate-700">Amount</label>
+      <p-inputNumber
+        inputId="paymentAmount"
+        [ngModel]="paymentAmount()"
+        (ngModelChange)="paymentAmount.set($event)"
+        mode="decimal"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+        [min]="0"
+        [max]="outstanding()"
+        styleClass="w-full"
+      ></p-inputNumber>
+      <span class="text-xs text-slate-500">Outstanding balance: {{ outstanding() | number: '1.2-2' }}</span>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="paymentMode" class="text-sm font-medium text-slate-700">Payment Mode</label>
+      <p-select
+        inputId="paymentMode"
+        [options]="paymentModes"
+        [ngModel]="paymentMode()"
+        (ngModelChange)="paymentMode.set($event)"
+        placeholder="Select a payment mode"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
+    </div>
+    @if (paymentMode() === 'Deposit') {
+    <div class="flex flex-col gap-2">
+      <label for="sourceDepositId" class="text-sm font-medium text-slate-700">Source Deposit ID</label>
+      <input pInputText id="sourceDepositId" [ngModel]="sourceDepositId()" (ngModelChange)="sourceDepositId.set($event)" class="w-full" />
+    </div>
+    }
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showPaymentModal.set(false)"></p-button>
+      <p-button
+        label="Record Payment"
+        [loading]="paymentSaving()"
+        (onClick)="submitPayment()"
+        [disabled]="!paymentAmount() || !paymentMode()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

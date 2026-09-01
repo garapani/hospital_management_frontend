@@ -1,27 +1,74 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
+import { DialogModule } from 'primeng/dialog';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { EMPTY, switchMap } from 'rxjs';
+import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { InvoicesApiService } from '../invoices-api.service.js';
-import { InvoiceWithReturns, invoiceReference, statusSeverity } from '../invoice.model.js';
+import {
+  InvoiceWithReturns,
+  PAYMENT_MODES,
+  PaymentMode,
+  invoiceReference,
+  outstandingBalance,
+  statusSeverity,
+} from '../invoice.model.js';
 
 @Component({
-  imports: [DecimalPipe, DatePipe, RouterModule, ButtonModule, TagModule],
+  imports: [
+    DecimalPipe,
+    DatePipe,
+    FormsModule,
+    RouterModule,
+    ButtonModule,
+    TagModule,
+    DialogModule,
+    InputNumberModule,
+    InputTextModule,
+    SelectModule,
+    ToastModule,
+  ],
+  providers: [MessageService],
   selector: 'hms-invoice-detail',
   templateUrl: './invoice-detail.html',
 })
 export class InvoiceDetail {
   private readonly invoicesApi = inject(InvoicesApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly messageService = inject(MessageService);
+  readonly auth = inject(AuthService);
 
   readonly invoice = signal<InvoiceWithReturns | null>(null);
   readonly error = signal<string | null>(null);
 
   readonly reference = invoiceReference;
   readonly statusSeverity = statusSeverity;
+  readonly outstanding = computed(() => {
+    const invoice = this.invoice();
+    return invoice ? outstandingBalance(invoice) : 0;
+  });
+  readonly canRecordPayment = computed(() => {
+    const invoice = this.invoice();
+    return !!invoice && this.auth.hasPermission('billing.manage') && invoice.status !== 'Paid' && invoice.status !== 'Cancelled';
+  });
+
+  readonly paymentModes = PAYMENT_MODES.map((mode) => ({ label: mode, value: mode }));
+  readonly showPaymentModal = signal(false);
+  readonly paymentAmount = signal<number | null>(null);
+  readonly paymentMode = signal<PaymentMode | null>(null);
+  readonly sourceDepositId = signal('');
+  readonly paymentSaving = signal(false);
+  readonly paymentError = signal<string | null>(null);
 
   // Subscribes to paramMap (not route.snapshot) so a route-reuse navigation between two
   // billing/invoices/:id URLs (e.g. browser back/forward) refetches instead of leaving the
@@ -44,6 +91,49 @@ export class InvoiceDetail {
       .subscribe({
         next: (invoice) => this.invoice.set(invoice),
         error: () => this.error.set('Failed to load invoice.'),
+      });
+  }
+
+  openPaymentModal(): void {
+    this.paymentAmount.set(this.outstanding() || null);
+    this.paymentMode.set(null);
+    this.sourceDepositId.set('');
+    this.paymentError.set(null);
+    this.showPaymentModal.set(true);
+  }
+
+  submitPayment(): void {
+    const invoice = this.invoice();
+    const amount = this.paymentAmount();
+    const mode = this.paymentMode();
+    if (!invoice || !amount || !mode) {
+      return;
+    }
+    if (mode === 'Deposit' && !this.sourceDepositId().trim()) {
+      this.paymentError.set('Source deposit ID is required for a Deposit payment.');
+      return;
+    }
+
+    this.paymentSaving.set(true);
+    this.paymentError.set(null);
+    this.invoicesApi
+      .recordPayment(invoice.id, {
+        amount,
+        paymentMode: mode,
+        sourceDepositId: mode === 'Deposit' ? this.sourceDepositId().trim() : undefined,
+      })
+      .pipe(switchMap(() => this.invoicesApi.findOne(invoice.id)))
+      .subscribe({
+        next: (updated) => {
+          this.paymentSaving.set(false);
+          this.showPaymentModal.set(false);
+          this.invoice.set(updated);
+          this.messageService.add({ severity: 'success', summary: 'Payment recorded', detail: `${mode} ${amount}` });
+        },
+        error: (err: ApiError) => {
+          this.paymentSaving.set(false);
+          this.paymentError.set(err.message || 'Failed to record the payment.');
+        },
       });
   }
 }

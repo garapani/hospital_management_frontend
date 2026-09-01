@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClientService } from '@org/api-client';
 import { Observable } from 'rxjs';
-import { InvoiceListResult, InvoiceWithReturns } from './invoice.model.js';
+import { InvoiceListResult, InvoiceWithReturns, Payment, RecordPaymentDto } from './invoice.model.js';
 
 export interface ListInvoicesParams {
   patientId?: string;
@@ -29,5 +29,9 @@ export class InvoicesApiService {
 
   findOne(id: string): Observable<InvoiceWithReturns> {
     return this.apiClient.get<InvoiceWithReturns>(`/billing/invoices/${id}`);
+  }
+
+  recordPayment(id: string, dto: RecordPaymentDto): Observable<Payment> {
+    return this.apiClient.post<Payment>(`/billing/invoices/${id}/payments`, dto);
   }
 }

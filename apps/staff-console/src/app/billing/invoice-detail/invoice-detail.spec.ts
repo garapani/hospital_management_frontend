@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
+import { AuthService } from '@org/auth';
 import { InvoiceDetail } from './invoice-detail.js';
 import { InvoicesApiService } from '../invoices-api.service.js';
 import { InvoiceWithReturns } from '../invoice.model.js';
@@ -27,6 +28,10 @@ function fakeInvoice(overrides: Partial<InvoiceWithReturns> = {}): InvoiceWithRe
   };
 }
 
+function fakeAuth(canManage = true): AuthService {
+  return { hasPermission: () => canManage } as unknown as AuthService;
+}
+
 describe('InvoiceDetail', () => {
   it('fetches the invoice for the route id param and exposes it as a signal', async () => {
     const invoice = fakeInvoice();
@@ -36,6 +41,7 @@ describe('InvoiceDetail', () => {
       imports: [InvoiceDetail],
       providers: [
         { provide: InvoicesApiService, useValue: invoicesApi },
+        { provide: AuthService, useValue: fakeAuth() },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'invoice-1' })) } },
       ],
     });
@@ -57,6 +63,7 @@ describe('InvoiceDetail', () => {
       imports: [InvoiceDetail],
       providers: [
         { provide: InvoicesApiService, useValue: invoicesApi },
+        { provide: AuthService, useValue: fakeAuth() },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'invoice-1' })) } },
       ],
     });
@@ -80,6 +87,7 @@ describe('InvoiceDetail', () => {
       imports: [InvoiceDetail],
       providers: [
         { provide: InvoicesApiService, useValue: invoicesApi },
+        { provide: AuthService, useValue: fakeAuth() },
         { provide: ActivatedRoute, useValue: { paramMap: paramMap$ } },
       ],
     });
@@ -95,5 +103,112 @@ describe('InvoiceDetail', () => {
 
     expect(findOne).toHaveBeenCalledWith('invoice-2');
     expect(fixture.componentInstance.invoice()).toEqual(invoiceTwo);
+  });
+
+  describe('Record Payment', () => {
+    function setUp(opts: { canManage?: boolean; invoice?: InvoiceWithReturns } = {}) {
+      const invoice = opts.invoice ?? fakeInvoice({ totalAmount: 100, paidAmount: 40 });
+      const findOne = jest.fn().mockReturnValue(of(invoice));
+      const recordPayment = jest.fn().mockReturnValue(of({ id: 'payment-1' }));
+      const invoicesApi = { findOne, recordPayment } as unknown as InvoicesApiService;
+
+      TestBed.configureTestingModule({
+        imports: [InvoiceDetail],
+        providers: [
+          { provide: InvoicesApiService, useValue: invoicesApi },
+          { provide: AuthService, useValue: fakeAuth(opts.canManage ?? true) },
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: invoice.id })) } },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(InvoiceDetail);
+      fixture.detectChanges();
+      return { fixture, invoice, findOne, recordPayment };
+    }
+
+    it('computes the outstanding balance from total minus paid', async () => {
+      const { fixture } = setUp({ invoice: fakeInvoice({ totalAmount: 100, paidAmount: 40 }) });
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.outstanding()).toBe(60);
+    });
+
+    it('hides the Record Payment action without billing.manage', async () => {
+      const { fixture } = setUp({ canManage: false });
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.canRecordPayment()).toBe(false);
+    });
+
+    it('hides the Record Payment action once the invoice is Paid or Cancelled', async () => {
+      const { fixture } = setUp({ invoice: fakeInvoice({ status: 'Paid' }) });
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.canRecordPayment()).toBe(false);
+    });
+
+    it('records a payment and refreshes the invoice from the server', async () => {
+      const updatedInvoice = fakeInvoice({ paidAmount: 100, status: 'Paid' });
+      const { fixture, invoice, findOne, recordPayment } = setUp();
+      await fixture.whenStable();
+      findOne.mockReturnValue(of(updatedInvoice));
+
+      const component = fixture.componentInstance;
+      component.openPaymentModal();
+      component.paymentAmount.set(60);
+      component.paymentMode.set('Cash');
+      component.submitPayment();
+      await fixture.whenStable();
+
+      expect(recordPayment).toHaveBeenCalledWith(invoice.id, { amount: 60, paymentMode: 'Cash', sourceDepositId: undefined });
+      expect(findOne).toHaveBeenLastCalledWith(invoice.id);
+      expect(component.invoice()).toEqual(updatedInvoice);
+      expect(component.showPaymentModal()).toBe(false);
+    });
+
+    it('requires a source deposit id when the payment mode is Deposit', async () => {
+      const { fixture, recordPayment } = setUp();
+      await fixture.whenStable();
+
+      const component = fixture.componentInstance;
+      component.openPaymentModal();
+      component.paymentAmount.set(60);
+      component.paymentMode.set('Deposit');
+      component.submitPayment();
+
+      expect(recordPayment).not.toHaveBeenCalled();
+      expect(component.paymentError()).toContain('Source deposit ID');
+    });
+
+    it('surfaces the backend error message and stops the saving spinner on failure', async () => {
+      const invoice = fakeInvoice();
+      const findOne = jest.fn().mockReturnValue(of(invoice));
+      const recordPayment = jest.fn().mockReturnValue(throwError(() => ({ message: 'Payment amount exceeds outstanding balance' })));
+      const invoicesApi = { findOne, recordPayment } as unknown as InvoicesApiService;
+
+      TestBed.configureTestingModule({
+        imports: [InvoiceDetail],
+        providers: [
+          { provide: InvoicesApiService, useValue: invoicesApi },
+          { provide: AuthService, useValue: fakeAuth() },
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: invoice.id })) } },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(InvoiceDetail);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const component = fixture.componentInstance;
+      component.openPaymentModal();
+      component.paymentAmount.set(999);
+      component.paymentMode.set('Cash');
+      component.submitPayment();
+      await fixture.whenStable();
+
+      expect(component.paymentSaving()).toBe(false);
+      expect(component.paymentError()).toBe('Payment amount exceeds outstanding balance');
+      expect(component.showPaymentModal()).toBe(true);
+    });
   });
 });

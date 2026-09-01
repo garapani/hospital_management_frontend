@@ -67,4 +67,18 @@ describe('InvoicesApiService', () => {
     req.flush(invoice);
     expect(result).toEqual(invoice);
   });
+
+  it('posts a payment to the invoice payments endpoint', () => {
+    let result: unknown;
+    service.recordPayment('invoice-1', { amount: 100, paymentMode: 'Cash' }).subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne(
+      'https://gateway.example/api/billing/invoices/invoice-1/payments',
+    );
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ amount: 100, paymentMode: 'Cash' });
+    const payment = { id: 'payment-1', invoiceId: 'invoice-1', amount: 100, paymentMode: 'Cash' };
+    req.flush(payment);
+    expect(result).toEqual(payment);
+  });
 });
