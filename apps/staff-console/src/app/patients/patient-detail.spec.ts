@@ -19,6 +19,7 @@ describe('PatientDetail', () => {
     firstName: 'Jane',
     lastName: 'Doe',
     gender: 'Female',
+    allergies: 'Penicillin',
     isActive: true,
     createdAt: '2026-08-01T00:00:00Z',
     updatedAt: '2026-08-01T00:00:00Z',
@@ -164,7 +165,7 @@ describe('PatientDetail', () => {
 
     expect(fixture.componentInstance.showEditModal()).toBe(true);
     expect(fixture.componentInstance.editForm()).toEqual(
-      expect.objectContaining({ firstName: 'Jane', lastName: 'Doe', gender: 'Female' }),
+      expect.objectContaining({ firstName: 'Jane', lastName: 'Doe', gender: 'Female', allergies: 'Penicillin' }),
     );
   });
 
@@ -181,6 +182,20 @@ describe('PatientDetail', () => {
     expect(patientsApi.update).toHaveBeenCalledWith('patient-1', expect.objectContaining({ firstName: 'Janet' }));
     expect(fixture.componentInstance.patient()?.firstName).toBe('Janet');
     expect(fixture.componentInstance.showEditModal()).toBe(false);
+  });
+
+  it('saves an updated allergies value', async () => {
+    const updated: Patient = { ...patient, allergies: 'No known allergies' };
+    const { fixture, patientsApi } = setup([], { update: jest.fn().mockReturnValue(of(updated)) });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openEditModal();
+    fixture.componentInstance.editForm.set({ ...fixture.componentInstance.editForm(), allergies: 'No known allergies' });
+    fixture.componentInstance.submitEdit();
+
+    expect(patientsApi.update).toHaveBeenCalledWith('patient-1', expect.objectContaining({ allergies: 'No known allergies' }));
+    expect(fixture.componentInstance.patient()?.allergies).toBe('No known allergies');
   });
 
   it('clears the saving flag and keeps the modal open when the edit save fails', async () => {

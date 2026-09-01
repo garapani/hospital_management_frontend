@@ -9,6 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
+import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 
@@ -30,6 +31,7 @@ import { calculateAge, isValidEmail, isValidPhoneNumber } from './patient.model.
     DialogModule,
     SelectModule,
     TagModule,
+    TextareaModule,
     ToastModule,
   ],
   providers: [MessageService],

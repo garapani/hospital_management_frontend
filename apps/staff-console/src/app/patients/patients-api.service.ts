@@ -30,6 +30,7 @@ export interface Patient {
   phoneNumber?: string;
   email?: string;
   bloodGroup?: string;
+  allergies?: string;
   governmentIdType?: string;
   governmentIdNumber?: string;
   isActive: boolean;
@@ -49,6 +50,7 @@ export interface CreatePatientDto {
   phoneNumber?: string;
   email?: string;
   bloodGroup?: string;
+  allergies?: string;
   governmentIdType?: string;
   governmentIdNumber?: string;
   addresses?: PatientAddress[];

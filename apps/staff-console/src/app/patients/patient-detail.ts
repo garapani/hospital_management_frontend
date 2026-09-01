@@ -242,6 +242,7 @@ export class PatientDetail implements OnInit {
       gender: p.gender,
       dateOfBirth: p.dateOfBirth,
       bloodGroup: p.bloodGroup,
+      allergies: p.allergies,
       phoneNumber: p.phoneNumber,
       email: p.email,
       governmentIdType: p.governmentIdType,
