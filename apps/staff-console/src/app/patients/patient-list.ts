@@ -70,6 +70,8 @@ export class PatientList implements OnInit {
     allowDuplicate: false,
   });
 
+  readonly hasInsurance = signal(false);
+
   readonly genderOptions = [
     { label: 'Male', value: 'Male' },
     { label: 'Female', value: 'Female' },
@@ -143,6 +145,7 @@ export class PatientList implements OnInit {
       bloodGroup: 'Unknown',
       allowDuplicate: false,
     });
+    this.hasInsurance.set(false);
     this.showDuplicateWarning.set(false);
     this.duplicateMatches.set([]);
     this.showRegistrationModal.set(true);
@@ -185,7 +188,13 @@ export class PatientList implements OnInit {
   }
 
   private submitRegistration() {
-    this.api.create(this.patientForm()).subscribe({
+    const form = this.patientForm();
+    // Unchecking "Has Insurance?" after typing something shouldn't silently resurrect it.
+    const payload: CreatePatientDto = this.hasInsurance()
+      ? form
+      : { ...form, insuranceProvider: undefined, insurancePolicyNumber: undefined };
+
+    this.api.create(payload).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',

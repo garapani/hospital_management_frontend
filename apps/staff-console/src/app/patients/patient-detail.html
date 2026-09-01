@@ -99,9 +99,20 @@
           <div class="text-xs text-slate-500 mb-1">Email Address</div>
           <div class="font-medium text-slate-900">{{ p.email || 'N/A' }}</div>
         </div>
-        <div class="surface-card p-3 sm:col-span-3 lg:col-span-6">
+        <div class="surface-card p-3 sm:col-span-3 lg:col-span-3">
           <div class="text-xs text-slate-500 mb-1">Government ID ({{ p.governmentIdType || 'Type' }})</div>
           <div class="font-medium text-slate-900 font-mono">{{ p.governmentIdNumber || 'N/A' }}</div>
+        </div>
+        <div class="surface-card p-3 sm:col-span-3 lg:col-span-3">
+          <div class="text-xs text-slate-500 mb-1">Insurance</div>
+          @if (p.insuranceProvider || p.insurancePolicyNumber) {
+          <div class="font-medium text-slate-900">
+            {{ p.insuranceProvider || 'Provider not recorded' }}
+            <span class="font-mono text-xs text-slate-500">{{ p.insurancePolicyNumber ? '(' + p.insurancePolicyNumber + ')' : '' }}</span>
+          </div>
+          } @else {
+          <div class="font-medium text-slate-900">Self-pay / not recorded</div>
+          }
         </div>
       </div>
     </div>
@@ -532,6 +543,14 @@
     <div class="flex flex-col gap-2">
       <label for="editGovIdNumber" class="text-sm font-medium text-slate-700">Government ID Number</label>
       <input id="editGovIdNumber" pInputText [ngModel]="editForm().governmentIdNumber" (ngModelChange)="editForm.set({ ...editForm(), governmentIdNumber: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editInsuranceProvider" class="text-sm font-medium text-slate-700">Insurance Provider</label>
+      <input id="editInsuranceProvider" pInputText [ngModel]="editForm().insuranceProvider" (ngModelChange)="editForm.set({ ...editForm(), insuranceProvider: $event })" class="w-full" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="editInsurancePolicyNumber" class="text-sm font-medium text-slate-700">Policy / Member Number</label>
+      <input id="editInsurancePolicyNumber" pInputText [ngModel]="editForm().insurancePolicyNumber" (ngModelChange)="editForm.set({ ...editForm(), insurancePolicyNumber: $event })" class="w-full" />
     </div>
   </div>
   <ng-template pTemplate="footer">

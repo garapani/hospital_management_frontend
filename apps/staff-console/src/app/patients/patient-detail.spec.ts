@@ -185,6 +185,19 @@ describe('PatientDetail', () => {
     expect(fixture.componentInstance.showEditModal()).toBe(false);
   });
 
+  it('pre-fills the insurance fields captured at intake into the edit form', async () => {
+    const withInsurance: Patient = { ...patient, insuranceProvider: 'Star Health', insurancePolicyNumber: 'SH-001' };
+    const { fixture } = setup([], { getById: jest.fn().mockReturnValue(of(withInsurance)) });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openEditModal();
+
+    expect(fixture.componentInstance.editForm()).toEqual(
+      expect.objectContaining({ insuranceProvider: 'Star Health', insurancePolicyNumber: 'SH-001' }),
+    );
+  });
+
   it('saves an updated allergies value', async () => {
     const updated: Patient = { ...patient, allergies: 'No known allergies' };
     const { fixture, patientsApi } = setup([], { update: jest.fn().mockReturnValue(of(updated)) });

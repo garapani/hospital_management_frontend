@@ -253,6 +253,8 @@ export class PatientDetail implements OnInit {
       email: p.email,
       governmentIdType: p.governmentIdType,
       governmentIdNumber: p.governmentIdNumber,
+      insuranceProvider: p.insuranceProvider,
+      insurancePolicyNumber: p.insurancePolicyNumber,
     });
     this.showEditModal.set(true);
   }

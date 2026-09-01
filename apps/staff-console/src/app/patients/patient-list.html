@@ -248,6 +248,43 @@
       ></textarea>
     </div>
 
+    <div class="flex flex-col gap-2 border border-slate-200 rounded-lg p-3">
+      <label class="flex items-center gap-2 text-sm font-medium text-slate-700 cursor-pointer">
+        <input
+          type="checkbox"
+          [ngModel]="hasInsurance()"
+          (ngModelChange)="hasInsurance.set($event)"
+        />
+        Has Insurance?
+      </label>
+      @if (hasInsurance()) {
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+        <div class="flex flex-col gap-1">
+          <label for="insuranceProvider" class="text-xs font-semibold text-slate-600">Insurance Provider</label>
+          <input
+            id="insuranceProvider"
+            pInputText
+            placeholder="e.g. Star Health"
+            [ngModel]="patientForm().insuranceProvider"
+            (ngModelChange)="patientForm.set({ ...patientForm(), insuranceProvider: $event })"
+          />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label for="insurancePolicyNumber" class="text-xs font-semibold text-slate-600">Policy / Member Number</label>
+          <input
+            id="insurancePolicyNumber"
+            pInputText
+            [ngModel]="patientForm().insurancePolicyNumber"
+            (ngModelChange)="patientForm.set({ ...patientForm(), insurancePolicyNumber: $event })"
+          />
+        </div>
+      </div>
+      <p class="text-xs text-slate-400 mt-1">
+        Captured as a quick note for Billing — the formal policy (payer, coverage, sum insured) is set up separately in Insurance.
+      </p>
+      }
+    </div>
+
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="flex flex-col gap-1">
         <label for="idType" class="text-xs font-semibold text-slate-600">Government ID Type</label>

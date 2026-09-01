@@ -33,6 +33,10 @@ export interface Patient {
   allergies?: string;
   governmentIdType?: string;
   governmentIdNumber?: string;
+  /** Free-text, captured by Receptionist at intake — not a formal PatientPolicy (that's set up
+   *  separately via the Insurance module, out of Receptionist's PRD-scoped permissions). */
+  insuranceProvider?: string;
+  insurancePolicyNumber?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -53,6 +57,8 @@ export interface CreatePatientDto {
   allergies?: string;
   governmentIdType?: string;
   governmentIdNumber?: string;
+  insuranceProvider?: string;
+  insurancePolicyNumber?: string;
   addresses?: PatientAddress[];
   kins?: PatientKin[];
   allowDuplicate?: boolean;
