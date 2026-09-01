@@ -154,14 +154,23 @@
           @if (referenceRange(component)) { · Reference: {{ referenceRange(component) }} }
         </span>
       </div>
-      <input
-        pInputText
-        [attr.aria-label]="component.name + ' value'"
-        [ngModel]="resultValues()[component.id]"
-        (ngModelChange)="setResultValue(component.id, $event)"
-        placeholder="Value"
-        class="w-full"
-      />
+      <div class="flex flex-col gap-1">
+        <input
+          pInputText
+          [type]="isNumericComponent(component) ? 'number' : 'text'"
+          [attr.inputmode]="isNumericComponent(component) ? 'decimal' : null"
+          [attr.aria-label]="component.name + ' value'"
+          [ngModel]="resultValues()[component.id]"
+          (ngModelChange)="setResultValue(component.id, $event)"
+          placeholder="Value"
+          class="w-full"
+        />
+        @if (isValueAbnormal(component)) {
+        <span class="text-xs text-red-600 flex items-center gap-1">
+          <i class="pi pi-exclamation-triangle"></i> Outside reference range
+        </span>
+        }
+      </div>
     </div>
     }
     @if (resultsError()) {

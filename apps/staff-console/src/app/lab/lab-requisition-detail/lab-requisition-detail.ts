@@ -14,7 +14,7 @@ import { ToastModule } from 'primeng/toast';
 import { AuthService } from '@org/auth';
 
 import { LabApiService, LabRequisition, LabResult, LabTestComponent } from '../lab-api.service.js';
-import { labRequisitionStatusSeverity, componentReferenceRange } from '../lab.model.js';
+import { labRequisitionStatusSeverity, componentReferenceRange, computeIsAbnormal, hasNumericRange } from '../lab.model.js';
 
 export interface DisplayedResult {
   component: LabTestComponent;
@@ -53,6 +53,15 @@ export class LabRequisitionDetail implements OnInit {
 
   readonly statusSeverity = labRequisitionStatusSeverity;
   readonly referenceRange = componentReferenceRange;
+  readonly isNumericComponent = hasNumericRange;
+
+  /** Live feedback at entry time — mirrors the backend's range check so a fat-fingered value warns
+   *  before saving instead of only after a round trip (the saved `isAbnormal` badge already exists
+   *  on the read-only results view; this powers the equivalent inline warning during entry). */
+  isValueAbnormal(component: LabTestComponent): boolean {
+    const value = this.resultValues()[component.id];
+    return value !== undefined && computeIsAbnormal(component, value);
+  }
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
@@ -168,7 +177,10 @@ export class LabRequisitionDetail implements OnInit {
     // sequential also means a partial failure is attributable to a specific component instead of
     // one blanket error after some have already saved.
     from(components).pipe(
-      concatMap((c) => this.labApi.enterResult(id, { componentId: c.id, value: values[c.id].trim() })),
+      concatMap((c) => {
+        const value = values[c.id].trim();
+        return this.labApi.enterResult(id, { componentId: c.id, value, isAbnormal: computeIsAbnormal(c, value) });
+      }),
       toArray(),
     ).subscribe({
       next: () => {

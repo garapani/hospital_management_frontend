@@ -149,12 +149,61 @@ describe('LabRequisitionDetail', () => {
     fixture.componentInstance.submitResults();
 
     expect(labApi.enterResult).toHaveBeenCalledTimes(2);
-    expect(labApi.enterResult).toHaveBeenCalledWith('req-1', { componentId: 'comp-1', value: '13.5' });
-    expect(labApi.enterResult).toHaveBeenCalledWith('req-1', { componentId: 'comp-2', value: 'Negative' });
+    expect(labApi.enterResult).toHaveBeenCalledWith('req-1', { componentId: 'comp-1', value: '13.5', isAbnormal: false });
+    expect(labApi.enterResult).toHaveBeenCalledWith('req-1', { componentId: 'comp-2', value: 'Negative', isAbnormal: false });
     expect(fixture.componentInstance.showResultsDialog()).toBe(false);
     expect(fixture.componentInstance.enteringResults()).toBe(false);
     // Reloads the requisition after saving so the updated status is reflected.
     expect(labApi.getRequisition).toHaveBeenCalledTimes(2);
+  });
+
+  it('sends isAbnormal computed against the numeric reference range, not left unset', async () => {
+    const { fixture, labApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openResultsDialog();
+    fixture.componentInstance.setResultValue('comp-1', '20'); // Hemoglobin range is 12-16
+    fixture.componentInstance.setResultValue('comp-2', 'Negative');
+    fixture.componentInstance.submitResults();
+
+    expect(labApi.enterResult).toHaveBeenCalledWith('req-1', { componentId: 'comp-1', value: '20', isAbnormal: true });
+    expect(labApi.enterResult).toHaveBeenCalledWith('req-1', { componentId: 'comp-2', value: 'Negative', isAbnormal: false });
+  });
+
+  it('flags a value outside the numeric reference range as abnormal at entry time, before saving', async () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openResultsDialog();
+    expect(fixture.componentInstance.isValueAbnormal(components[0])).toBe(false);
+
+    fixture.componentInstance.setResultValue('comp-1', '20'); // outside 12-16
+    expect(fixture.componentInstance.isValueAbnormal(components[0])).toBe(true);
+
+    fixture.componentInstance.setResultValue('comp-1', '14'); // back inside range
+    expect(fixture.componentInstance.isValueAbnormal(components[0])).toBe(false);
+  });
+
+  it('never flags a qualitative component (no numeric range) as abnormal', async () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openResultsDialog();
+    fixture.componentInstance.setResultValue('comp-2', 'Positive');
+
+    expect(fixture.componentInstance.isValueAbnormal(components[1])).toBe(false);
+    expect(fixture.componentInstance.isNumericComponent(components[1])).toBe(false);
+  });
+
+  it('exposes numeric components for the type/inputmode of the entry field', () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.isNumericComponent(components[0])).toBe(true);
+    expect(fixture.componentInstance.isNumericComponent(components[1])).toBe(false);
   });
 
   it('rejects saving when any component value is missing', async () => {
