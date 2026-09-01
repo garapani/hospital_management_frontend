@@ -5,6 +5,7 @@ import { InvoiceList } from './invoice-list.js';
 import { InvoicesApiService } from '../invoices-api.service.js';
 import { Invoice, InvoiceListResult } from '../invoice.model.js';
 import { DirectoryResolverService } from '../../directory/directory-resolver.service.js';
+import { PatientsApiService } from '../../patients/patients-api.service.js';
 
 const directoryResolverProvider = {
   provide: DirectoryResolverService,
@@ -15,14 +16,20 @@ describe('InvoiceList', () => {
   function setup() {
     const result: InvoiceListResult = { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } };
     const invoicesApi = { list: jest.fn().mockReturnValue(of(result)) } as unknown as InvoicesApiService;
+    const patientsApi = { search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })) } as unknown as PatientsApiService;
 
     TestBed.configureTestingModule({
       imports: [InvoiceList],
-      providers: [provideRouter([]), { provide: InvoicesApiService, useValue: invoicesApi }, directoryResolverProvider],
+      providers: [
+        provideRouter([]),
+        { provide: InvoicesApiService, useValue: invoicesApi },
+        { provide: PatientsApiService, useValue: patientsApi },
+        directoryResolverProvider,
+      ],
     });
 
     const fixture = TestBed.createComponent(InvoiceList);
-    return { fixture, invoicesApi };
+    return { fixture, invoicesApi, patientsApi };
   }
 
   it('loads page 1 exactly once on init (PrimeNG lazyLoadOnInit is disabled to avoid a double fetch)', async () => {
@@ -38,9 +45,15 @@ describe('InvoiceList', () => {
     const invoicesApi = {
       list: jest.fn().mockReturnValue(throwError(() => new Error('boom'))),
     } as unknown as InvoicesApiService;
+    const patientsApi = { search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })) } as unknown as PatientsApiService;
     TestBed.configureTestingModule({
       imports: [InvoiceList],
-      providers: [provideRouter([]), { provide: InvoicesApiService, useValue: invoicesApi }, directoryResolverProvider],
+      providers: [
+        provideRouter([]),
+        { provide: InvoicesApiService, useValue: invoicesApi },
+        { provide: PatientsApiService, useValue: patientsApi },
+        directoryResolverProvider,
+      ],
     });
     const fixture = TestBed.createComponent(InvoiceList);
 
@@ -93,9 +106,15 @@ describe('InvoiceList', () => {
     };
     const result: InvoiceListResult = { data: [invoice], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } };
     const invoicesApi = { list: jest.fn().mockReturnValue(of(result)) } as unknown as InvoicesApiService;
+    const patientsApi = { search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })) } as unknown as PatientsApiService;
     TestBed.configureTestingModule({
       imports: [InvoiceList],
-      providers: [provideRouter([]), { provide: InvoicesApiService, useValue: invoicesApi }, directoryResolverProvider],
+      providers: [
+        provideRouter([]),
+        { provide: InvoicesApiService, useValue: invoicesApi },
+        { provide: PatientsApiService, useValue: patientsApi },
+        directoryResolverProvider,
+      ],
     });
     const fixture = TestBed.createComponent(InvoiceList);
 
@@ -104,5 +123,21 @@ describe('InvoiceList', () => {
 
     expect(fixture.componentInstance.invoices()).toEqual([invoice]);
     expect(fixture.componentInstance.totalRecords()).toBe(1);
+  });
+
+  it('debounces and searches patients as the filter is typed', () => {
+    jest.useFakeTimers();
+    const { fixture, patientsApi } = setup();
+    (patientsApi.search as jest.Mock).mockReturnValue(
+      of({ data: [{ id: 'p1', firstName: 'John', lastName: 'Smith', patientNo: 'PAT-2' }], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } }),
+    );
+
+    fixture.componentInstance.onPatientFilterSearch('jo');
+    expect(patientsApi.search).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(300);
+
+    expect(patientsApi.search).toHaveBeenCalledWith({ page: 1, limit: 10, q: 'jo' });
+    expect(fixture.componentInstance.patientOptions()).toEqual([{ label: 'John Smith (PAT-2)', value: 'p1' }]);
+    jest.useRealTimers();
   });
 });

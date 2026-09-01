@@ -3,20 +3,25 @@
   <div class="surface-panel p-6 flex flex-col gap-6">
     <div>
       <h1 class="page-title">Invoices</h1>
-      <p class="page-subtitle">Filter invoices by patient ID</p>
+      <p class="page-subtitle">Filter invoices by patient</p>
     </div>
 
     <div class="flex items-end gap-3 flex-wrap">
       <label class="flex flex-col gap-2">
-        <span class="text-sm font-medium text-slate-700">Patient ID</span>
-        <input
-          pInputText
+        <span class="text-sm font-medium text-slate-700">Patient</span>
+        <p-select
+          [options]="patientOptions()"
           [ngModel]="patientIdFilter()"
           (ngModelChange)="patientIdFilter.set($event)"
-          (keyup.enter)="applyPatientFilter()"
-          placeholder="Filter by patient ID"
-          class="w-64 bg-white border-slate-200 rounded-lg"
-        />
+          [filter]="true"
+          (onFilter)="onPatientFilterSearch($event.filter)"
+          [loading]="patientSearching()"
+          filterPlaceholder="Search by name, number or phone"
+          emptyFilterMessage="Type at least 2 characters to search"
+          placeholder="Search for a patient"
+          [showClear]="true"
+          styleClass="w-64"
+        ></p-select>
       </label>
       <p-button
         label="Filter"
