@@ -1,0 +1,76 @@
+<div class="h-full flex flex-col gap-6">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h1 class="page-title">Ward Board</h1>
+      <p class="text-sm text-slate-500 mt-1">Live bed occupancy for a ward.</p>
+    </div>
+
+    <div class="flex flex-col gap-1 w-full sm:w-64">
+      <label for="wardPicker" class="text-xs font-medium text-slate-500">Ward</label>
+      <p-select
+        inputId="wardPicker"
+        [options]="wards()"
+        optionLabel="wardName"
+        optionValue="id"
+        [ngModel]="selectedWardId()"
+        (ngModelChange)="selectWard($event)"
+        [filter]="true"
+        placeholder="Select a ward"
+        styleClass="w-full"
+      ></p-select>
+    </div>
+  </div>
+
+  @if (selectedWard(); as ward) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-wrap items-center gap-4">
+    <div>
+      <span class="text-sm text-slate-500">Ward</span>
+      <div class="font-semibold text-slate-800">{{ ward.wardName }} ({{ ward.wardCode }})</div>
+    </div>
+    <p-tag [value]="availableCount() + ' Available'" severity="success" [rounded]="true"></p-tag>
+    <p-tag [value]="occupiedCount() + ' Occupied'" severity="info" [rounded]="true"></p-tag>
+  </div>
+  }
+
+  @if (loading()) {
+  <div class="flex items-center justify-center h-64">
+    <i class="pi pi-spinner pi-spin text-4xl text-sky-500"></i>
+  </div>
+  } @else if (!selectedWard()) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-8 text-center text-slate-500">
+    No wards are set up for this hospital yet.
+  </div>
+  } @else if (beds().length === 0) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-8 text-center text-slate-500">
+    This ward has no beds set up yet.
+  </div>
+  } @else {
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    @for (bed of beds(); track bed.id) {
+    <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-col gap-3">
+      <div class="flex items-center justify-between">
+        <div class="font-semibold text-slate-800">Bed {{ bed.bedNumber }}</div>
+        <p-tag [value]="bed.status" [severity]="bedStatusSeverity(bed.status)" [rounded]="true"></p-tag>
+      </div>
+      @if (bed.bedType) {
+      <div class="text-xs text-slate-400">{{ bed.bedType }}</div>
+      }
+      @if (bed.admission; as admission) {
+      <div class="border-t border-slate-100 pt-3 flex flex-col gap-1">
+        <div class="font-medium text-slate-900">{{ admission.patientDisplayName }}</div>
+        <div class="text-xs text-slate-500">{{ admission.patientNo }}</div>
+        <a
+          [routerLink]="['/admissions', admission.id]"
+          class="text-sky-600 hover:text-sky-800 text-sm font-medium mt-1"
+        >
+          View admission
+        </a>
+      </div>
+      } @else if (bed.status === 'Available') {
+      <div class="text-sm text-slate-400 italic">Free</div>
+      }
+    </div>
+    }
+  </div>
+  }
+</div>

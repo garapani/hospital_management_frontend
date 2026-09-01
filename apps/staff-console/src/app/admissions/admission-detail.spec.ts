@@ -5,6 +5,7 @@ import { AuthService } from '@org/auth';
 import { ApiError } from '@org/api-client';
 import { AdmissionDetail } from './admission-detail.js';
 import { AdmissionsApiService, Admission, DischargeSummary } from './admissions-api.service.js';
+import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 
 describe('AdmissionDetail', () => {
   const admission: Admission = {
@@ -61,6 +62,10 @@ describe('AdmissionDetail', () => {
     } as unknown as AdmissionsApiService;
     const auth = { hasPermission: () => true, currentUser: () => ({ sub: 'user-1' }) } as unknown as AuthService;
     const activatedRoute = { paramMap: of(convertToParamMap({ id: 'admission-1' })) } as unknown as ActivatedRoute;
+    const masterDataApi = {
+      listWards: jest.fn().mockReturnValue(of([{ id: 'ward-1', wardName: 'ICU', isActive: true }, { id: 'ward-2', wardName: 'General', isActive: true }])),
+      listBedsByWard: jest.fn().mockReturnValue(of([{ id: 'bed-2', wardId: 'ward-2', bedNumber: '2', status: 'Available', isActive: true }])),
+    } as unknown as MasterDataApiService;
 
     TestBed.configureTestingModule({
       imports: [AdmissionDetail],
@@ -69,11 +74,12 @@ describe('AdmissionDetail', () => {
         { provide: AdmissionsApiService, useValue: admissionsApi },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
+        { provide: MasterDataApiService, useValue: masterDataApi },
       ],
     });
 
     const fixture = TestBed.createComponent(AdmissionDetail);
-    return { fixture, admissionsApi };
+    return { fixture, admissionsApi, masterDataApi };
   }
 
   it('loads the admission and its discharge summary', async () => {
@@ -101,6 +107,10 @@ describe('AdmissionDetail', () => {
     } as unknown as AdmissionsApiService;
     const auth = { hasPermission: () => true, currentUser: () => ({ sub: 'user-1' }) } as unknown as AuthService;
     const activatedRoute = { paramMap: of(convertToParamMap({ id: 'admission-1' })) } as unknown as ActivatedRoute;
+    const masterDataApi = {
+      listWards: jest.fn().mockReturnValue(of([])),
+      listBedsByWard: jest.fn().mockReturnValue(of([])),
+    } as unknown as MasterDataApiService;
 
     TestBed.configureTestingModule({
       imports: [AdmissionDetail],
@@ -109,6 +119,7 @@ describe('AdmissionDetail', () => {
         { provide: AdmissionsApiService, useValue: admissionsApi },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
+        { provide: MasterDataApiService, useValue: masterDataApi },
       ],
     });
     const fixture = TestBed.createComponent(AdmissionDetail);
@@ -134,6 +145,29 @@ describe('AdmissionDetail', () => {
     );
     expect(fixture.componentInstance.admission()?.bedId).toBe('bed-2');
     expect(fixture.componentInstance.showTransferModal()).toBe(false);
+  });
+
+  it('opens the transfer modal defaulted to the current ward, and reloads beds when the ward changes', async () => {
+    const { fixture, masterDataApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openTransferModal();
+    await fixture.whenStable();
+
+    expect(masterDataApi.listWards).toHaveBeenCalled();
+    expect(fixture.componentInstance.transferWardId()).toBe('ward-1');
+    expect(masterDataApi.listBedsByWard).toHaveBeenCalledWith('ward-1');
+
+    fixture.componentInstance.selectTransferWard('ward-2');
+    await fixture.whenStable();
+
+    expect(masterDataApi.listBedsByWard).toHaveBeenCalledWith('ward-2');
+    expect(fixture.componentInstance.transferBeds()).toEqual([
+      { id: 'bed-2', wardId: 'ward-2', bedNumber: '2', status: 'Available', isActive: true },
+    ]);
+    // Switching ward clears any bed picked under the previous ward.
+    expect(fixture.componentInstance.toBedId()).toBe('');
   });
 
   it('clears the transferring flag and keeps the modal open when transfer errors', async () => {

@@ -25,3 +25,13 @@ export function summaryReviewSeverity(summary: { reviewedBy: string | null } | n
 
 export const ADMISSION_STATUSES = ['Admitted', 'Discharged'];
 export const ADMISSION_SOURCES = ['OPD', 'ER', 'Direct'];
+
+const BED_STATUS_SEVERITY: Record<string, Severity> = {
+  Available: 'success',
+  Occupied: 'info',
+  Maintenance: 'warn',
+};
+
+export function bedStatusSeverity(status: string): Severity {
+  return BED_STATUS_SEVERITY[status] ?? 'secondary';
+}

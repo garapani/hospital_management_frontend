@@ -7,20 +7,24 @@ import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { DialogModule } from 'primeng/dialog';
+import { SelectModule } from 'primeng/select';
 import { AuthService } from '@org/auth';
 import { ApiError } from '@org/api-client';
 
 import { AdmissionsApiService, Admission, CreateDischargeSummaryDto, DischargeSummary } from './admissions-api.service.js';
 import { admissionSourceSeverity, admissionStatusSeverity, summaryReviewSeverity } from './admission.model.js';
+import { MasterDataApiService } from '../master-data/master-data-api.service.js';
+import { Ward, Bed } from '../master-data/master-data.model.js';
 
 @Component({
   selector: 'hms-admission-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, DialogModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, DialogModule, SelectModule],
   templateUrl: './admission-detail.html',
 })
 export class AdmissionDetail implements OnInit {
   private readonly admissionsApi = inject(AdmissionsApiService);
+  private readonly masterDataApi = inject(MasterDataApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly auth = inject(AuthService);
@@ -29,8 +33,13 @@ export class AdmissionDetail implements OnInit {
   readonly loading = signal(true);
   readonly notFound = signal(false);
 
-  // Transfer
+  // Transfer — ward + bed pickers (not a free-text bed UUID field), scoped to beds actually
+  // available right now so a nurse can't pick an occupied/maintenance bed by mistake.
   readonly showTransferModal = signal(false);
+  readonly transferWards = signal<Ward[]>([]);
+  readonly transferWardId = signal<string | null>(null);
+  readonly transferBeds = signal<Bed[]>([]);
+  readonly transferBedsLoading = signal(false);
   readonly toBedId = signal('');
   readonly transferReason = signal('');
   readonly transferring = signal(false);
@@ -108,9 +117,42 @@ export class AdmissionDetail implements OnInit {
   }
 
   openTransferModal() {
+    const admission = this.admission();
     this.toBedId.set('');
     this.transferReason.set('');
     this.showTransferModal.set(true);
+
+    if (this.transferWards().length === 0) {
+      this.masterDataApi.listWards().subscribe({
+        next: (wards) => this.transferWards.set(wards.filter((w) => w.isActive)),
+      });
+    }
+    const initialWardId = admission?.wardId ?? null;
+    this.transferWardId.set(initialWardId);
+    if (initialWardId) {
+      this.loadTransferBeds(initialWardId);
+    }
+  }
+
+  selectTransferWard(wardId: string | null) {
+    this.transferWardId.set(wardId);
+    this.toBedId.set('');
+    if (wardId) {
+      this.loadTransferBeds(wardId);
+    } else {
+      this.transferBeds.set([]);
+    }
+  }
+
+  private loadTransferBeds(wardId: string) {
+    this.transferBedsLoading.set(true);
+    this.masterDataApi.listBedsByWard(wardId).subscribe({
+      next: (beds) => {
+        this.transferBeds.set(beds.filter((b) => b.isActive && b.status === 'Available'));
+        this.transferBedsLoading.set(false);
+      },
+      error: () => this.transferBedsLoading.set(false),
+    });
   }
 
   confirmTransfer() {

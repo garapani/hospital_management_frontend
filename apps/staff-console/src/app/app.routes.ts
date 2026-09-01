@@ -258,6 +258,12 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.ADMISSION_READ)],
       },
       {
+        // Must precede 'admissions/:id' — otherwise the ':id' route swallows this static segment.
+        path: 'admissions/ward-board',
+        loadComponent: () => import('./admissions/ward-board.js').then((m) => m.WardBoard),
+        canActivate: [permissionGuard(Permissions.ADMISSION_READ)],
+      },
+      {
         path: 'admissions/:id',
         loadComponent: () => import('./admissions/admission-detail.js').then((m) => m.AdmissionDetail),
         canActivate: [permissionGuard(Permissions.ADMISSION_READ)],

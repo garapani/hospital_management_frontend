@@ -203,8 +203,38 @@
 <p-dialog header="Transfer Bed" [(visible)]="showTransferModal" [modal]="true" [style]="{ width: '450px' }" styleClass="surface-modal">
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
-      <label for="toBedId" class="text-sm font-medium text-slate-700">Destination Bed ID</label>
-      <input id="toBedId" pInputText [ngModel]="toBedId()" (ngModelChange)="toBedId.set($event)" class="w-full" placeholder="Required" />
+      <label for="transferWard" class="text-sm font-medium text-slate-700">Destination Ward</label>
+      <p-select
+        inputId="transferWard"
+        [options]="transferWards()"
+        optionLabel="wardName"
+        optionValue="id"
+        [ngModel]="transferWardId()"
+        (ngModelChange)="selectTransferWard($event)"
+        [filter]="true"
+        placeholder="Select a ward"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="toBedId" class="text-sm font-medium text-slate-700">Destination Bed</label>
+      <p-select
+        inputId="toBedId"
+        [options]="transferBeds()"
+        optionLabel="bedNumber"
+        optionValue="id"
+        [ngModel]="toBedId()"
+        (ngModelChange)="toBedId.set($event)"
+        [filter]="true"
+        [disabled]="!transferWardId() || transferBedsLoading()"
+        [placeholder]="transferWardId() ? 'Select an available bed' : 'Select a ward first'"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
+      @if (transferWardId() && !transferBedsLoading() && transferBeds().length === 0) {
+      <p class="text-xs text-amber-600">No available beds in this ward right now.</p>
+      }
     </div>
     <div class="flex flex-col gap-2">
       <label for="transferReason" class="text-sm font-medium text-slate-700">Reason</label>

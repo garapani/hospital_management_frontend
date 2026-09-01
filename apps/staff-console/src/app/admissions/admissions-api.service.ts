@@ -22,6 +22,13 @@ export interface Admission {
   updatedAt: string;
 }
 
+/** GET /admissions/active's shape — the patient fields are joined in server-side (see
+ *  AdmissionsService.listActive) so the Ward Board can render an occupant's name in one call. */
+export interface ActiveAdmission extends Admission {
+  patientDisplayName: string;
+  patientNo: string;
+}
+
 export interface CreateAdmissionDto {
   patientId: string;
   admissionSource: string;
@@ -123,8 +130,8 @@ export class AdmissionsApiService {
     });
   }
 
-  listActive(wardId?: string): Observable<Admission[]> {
-    return this.apiClient.get<Admission[]>('/admissions/active', {
+  listActive(wardId?: string): Observable<ActiveAdmission[]> {
+    return this.apiClient.get<ActiveAdmission[]>('/admissions/active', {
       params: wardId ? { wardId } : {},
     });
   }

@@ -211,6 +211,17 @@ body }`.
   for the same "extends base directly" reason, which requires every transitively-imported file
   (not just `*.spec.ts`) to appear in `include` — broadened to `src/**/*.ts`.
 
+- **Editing a shared lib's source (`libs/auth`, `libs/api-client`) doesn't show up in a plain
+  `tsc --noEmit -p apps/staff-console/tsconfig.app.json`** — that tsconfig's `references` point at
+  the libs' `tsconfig.lib.json`, and plain `--noEmit` (not `--build`) resolves a referenced
+  project's types from its prebuilt `dist/*.d.ts`, not live source, so an edited type (e.g. adding
+  a field to `AccessTokenClaims`) silently checks against the stale dist output — confirmed via
+  `tsc --noEmit ... --listFiles | grep <file>` showing the `dist/` path, not `src/`. Fixed for that
+  session by running `tsc --build apps/staff-console/tsconfig.app.json` once (which rebuilds an
+  out-of-date referenced project first), then the plain `--noEmit` runs matched it. After editing
+  `libs/auth`/`libs/api-client` source, run the `--build` form (or `pnpm nx test`/whatever target
+  actually rebuilds the lib) at least once before trusting a plain `--noEmit` result on the app.
+
 ## Git Conventions
 
 Same as the backend repo: conventional commit format (`feat:`, `fix:`, `docs:`, `refactor:`,

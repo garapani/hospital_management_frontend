@@ -202,6 +202,15 @@
       <i class="pi pi-bed text-base"></i>
       Admissions / ADT
     </a>
+    <a
+      routerLink="/admissions/ward-board"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-th-large text-base"></i>
+      Ward Board
+    </a>
     } @if (auth.hasPermission('inventory.read')) {
     <a
       routerLink="/inventory"
