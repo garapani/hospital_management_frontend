@@ -5,9 +5,12 @@ import { AuthService } from '@org/auth';
 import { AdmissionList } from './admission-list.js';
 import { AdmissionsApiService } from './admissions-api.service.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
+import { UsersApiService } from '../users/users-api.service.js';
+import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 
 describe('AdmissionList', () => {
-  function setup() {
+  function setup(overrides: { doctors?: unknown[]; wards?: unknown[] } = {}) {
     const admissionsApi = {
       list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
       listActive: jest.fn().mockReturnValue(of([])),
@@ -15,6 +18,16 @@ describe('AdmissionList', () => {
     } as unknown as AdmissionsApiService;
     const auth = { hasPermission: () => true } as unknown as AuthService;
     const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
+    const patientsApi = {
+      search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+    } as unknown as PatientsApiService;
+    const usersApi = {
+      listDirectory: jest.fn().mockReturnValue(of(overrides.doctors ?? [])),
+    } as unknown as UsersApiService;
+    const masterDataApi = {
+      listWards: jest.fn().mockReturnValue(of(overrides.wards ?? [])),
+      listBedsByWard: jest.fn().mockReturnValue(of([])),
+    } as unknown as MasterDataApiService;
 
     TestBed.configureTestingModule({
       imports: [AdmissionList],
@@ -23,11 +36,14 @@ describe('AdmissionList', () => {
         { provide: AdmissionsApiService, useValue: admissionsApi },
         { provide: AuthService, useValue: auth },
         { provide: DirectoryResolverService, useValue: directoryResolver },
+        { provide: PatientsApiService, useValue: patientsApi },
+        { provide: UsersApiService, useValue: usersApi },
+        { provide: MasterDataApiService, useValue: masterDataApi },
       ],
     });
 
     const fixture = TestBed.createComponent(AdmissionList);
-    return { fixture, admissionsApi };
+    return { fixture, admissionsApi, patientsApi, usersApi, masterDataApi };
   }
 
   it('loads admissions on init, page 1', async () => {
@@ -127,6 +143,57 @@ describe('AdmissionList', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.loading()).toBe(false);
+  });
+
+  it('loads doctor and ward options on init', async () => {
+    const { fixture, usersApi } = setup({
+      doctors: [{ id: 'doc-1', displayName: 'Dr. Rao' }],
+      wards: [{ id: 'ward-1', wardName: 'General Ward', isActive: true }],
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(usersApi.listDirectory).toHaveBeenCalledWith('Doctor');
+    expect(fixture.componentInstance.doctorOptions()).toEqual([{ label: 'Dr. Rao', value: 'doc-1' }]);
+    expect(fixture.componentInstance.wardOptions()).toEqual([{ id: 'ward-1', wardName: 'General Ward', isActive: true }]);
+  });
+
+  it('debounces and searches patients as the filter/create pickers are typed', () => {
+    jest.useFakeTimers();
+    const { fixture, patientsApi } = setup();
+    (patientsApi.search as jest.Mock).mockReturnValue(
+      of({ data: [{ id: 'p1', firstName: 'John', lastName: 'Smith', patientNo: 'PAT-2' }], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } }),
+    );
+
+    fixture.componentInstance.onPatientFilterSearch('jo');
+    fixture.componentInstance.onCreatePatientSearch('jo');
+    expect(patientsApi.search).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(300);
+
+    expect(patientsApi.search).toHaveBeenCalledWith({ page: 1, limit: 10, q: 'jo' });
+    expect(fixture.componentInstance.patientOptions()).toEqual([{ label: 'John Smith (PAT-2)', value: 'p1' }]);
+    expect(fixture.componentInstance.createPatientOptions()).toEqual([{ label: 'John Smith (PAT-2)', value: 'p1' }]);
+    jest.useRealTimers();
+  });
+
+  it('loads available beds for the selected ward in the create dialog, and clears the bed on ward change', async () => {
+    const { fixture, masterDataApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (masterDataApi.listBedsByWard as jest.Mock).mockReturnValue(
+      of([
+        { id: 'bed-1', bedNumber: 'B-01', isActive: true, status: 'Available' },
+        { id: 'bed-2', bedNumber: 'B-02', isActive: true, status: 'Occupied' },
+      ]),
+    );
+    fixture.componentInstance.createForm.set({ ...fixture.componentInstance.createForm(), bedId: 'stale-bed' });
+
+    fixture.componentInstance.selectCreateBedWard('ward-1');
+    await fixture.whenStable();
+
+    expect(masterDataApi.listBedsByWard).toHaveBeenCalledWith('ward-1');
+    expect(fixture.componentInstance.createBeds()).toEqual([{ id: 'bed-1', bedNumber: 'B-01', isActive: true, status: 'Available' }]);
+    expect(fixture.componentInstance.createForm().bedId).toBe('');
   });
 
   it('clears the saving flag and keeps the modal open when create errors', async () => {

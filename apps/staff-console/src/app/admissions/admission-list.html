@@ -20,8 +20,18 @@
       ></p-selectbutton>
     </div>
     <div class="flex flex-col gap-2">
-      <label for="filterWard" class="text-xs font-semibold text-slate-600">Ward ID</label>
-      <input id="filterWard" pInputText [ngModel]="wardIdFilter()" (ngModelChange)="wardIdFilter.set($event)" placeholder="Optional" />
+      <label for="filterWard" class="text-xs font-semibold text-slate-600">Ward</label>
+      <p-select
+        inputId="filterWard"
+        [options]="wardOptions()"
+        optionLabel="wardName"
+        optionValue="id"
+        [ngModel]="wardIdFilter()"
+        (ngModelChange)="wardIdFilter.set($event)"
+        placeholder="All wards"
+        [showClear]="true"
+        styleClass="w-52"
+      ></p-select>
     </div>
     @if (view() === 'All') {
     <div class="flex flex-col gap-2">
@@ -37,8 +47,21 @@
       ></p-select>
     </div>
     <div class="flex flex-col gap-2">
-      <label for="filterPatient" class="text-xs font-semibold text-slate-600">Patient ID</label>
-      <input id="filterPatient" pInputText [ngModel]="patientIdFilter()" (ngModelChange)="patientIdFilter.set($event)" placeholder="Optional" />
+      <label for="filterPatient" class="text-xs font-semibold text-slate-600">Patient</label>
+      <p-select
+        inputId="filterPatient"
+        [options]="patientOptions()"
+        [ngModel]="patientIdFilter()"
+        (ngModelChange)="patientIdFilter.set($event)"
+        [filter]="true"
+        (onFilter)="onPatientFilterSearch($event.filter)"
+        [loading]="patientSearching()"
+        filterPlaceholder="Search by name, number or phone"
+        emptyFilterMessage="Type at least 2 characters to search"
+        placeholder="Search for a patient"
+        [showClear]="true"
+        styleClass="w-64"
+      ></p-select>
     </div>
     }
     <p-button label="Apply" size="small" severity="secondary" (onClick)="applyFilters()"></p-button>
@@ -97,8 +120,21 @@
 <p-dialog header="New Admission" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
     <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
-      <label for="admPatientId" class="text-sm font-medium text-slate-700">Patient ID</label>
-      <input id="admPatientId" pInputText [ngModel]="createForm().patientId" (ngModelChange)="createForm.set({ ...createForm(), patientId: $event })" class="w-full" />
+      <label for="admPatientId" class="text-sm font-medium text-slate-700">Patient</label>
+      <p-select
+        inputId="admPatientId"
+        [options]="createPatientOptions()"
+        [ngModel]="createForm().patientId"
+        (ngModelChange)="createForm.set({ ...createForm(), patientId: $event })"
+        [filter]="true"
+        (onFilter)="onCreatePatientSearch($event.filter)"
+        [loading]="createPatientSearching()"
+        filterPlaceholder="Search by name, number or phone"
+        emptyFilterMessage="Type at least 2 characters to search"
+        placeholder="Search for a patient"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
     </div>
     <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
       <label for="admSource" class="text-sm font-medium text-slate-700">Admission Source</label>
@@ -113,12 +149,48 @@
       ></p-select>
     </div>
     <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
-      <label for="admDoctor" class="text-sm font-medium text-slate-700">Admitting Doctor ID</label>
-      <input id="admDoctor" pInputText [ngModel]="createForm().admittingDoctorId" (ngModelChange)="createForm.set({ ...createForm(), admittingDoctorId: $event })" class="w-full" />
+      <label for="admDoctor" class="text-sm font-medium text-slate-700">Admitting Doctor</label>
+      <p-select
+        inputId="admDoctor"
+        [options]="doctorOptions()"
+        [ngModel]="createForm().admittingDoctorId"
+        (ngModelChange)="createForm.set({ ...createForm(), admittingDoctorId: $event })"
+        [filter]="true"
+        placeholder="Select a doctor"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
     </div>
-    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
-      <label for="admBed" class="text-sm font-medium text-slate-700">Bed ID</label>
-      <input id="admBed" pInputText [ngModel]="createForm().bedId" (ngModelChange)="createForm.set({ ...createForm(), bedId: $event })" class="w-full" />
+    <div class="flex flex-col gap-2">
+      <label for="admWard" class="text-sm font-medium text-slate-700">Ward</label>
+      <p-select
+        inputId="admWard"
+        [options]="wardOptions()"
+        optionLabel="wardName"
+        optionValue="id"
+        [ngModel]="createBedWardId()"
+        (ngModelChange)="selectCreateBedWard($event)"
+        placeholder="Select a ward"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="admBed" class="text-sm font-medium text-slate-700">Bed</label>
+      <p-select
+        inputId="admBed"
+        [options]="createBeds()"
+        optionLabel="bedNumber"
+        optionValue="id"
+        [ngModel]="createForm().bedId"
+        (ngModelChange)="createForm.set({ ...createForm(), bedId: $event })"
+        [loading]="createBedsLoading()"
+        [disabled]="!createBedWardId()"
+        placeholder="Select a bed"
+        emptyMessage="No available beds in this ward"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
     </div>
   </div>
   <ng-template pTemplate="footer">

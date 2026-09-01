@@ -14,8 +14,18 @@ import { AuthService } from '@org/auth';
 import { AdmissionsApiService, Admission, CreateAdmissionDto } from './admissions-api.service.js';
 import { admissionSourceSeverity, admissionStatusSeverity, ADMISSION_SOURCES, ADMISSION_STATUSES } from './admission.model.js';
 import { EntityName } from '../directory/entity-name.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
+import { UsersApiService } from '../users/users-api.service.js';
+import { MasterDataApiService } from '../master-data/master-data-api.service.js';
+import { Ward, Bed } from '../master-data/master-data.model.js';
 
 export type AdmissionView = 'All' | 'Active';
+
+const PATIENT_SEARCH_DEBOUNCE_MS = 300;
+
+function patientLabel(p: { firstName: string; lastName: string; patientNo: string }): string {
+  return `${p.firstName} ${p.lastName} (${p.patientNo})`;
+}
 
 @Component({
   selector: 'hms-admission-list',
@@ -37,6 +47,9 @@ export type AdmissionView = 'All' | 'Active';
 })
 export class AdmissionList {
   private readonly admissionsApi = inject(AdmissionsApiService);
+  private readonly patientsApi = inject(PatientsApiService);
+  private readonly usersApi = inject(UsersApiService);
+  private readonly masterDataApi = inject(MasterDataApiService);
   readonly auth = inject(AuthService);
 
   // GET /admissions/active returns the full list with no server-side pagination, unlike the "All"
@@ -60,6 +73,21 @@ export class AdmissionList {
   readonly patientIdFilter = signal('');
   readonly wardIdFilter = signal('');
 
+  // Name pickers, replacing raw-UUID text fields — matching the Orders/Nursing/OT/Maternity/
+  // Vaccination pattern (server-searched patient) and the Appointments pattern (bulk-loaded
+  // doctor/ward, small enough lists to load once rather than search).
+  readonly patientOptions = signal<{ label: string; value: string }[]>([]);
+  readonly patientSearching = signal(false);
+  private patientSearchTimer?: ReturnType<typeof setTimeout>;
+  readonly createPatientOptions = signal<{ label: string; value: string }[]>([]);
+  readonly createPatientSearching = signal(false);
+  private createPatientSearchTimer?: ReturnType<typeof setTimeout>;
+  readonly doctorOptions = signal<{ label: string; value: string }[]>([]);
+  readonly wardOptions = signal<Ward[]>([]);
+  readonly createBedWardId = signal<string | null>(null);
+  readonly createBeds = signal<Bed[]>([]);
+  readonly createBedsLoading = signal(false);
+
   readonly showCreateModal = signal(false);
   readonly createForm = signal<CreateAdmissionDto>({
     patientId: '',
@@ -80,6 +108,69 @@ export class AdmissionList {
 
   constructor() {
     this.load(0);
+    this.usersApi.listDirectory('Doctor').subscribe({
+      next: (doctors) => this.doctorOptions.set(doctors.map((d) => ({ label: d.displayName, value: d.id }))),
+      error: () => this.doctorOptions.set([]),
+    });
+    this.masterDataApi.listWards().subscribe({
+      next: (wards) => this.wardOptions.set(wards.filter((w) => w.isActive)),
+      error: () => this.wardOptions.set([]),
+    });
+  }
+
+  onPatientFilterSearch(query: string): void {
+    clearTimeout(this.patientSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) {
+      this.patientOptions.set([]);
+      return;
+    }
+    this.patientSearchTimer = setTimeout(() => {
+      this.patientSearching.set(true);
+      this.patientsApi.search({ page: 1, limit: 10, q }).subscribe({
+        next: (res) => {
+          this.patientOptions.set(res.data.map((p) => ({ label: patientLabel(p), value: p.id })));
+          this.patientSearching.set(false);
+        },
+        error: () => this.patientSearching.set(false),
+      });
+    }, PATIENT_SEARCH_DEBOUNCE_MS);
+  }
+
+  onCreatePatientSearch(query: string): void {
+    clearTimeout(this.createPatientSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) {
+      this.createPatientOptions.set([]);
+      return;
+    }
+    this.createPatientSearchTimer = setTimeout(() => {
+      this.createPatientSearching.set(true);
+      this.patientsApi.search({ page: 1, limit: 10, q }).subscribe({
+        next: (res) => {
+          this.createPatientOptions.set(res.data.map((p) => ({ label: patientLabel(p), value: p.id })));
+          this.createPatientSearching.set(false);
+        },
+        error: () => this.createPatientSearching.set(false),
+      });
+    }, PATIENT_SEARCH_DEBOUNCE_MS);
+  }
+
+  selectCreateBedWard(wardId: string | null): void {
+    this.createBedWardId.set(wardId);
+    this.createForm.set({ ...this.createForm(), bedId: '' });
+    if (!wardId) {
+      this.createBeds.set([]);
+      return;
+    }
+    this.createBedsLoading.set(true);
+    this.masterDataApi.listBedsByWard(wardId).subscribe({
+      next: (beds) => {
+        this.createBeds.set(beds.filter((b) => b.isActive && b.status === 'Available'));
+        this.createBedsLoading.set(false);
+      },
+      error: () => this.createBedsLoading.set(false),
+    });
   }
 
   load(first: number): void {
@@ -143,6 +234,9 @@ export class AdmissionList {
       admittingDoctorId: '',
       bedId: '',
     });
+    this.createPatientOptions.set([]);
+    this.createBedWardId.set(null);
+    this.createBeds.set([]);
     this.showCreateModal.set(true);
   }
 
