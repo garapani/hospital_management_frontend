@@ -17,6 +17,7 @@ import { StockMovementDto, WardStockBalance, WardStockTransaction } from './ward
 import { InventoryApiService, InventoryItem, InventoryItemCategory, InventoryItemSubCategory } from '../inventory/inventory-api.service.js';
 import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 import { Department } from '../master-data/master-data.model.js';
+import { EntityName } from '../directory/entity-name.js';
 
 interface MovementForm {
   departmentId: string;
@@ -39,7 +40,7 @@ const EMPTY_FORM: MovementForm = {
 };
 
 @Component({
-  imports: [DecimalPipe, DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, SelectModule, TabsModule],
+  imports: [DecimalPipe, DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, SelectModule, TabsModule, EntityName],
   selector: 'hms-ward-supply-console',
   templateUrl: './ward-supply-console.html',
 })

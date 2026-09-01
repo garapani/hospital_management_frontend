@@ -7,6 +7,12 @@ import { WardSupplyConsole } from './ward-supply-console.js';
 import { WardSupplyApiService } from './ward-supply-api.service.js';
 import { InventoryApiService } from '../inventory/inventory-api.service.js';
 import { MasterDataApiService } from '../master-data/master-data-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
+
+const directoryResolverProvider = {
+  provide: DirectoryResolverService,
+  useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
+};
 
 describe('WardSupplyConsole', () => {
   function setup(canManage = true) {
@@ -35,6 +41,7 @@ describe('WardSupplyConsole', () => {
         { provide: MasterDataApiService, useValue: masterDataApi },
         { provide: MessageService, useValue: messageService },
         { provide: AuthService, useValue: auth },
+        directoryResolverProvider,
       ],
     });
 

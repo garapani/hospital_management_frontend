@@ -4,7 +4,7 @@ import { DirectoryResolverService } from './directory-resolver.service.js';
 import { DirectoryApiService, DirectoryResolveResult } from './directory-api.service.js';
 
 describe('DirectoryResolverService', () => {
-  function setup(resolveResult: DirectoryResolveResult | 'error' = { patients: {}, doctors: {}, wards: {}, beds: {} }) {
+  function setup(resolveResult: DirectoryResolveResult | 'error' = { patients: {}, doctors: {}, wards: {}, beds: {}, items: {} }) {
     const directoryApi = {
       resolve: jest.fn().mockReturnValue(
         resolveResult === 'error' ? throwError(() => new Error('boom')) : of(resolveResult),
@@ -24,6 +24,7 @@ describe('DirectoryResolverService', () => {
       doctors: { 'doctor-1': { displayName: 'Dr. Smith' } },
       wards: {},
       beds: {},
+      items: {},
     });
 
     const results: (string | null)[] = [];
@@ -43,7 +44,7 @@ describe('DirectoryResolverService', () => {
   it('caches a resolved id and never calls the API for it again', async () => {
     const { service, directoryApi } = setup({
       patients: { 'patient-1': { displayName: 'Jane Doe', patientNo: 'PAT-1' } },
-      doctors: {}, wards: {}, beds: {},
+      doctors: {}, wards: {}, beds: {}, items: {},
     });
 
     service.resolve('patient', 'patient-1').subscribe();
@@ -58,7 +59,7 @@ describe('DirectoryResolverService', () => {
   });
 
   it('resolves null for an id the backend does not return (deleted/cross-tenant/unknown)', async () => {
-    const { service } = setup({ patients: {}, doctors: {}, wards: {}, beds: {} });
+    const { service } = setup({ patients: {}, doctors: {}, wards: {}, beds: {}, items: {} });
 
     let value: string | null = 'unset';
     service.resolve('patient', 'missing-id').subscribe((n) => (value = n));
