@@ -10,6 +10,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { TabsModule } from 'primeng/tabs';
 import { SelectModule } from 'primeng/select';
+import { PaginatorModule, PaginatorState } from 'primeng/paginator';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { Observable } from 'rxjs';
@@ -18,9 +19,12 @@ import { AuthService } from '@org/auth';
 import { NursingApiService } from './nursing-api.service.js';
 import {
   CreateAdministrationDto,
+  CreateHandoffNoteDto,
   CreateTaskDto,
   MedicationAdministration,
   NursingTask,
+  Shift,
+  ShiftHandoffNote,
 } from './nursing.model.js';
 import { PatientsApiService } from '../patients/patients-api.service.js';
 import { AdmissionsApiService, Admission } from '../admissions/admissions-api.service.js';
@@ -30,13 +34,14 @@ const DEFAULT_PAGE_SIZE = 20;
 const PATIENT_SEARCH_DEBOUNCE_MS = 300;
 const EMPTY_TASK_FORM: CreateTaskDto = { admissionId: '', taskType: '', description: '' };
 const EMPTY_ADMIN_FORM: CreateAdministrationDto = { admissionId: '', drugName: '', dose: '' };
+const EMPTY_HANDOFF_FORM: CreateHandoffNoteDto = { admissionId: '', note: '' };
 
 function patientLabel(p: { firstName: string; lastName: string; patientNo: string }): string {
   return `${p.firstName} ${p.lastName} (${p.patientNo})`;
 }
 
 @Component({
-  imports: [DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, TextareaModule, TabsModule, SelectModule, EntityName],
+  imports: [DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, TextareaModule, TabsModule, SelectModule, PaginatorModule, EntityName],
   selector: 'hms-nursing-console',
   templateUrl: './nursing-console.html',
 })
@@ -89,6 +94,22 @@ export class NursingConsole {
   readonly skipNotes = signal('');
   private skippingAdmin: MedicationAdministration | null = null;
 
+  readonly handoffNotes = signal<ShiftHandoffNote[]>([]);
+  readonly handoffTotalRecords = signal(0);
+  readonly handoffPageSize = signal(DEFAULT_PAGE_SIZE);
+  readonly handoffFirstRecord = signal(0);
+  readonly handoffLoading = signal(false);
+  readonly showHandoffModal = signal(false);
+  readonly handoffForm = signal<CreateHandoffNoteDto>(EMPTY_HANDOFF_FORM);
+  readonly handoffSaving = signal(false);
+  readonly handoffError = signal<string | null>(null);
+  readonly handoffAckId = signal<string | null>(null);
+  readonly shiftOptions: { label: string; value: Shift }[] = [
+    { label: 'Day', value: 'Day' },
+    { label: 'Evening', value: 'Evening' },
+    { label: 'Night', value: 'Night' },
+  ];
+
   // Arriving from an Admission's "Nursing Tasks / MAR" link (?admissionId=...) applies that
   // filter immediately instead of landing on the unfiltered list — the nurse would otherwise have
   // to copy the Admission ID off the admission screen and paste it in here by hand. Subscribes
@@ -106,6 +127,7 @@ export class NursingConsole {
       }
       this.loadTasks(1, this.tasksPageSize());
       this.loadAdministrations(1, this.administrationsPageSize());
+      this.loadHandoffNotes(1, this.handoffPageSize());
     });
   }
 
@@ -184,6 +206,7 @@ export class NursingConsole {
   applyFilter(): void {
     this.loadTasks(1, this.tasksPageSize());
     this.loadAdministrations(1, this.administrationsPageSize());
+    this.loadHandoffNotes(1, this.handoffPageSize());
   }
 
   // --- Tasks ---
@@ -365,6 +388,68 @@ export class NursingConsole {
       },
       error: (err: ApiError) => {
         this.adminActionId.set(null);
+        this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
+      },
+    });
+  }
+
+  // --- Shift handoff notes ---
+
+  onHandoffPageChange(event: PaginatorState): void {
+    const rows = event.rows ?? this.handoffPageSize();
+    const page = Math.floor((event.first ?? 0) / rows) + 1;
+    this.loadHandoffNotes(page, rows);
+  }
+
+  loadHandoffNotes(page: number, limit: number): void {
+    this.handoffLoading.set(true);
+    this.handoffFirstRecord.set((page - 1) * limit);
+    this.api.listHandoffNotes(this.admissionIdFilter() || undefined, page, limit).subscribe({
+      next: (result) => {
+        this.handoffNotes.set(result.data);
+        this.handoffTotalRecords.set(result.meta.total);
+        this.handoffLoading.set(false);
+      },
+      error: () => {
+        this.handoffLoading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load shift handoff notes.' });
+      },
+    });
+  }
+
+  openHandoffModal(): void {
+    this.handoffForm.set({ ...EMPTY_HANDOFF_FORM, admissionId: this.admissionIdFilter() });
+    this.handoffError.set(null);
+    this.showHandoffModal.set(true);
+  }
+
+  submitHandoffNote(): void {
+    this.handoffSaving.set(true);
+    this.handoffError.set(null);
+    this.api.createHandoffNote(this.handoffForm()).subscribe({
+      next: () => {
+        this.handoffSaving.set(false);
+        this.showHandoffModal.set(false);
+        this.loadHandoffNotes(1, this.handoffPageSize());
+        this.messageService.add({ severity: 'success', summary: 'Handoff note added' });
+      },
+      error: (err: ApiError) => {
+        this.handoffSaving.set(false);
+        this.handoffError.set(err.message || 'Failed to save the handoff note.');
+      },
+    });
+  }
+
+  acknowledgeHandoffNote(note: ShiftHandoffNote): void {
+    this.handoffAckId.set(note.id);
+    this.api.acknowledgeHandoffNote(note.id).subscribe({
+      next: () => {
+        this.handoffAckId.set(null);
+        this.loadHandoffNotes(1, this.handoffPageSize());
+        this.messageService.add({ severity: 'success', summary: 'Note acknowledged' });
+      },
+      error: (err: ApiError) => {
+        this.handoffAckId.set(null);
         this.messageService.add({ severity: 'error', summary: 'Action failed', detail: err.message || 'Please try again.' });
       },
     });

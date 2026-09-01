@@ -22,6 +22,9 @@ describe('NursingConsole', () => {
       createAdministration: jest.fn().mockReturnValue(of({})),
       administer: jest.fn().mockReturnValue(of({})),
       skipAdministration: jest.fn().mockReturnValue(of({})),
+      listHandoffNotes: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
+      createHandoffNote: jest.fn().mockReturnValue(of({})),
+      acknowledgeHandoffNote: jest.fn().mockReturnValue(of({})),
     } as unknown as NursingApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
     const confirmationService = {
@@ -95,6 +98,7 @@ describe('NursingConsole', () => {
     const api = {
       listTasks: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
       listAdministrations: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
+      listHandoffNotes: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
     } as unknown as NursingApiService;
     const queryParamMap$ = new Subject<ReturnType<typeof convertToParamMap>>();
     const patientsApi = {
@@ -298,5 +302,69 @@ describe('NursingConsole', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.canManage).toBe(false);
+  });
+
+  it('loads shift handoff notes on init, page 1', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(api.listHandoffNotes).toHaveBeenCalledWith(undefined, 1, 20);
+  });
+
+  it('creates a shift handoff note and toasts success', async () => {
+    const { fixture, api, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openHandoffModal();
+    fixture.componentInstance.handoffForm.set({ admissionId: 'adm-1', shift: 'Night', note: 'Recheck vitals at 2am.' });
+    fixture.componentInstance.submitHandoffNote();
+    await fixture.whenStable();
+
+    expect(api.createHandoffNote).toHaveBeenCalledWith(
+      expect.objectContaining({ admissionId: 'adm-1', shift: 'Night', note: 'Recheck vitals at 2am.' }),
+    );
+    expect(fixture.componentInstance.showHandoffModal()).toBe(false);
+    expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success', summary: 'Handoff note added' }));
+  });
+
+  it('shows an error toast when creating a handoff note fails', async () => {
+    const { fixture, api } = setup();
+    (api.createHandoffNote as jest.Mock).mockReturnValue({
+      subscribe: (handlers: { error: (err: ApiError) => void }) =>
+        handlers.error({ status: 400, message: 'Invalid admission', body: null }),
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.handoffForm.set({ admissionId: 'bad', note: 'x' });
+    fixture.componentInstance.submitHandoffNote();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.handoffError()).toBe('Invalid admission');
+  });
+
+  it('acknowledges a shift handoff note', async () => {
+    const { fixture, api, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.acknowledgeHandoffNote({ id: 'n1' } as never);
+    await fixture.whenStable();
+
+    expect(api.acknowledgeHandoffNote).toHaveBeenCalledWith('n1');
+    expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'success', summary: 'Note acknowledged' }));
+  });
+
+  it('pages the handoff notes list', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.onHandoffPageChange({ first: 20, rows: 20, page: 1, pageCount: 2 });
+    await fixture.whenStable();
+
+    expect(api.listHandoffNotes).toHaveBeenCalledWith(undefined, 2, 20);
   });
 });

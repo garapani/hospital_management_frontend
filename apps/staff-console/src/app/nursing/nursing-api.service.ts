@@ -3,10 +3,12 @@ import { ApiClientService } from '@org/api-client';
 import { Observable } from 'rxjs';
 import {
   CreateAdministrationDto,
+  CreateHandoffNoteDto,
   CreateTaskDto,
   MedicationAdministration,
   NursingTask,
   PaginatedResult,
+  ShiftHandoffNote,
 } from './nursing.model.js';
 
 @Injectable({ providedIn: 'root' })
@@ -55,5 +57,21 @@ export class NursingApiService {
 
   skipAdministration(id: string, notes?: string): Observable<MedicationAdministration> {
     return this.apiClient.post<MedicationAdministration>(`/nursing/administrations/${id}/skip`, { notes });
+  }
+
+  listHandoffNotes(admissionId?: string, page?: number, limit?: number): Observable<PaginatedResult<ShiftHandoffNote>> {
+    const query: Record<string, string | number> = {};
+    if (admissionId) query['admissionId'] = admissionId;
+    if (page !== undefined) query['page'] = page;
+    if (limit !== undefined) query['limit'] = limit;
+    return this.apiClient.get<PaginatedResult<ShiftHandoffNote>>('/nursing/handoff-notes', { params: query });
+  }
+
+  createHandoffNote(dto: CreateHandoffNoteDto): Observable<ShiftHandoffNote> {
+    return this.apiClient.post<ShiftHandoffNote>('/nursing/handoff-notes', dto);
+  }
+
+  acknowledgeHandoffNote(id: string): Observable<ShiftHandoffNote> {
+    return this.apiClient.post<ShiftHandoffNote>(`/nursing/handoff-notes/${id}/acknowledge`, {});
   }
 }

@@ -40,6 +40,7 @@
       <p-tablist>
         <p-tab value="0">Tasks</p-tab>
         <p-tab value="1">Medication Administration (MAR)</p-tab>
+        <p-tab value="2">Shift Handoff</p-tab>
       </p-tablist>
 
       <p-tabpanels styleClass="p-0">
@@ -171,6 +172,65 @@
             </p-table>
           </div>
         </p-tabpanel>
+
+        <p-tabpanel value="2">
+          <div class="p-4 flex flex-col gap-4">
+            @if (canManage && admissionIdFilter()) {
+            <div class="flex justify-end">
+              <p-button label="New Handoff Note" icon="pi pi-plus" size="small" (onClick)="openHandoffModal()"></p-button>
+            </div>
+            }
+            @if (handoffLoading()) {
+            <div class="text-center text-slate-500 py-6"><i class="pi pi-spin pi-spinner"></i></div>
+            } @else if (handoffNotes().length === 0) {
+            <div class="text-center text-slate-500 py-12">
+              <i class="pi pi-comments text-4xl mb-3 opacity-50"></i>
+              <p>No shift handoff notes {{ admissionIdFilter() ? 'for this admission' : '' }} yet.</p>
+            </div>
+            } @else {
+            <div class="flex flex-col gap-3">
+              @for (n of handoffNotes(); track n.id) {
+              <div class="surface-card p-4">
+                <div class="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                  <div class="flex items-center gap-2">
+                    @if (n.shift) {
+                    <p-tag [value]="n.shift" severity="secondary" [rounded]="true"></p-tag>
+                    }
+                    <span class="text-xs text-slate-400">{{ n.createdAt | date: 'medium' }}</span>
+                    <hms-entity-name type="doctor" [id]="n.createdBy"></hms-entity-name>
+                  </div>
+                  @if (n.acknowledged) {
+                  <span class="text-xs text-green-600 flex items-center gap-1">
+                    <i class="pi pi-check-circle"></i> Acknowledged by <hms-entity-name type="doctor" [id]="n.acknowledgedBy!"></hms-entity-name>
+                  </span>
+                  } @else if (canManage) {
+                  <p-button
+                    label="Acknowledge"
+                    icon="pi pi-check"
+                    [text]="true"
+                    size="small"
+                    [loading]="handoffAckId() === n.id"
+                    (onClick)="acknowledgeHandoffNote(n)"
+                  ></p-button>
+                  } @else {
+                  <span class="text-xs text-slate-400">Not yet acknowledged</span>
+                  }
+                </div>
+                <p class="text-sm text-slate-800 whitespace-pre-wrap">{{ n.note }}</p>
+              </div>
+              }
+            </div>
+            @if (handoffTotalRecords() > handoffPageSize()) {
+            <p-paginator
+              [rows]="handoffPageSize()"
+              [totalRecords]="handoffTotalRecords()"
+              [first]="handoffFirstRecord()"
+              (onPageChange)="onHandoffPageChange($event)"
+            ></p-paginator>
+            }
+            }
+          </div>
+        </p-tabpanel>
       </p-tabpanels>
     </p-tabs>
   </div>
@@ -263,6 +323,55 @@
         [loading]="adminSaving()"
         (onClick)="submitAdmin()"
         [disabled]="!adminForm().admissionId || !adminForm().drugName || !adminForm().dose"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- New Handoff Note Modal -->
+<p-dialog header="New Handoff Note" [(visible)]="showHandoffModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (handoffError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ handoffError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <span class="text-sm font-medium text-slate-700">Admission</span>
+      @if (selectedAdmission(); as admission) {
+      <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+        <hms-entity-name type="patient" [id]="admission.patientId"></hms-entity-name>
+        — Ward <hms-entity-name type="ward" [id]="admission.wardId"></hms-entity-name>
+      </div>
+      }
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="handoffShift" class="text-sm font-medium text-slate-700">Shift</label>
+      <p-select
+        id="handoffShift"
+        [options]="shiftOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select a shift"
+        [ngModel]="handoffForm().shift"
+        (ngModelChange)="handoffForm.set({ ...handoffForm(), shift: $event })"
+        class="w-full"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="handoffNote" class="text-sm font-medium text-slate-700">Note <span class="text-red-500">*</span></label>
+      <textarea pTextarea id="handoffNote" rows="4" [ngModel]="handoffForm().note" (ngModelChange)="handoffForm.set({ ...handoffForm(), note: $event })" class="w-full"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showHandoffModal.set(false)"></p-button>
+      <p-button
+        label="Save"
+        [loading]="handoffSaving()"
+        (onClick)="submitHandoffNote()"
+        [disabled]="!handoffForm().admissionId || !handoffForm().note.trim()"
       ></p-button>
     </div>
   </ng-template>

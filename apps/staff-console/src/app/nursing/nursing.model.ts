@@ -44,6 +44,26 @@ export interface CreateAdministrationDto {
   notes?: string;
 }
 
+export type Shift = 'Day' | 'Evening' | 'Night';
+
+export interface ShiftHandoffNote {
+  id: string;
+  admissionId: string;
+  shift: Shift | null;
+  note: string;
+  acknowledged: boolean;
+  acknowledgedBy: string | null;
+  acknowledgedAt: string | null;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface CreateHandoffNoteDto {
+  admissionId: string;
+  shift?: Shift;
+  note: string;
+}
+
 export interface PaginatedResult<T> {
   data: T[];
   meta: {
