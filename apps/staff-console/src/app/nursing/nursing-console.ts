@@ -9,6 +9,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { TextareaModule } from 'primeng/textarea';
 import { TabsModule } from 'primeng/tabs';
+import { SelectModule } from 'primeng/select';
 import { TableLazyLoadEvent } from 'primeng/table';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { Observable } from 'rxjs';
@@ -21,13 +22,21 @@ import {
   MedicationAdministration,
   NursingTask,
 } from './nursing.model.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
+import { AdmissionsApiService, Admission } from '../admissions/admissions-api.service.js';
+import { EntityName } from '../directory/entity-name.js';
 
 const DEFAULT_PAGE_SIZE = 20;
+const PATIENT_SEARCH_DEBOUNCE_MS = 300;
 const EMPTY_TASK_FORM: CreateTaskDto = { admissionId: '', taskType: '', description: '' };
 const EMPTY_ADMIN_FORM: CreateAdministrationDto = { admissionId: '', drugName: '', dose: '' };
 
+function patientLabel(p: { firstName: string; lastName: string; patientNo: string }): string {
+  return `${p.firstName} ${p.lastName} (${p.patientNo})`;
+}
+
 @Component({
-  imports: [DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, TextareaModule, TabsModule],
+  imports: [DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, TextareaModule, TabsModule, SelectModule, EntityName],
   selector: 'hms-nursing-console',
   templateUrl: './nursing-console.html',
 })
@@ -36,10 +45,21 @@ export class NursingConsole {
   private readonly route = inject(ActivatedRoute);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly patientsApi = inject(PatientsApiService);
+  private readonly admissionsApi = inject(AdmissionsApiService);
   readonly auth = inject(AuthService);
   readonly canManage = this.auth.hasPermission('nursing.manage');
 
   readonly admissionIdFilter = signal('');
+  // Patient search picker, replacing a raw-UUID "Admission ID" text filter — a nurse can only
+  // write vitals/tasks for one active admission per patient at a time, so picking the patient
+  // resolves to their current admission automatically instead of asking for its UUID directly.
+  readonly patientOptions = signal<{ label: string; value: string }[]>([]);
+  readonly patientSearching = signal(false);
+  private patientSearchTimer?: ReturnType<typeof setTimeout>;
+  readonly selectedPatientId = signal<string | null>(null);
+  readonly selectedAdmission = signal<Admission | null>(null);
+  readonly resolvingAdmission = signal(false);
 
   readonly tasks = signal<NursingTask[]>([]);
   readonly tasksTotalRecords = signal(0);
@@ -79,8 +99,85 @@ export class NursingConsole {
     this.route.queryParamMap.subscribe((params) => {
       const admissionId = params.get('admissionId');
       this.admissionIdFilter.set(admissionId ?? '');
+      this.selectedAdmission.set(null);
+      this.selectedPatientId.set(null);
+      if (admissionId) {
+        this.loadAdmissionContext(admissionId);
+      }
       this.loadTasks(1, this.tasksPageSize());
       this.loadAdministrations(1, this.administrationsPageSize());
+    });
+  }
+
+  /** Seeds the picker/context display for an admissionId that arrived via a query param (the
+   *  Admission screen's "Nursing Tasks / MAR" link) rather than through the picker itself. */
+  private loadAdmissionContext(admissionId: string): void {
+    this.admissionsApi.getById(admissionId).subscribe({
+      next: (admission) => {
+        this.selectedAdmission.set(admission);
+        this.selectedPatientId.set(admission.patientId);
+        this.patientsApi.getById(admission.patientId).subscribe({
+          next: (patient) => this.patientOptions.set([{ label: patientLabel(patient), value: patient.id }]),
+          error: () => {},
+        });
+      },
+      error: () => {},
+    });
+  }
+
+  onPatientFilterSearch(query: string): void {
+    clearTimeout(this.patientSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) {
+      this.patientOptions.set([]);
+      return;
+    }
+    this.patientSearchTimer = setTimeout(() => {
+      this.patientSearching.set(true);
+      this.patientsApi.search({ page: 1, limit: 10, q }).subscribe({
+        next: (res) => {
+          this.patientOptions.set(res.data.map((p) => ({ label: patientLabel(p), value: p.id })));
+          this.patientSearching.set(false);
+        },
+        error: () => this.patientSearching.set(false),
+      });
+    }, PATIENT_SEARCH_DEBOUNCE_MS);
+  }
+
+  /** A patient can only have one active admission at a time (backend-enforced), so selecting a
+   *  patient resolves straight to it — no separate "pick which admission" step needed. */
+  onPatientSelected(patientId: string | null): void {
+    this.selectedPatientId.set(patientId);
+    this.selectedAdmission.set(null);
+    this.admissionIdFilter.set('');
+
+    if (!patientId) {
+      this.applyFilter();
+      return;
+    }
+
+    this.resolvingAdmission.set(true);
+    this.admissionsApi.list({ patientId, status: 'Admitted', page: 1, limit: 1 }).subscribe({
+      next: (result) => {
+        this.resolvingAdmission.set(false);
+        const admission = result.data[0];
+        if (!admission) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'No active admission',
+            detail: 'This patient has no active admission right now.',
+          });
+          this.applyFilter();
+          return;
+        }
+        this.selectedAdmission.set(admission);
+        this.admissionIdFilter.set(admission.id);
+        this.applyFilter();
+      },
+      error: () => {
+        this.resolvingAdmission.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not look up this patient\'s admission.' });
+      },
     });
   }
 

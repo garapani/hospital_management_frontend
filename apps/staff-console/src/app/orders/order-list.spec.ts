@@ -4,6 +4,8 @@ import { of, throwError } from 'rxjs';
 import { AuthService } from '@org/auth';
 import { OrderList } from './order-list.js';
 import { OrdersApiService } from './orders-api.service.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 describe('OrderList', () => {
   function setup(queryParams: Record<string, string> = {}) {
@@ -15,6 +17,11 @@ describe('OrderList', () => {
     const activatedRoute = {
       queryParamMap: of(convertToParamMap(queryParams)),
     } as unknown as ActivatedRoute;
+    const patientsApi = {
+      getById: jest.fn().mockReturnValue(of({ id: 'patient-9', firstName: 'Jane', lastName: 'Doe', patientNo: 'PAT-1' })),
+      search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+    } as unknown as PatientsApiService;
+    const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
 
     TestBed.configureTestingModule({
       imports: [OrderList],
@@ -23,11 +30,13 @@ describe('OrderList', () => {
         { provide: OrdersApiService, useValue: ordersApi },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
+        { provide: PatientsApiService, useValue: patientsApi },
+        { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
     const fixture = TestBed.createComponent(OrderList);
-    return { fixture, ordersApi };
+    return { fixture, ordersApi, patientsApi };
   }
 
   it('does not fetch orders until a patient ID is provided (backend requires patientId)', async () => {
@@ -83,12 +92,45 @@ describe('OrderList', () => {
     expect(call.page).toBe(1);
   });
 
-  it('pre-fills the filter and create form and opens the modal when navigated with a patientId query param', () => {
-    const { fixture } = setup({ patientId: 'patient-9' });
+  it('pre-fills the filter and create form and opens the modal when navigated with a patientId query param', async () => {
+    const { fixture, patientsApi } = setup({ patientId: 'patient-9' });
 
     expect(fixture.componentInstance.patientIdFilter()).toBe('patient-9');
     expect(fixture.componentInstance.showCreateModal()).toBe(true);
     expect(fixture.componentInstance.createForm().patientId).toBe('patient-9');
+
+    // The picker shows a name, not a blank value, for the id it arrived with.
+    expect(patientsApi.getById).toHaveBeenCalledWith('patient-9');
+    await Promise.resolve();
+    expect(fixture.componentInstance.patientOptions()).toEqual([{ label: 'Jane Doe (PAT-1)', value: 'patient-9' }]);
+  });
+
+  it('debounces and searches patients by name/number/phone as the picker filter is typed', () => {
+    jest.useFakeTimers();
+    const { fixture, patientsApi } = setup();
+    (patientsApi.search as jest.Mock).mockReturnValue(
+      of({ data: [{ id: 'p1', firstName: 'John', lastName: 'Smith', patientNo: 'PAT-2' }], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } }),
+    );
+
+    fixture.componentInstance.onPatientFilterSearch('jo');
+    expect(patientsApi.search).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(300);
+
+    expect(patientsApi.search).toHaveBeenCalledWith({ page: 1, limit: 10, q: 'jo' });
+    expect(fixture.componentInstance.patientOptions()).toEqual([{ label: 'John Smith (PAT-2)', value: 'p1' }]);
+    jest.useRealTimers();
+  });
+
+  it('does not search until at least 2 characters are typed', () => {
+    jest.useFakeTimers();
+    const { fixture, patientsApi } = setup();
+
+    fixture.componentInstance.onPatientFilterSearch('j');
+    jest.advanceTimersByTime(300);
+
+    expect(patientsApi.search).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.patientOptions()).toEqual([]);
+    jest.useRealTimers();
   });
 
   it('does not open the create modal when no patientId query param is present', () => {

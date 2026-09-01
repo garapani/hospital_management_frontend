@@ -4,19 +4,35 @@
     <p class="text-sm text-slate-500 mt-1">Care tasks and the medication administration record (MAR).</p>
   </div>
 
-  <div class="surface-panel p-4 flex items-end gap-3 flex-wrap">
-    <label class="flex flex-col gap-2">
-      <span class="text-sm font-medium text-slate-700">Admission ID</span>
-      <input
-        pInputText
-        [ngModel]="admissionIdFilter()"
-        (ngModelChange)="admissionIdFilter.set($event)"
-        (keyup.enter)="applyFilter()"
-        placeholder="Filter by admission ID"
-        class="w-64"
-      />
-    </label>
-    <p-button label="Filter" (onClick)="applyFilter()" size="small"></p-button>
+  <div class="surface-panel p-4 flex flex-col gap-3">
+    <div class="flex items-end gap-3 flex-wrap">
+      <label class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-slate-700">Patient</span>
+        <p-select
+          inputId="nursingPatientFilter"
+          [options]="patientOptions()"
+          [ngModel]="selectedPatientId()"
+          (ngModelChange)="onPatientSelected($event)"
+          [filter]="true"
+          (onFilter)="onPatientFilterSearch($event.filter)"
+          [loading]="patientSearching() || resolvingAdmission()"
+          [showClear]="true"
+          filterPlaceholder="Search by name, number or phone"
+          emptyFilterMessage="Type at least 2 characters to search"
+          placeholder="Search for a patient"
+          styleClass="w-80"
+        ></p-select>
+      </label>
+    </div>
+    @if (selectedAdmission(); as admission) {
+    <div class="text-sm text-slate-600 flex items-center gap-2 flex-wrap">
+      <i class="pi pi-info-circle text-slate-400"></i>
+      Showing tasks/MAR for
+      <span class="font-medium text-slate-800"><hms-entity-name type="patient" [id]="admission.patientId"></hms-entity-name></span>
+      — Ward <hms-entity-name type="ward" [id]="admission.wardId"></hms-entity-name>,
+      Bed <hms-entity-name type="bed" [id]="admission.bedId"></hms-entity-name>
+    </div>
+    }
   </div>
 
   <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white">
@@ -29,7 +45,7 @@
       <p-tabpanels styleClass="p-0">
         <p-tabpanel value="0">
           <div class="p-4 flex flex-col gap-4">
-            @if (canManage) {
+            @if (canManage && admissionIdFilter()) {
             <div class="flex justify-end">
               <p-button label="New Task" icon="pi pi-plus" size="small" (onClick)="openTaskModal()"></p-button>
             </div>
@@ -94,7 +110,7 @@
 
         <p-tabpanel value="1">
           <div class="p-4 flex flex-col gap-4">
-            @if (canManage) {
+            @if (canManage && admissionIdFilter()) {
             <div class="flex justify-end">
               <p-button label="Schedule Medication" icon="pi pi-plus" size="small" (onClick)="openAdminModal()"></p-button>
             </div>
@@ -170,8 +186,13 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label for="taskAdmissionId" class="text-sm font-medium text-slate-700">Admission ID</label>
-      <input pInputText id="taskAdmissionId" [ngModel]="taskForm().admissionId" (ngModelChange)="taskForm.set({ ...taskForm(), admissionId: $event })" class="w-full" />
+      <span class="text-sm font-medium text-slate-700">Admission</span>
+      @if (selectedAdmission(); as admission) {
+      <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+        <hms-entity-name type="patient" [id]="admission.patientId"></hms-entity-name>
+        — Ward <hms-entity-name type="ward" [id]="admission.wardId"></hms-entity-name>
+      </div>
+      }
     </div>
     <div class="flex flex-col gap-2">
       <label for="taskType" class="text-sm font-medium text-slate-700">Task Type</label>
@@ -209,8 +230,13 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label for="adminAdmissionId" class="text-sm font-medium text-slate-700">Admission ID</label>
-      <input pInputText id="adminAdmissionId" [ngModel]="adminForm().admissionId" (ngModelChange)="adminForm.set({ ...adminForm(), admissionId: $event })" class="w-full" />
+      <span class="text-sm font-medium text-slate-700">Admission</span>
+      @if (selectedAdmission(); as admission) {
+      <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+        <hms-entity-name type="patient" [id]="admission.patientId"></hms-entity-name>
+        — Ward <hms-entity-name type="ward" [id]="admission.wardId"></hms-entity-name>
+      </div>
+      }
     </div>
     <div class="flex flex-col gap-2">
       <label for="adminDrugName" class="text-sm font-medium text-slate-700">Drug Name</label>

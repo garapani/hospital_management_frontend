@@ -6,6 +6,9 @@ import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { NursingConsole } from './nursing-console.js';
 import { NursingApiService } from './nursing-api.service.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
+import { AdmissionsApiService } from '../admissions/admissions-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 describe('NursingConsole', () => {
   function setup(canManage = true, queryParams: Record<string, string> = {}) {
@@ -28,6 +31,15 @@ describe('NursingConsole', () => {
     const activatedRoute = {
       queryParamMap: of(convertToParamMap(queryParams)),
     } as unknown as ActivatedRoute;
+    const patientsApi = {
+      getById: jest.fn().mockReturnValue(of({ id: 'patient-1', firstName: 'Jane', lastName: 'Doe', patientNo: 'PAT-1' })),
+      search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+    } as unknown as PatientsApiService;
+    const admissionsApi = {
+      getById: jest.fn().mockReturnValue(of({ id: 'adm-from-link', patientId: 'patient-1', wardId: 'ward-1', bedId: 'bed-1' })),
+      list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 1, totalPages: 0 } })),
+    } as unknown as AdmissionsApiService;
+    const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
 
     TestBed.configureTestingModule({
       imports: [NursingConsole],
@@ -37,11 +49,14 @@ describe('NursingConsole', () => {
         { provide: ConfirmationService, useValue: confirmationService },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
+        { provide: PatientsApiService, useValue: patientsApi },
+        { provide: AdmissionsApiService, useValue: admissionsApi },
+        { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
     const fixture = TestBed.createComponent(NursingConsole);
-    return { fixture, api, messageService, confirmationService };
+    return { fixture, api, messageService, confirmationService, patientsApi, admissionsApi };
   }
 
   it('loads tasks and administrations on init, page 1', async () => {
@@ -82,6 +97,15 @@ describe('NursingConsole', () => {
       listAdministrations: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
     } as unknown as NursingApiService;
     const queryParamMap$ = new Subject<ReturnType<typeof convertToParamMap>>();
+    const patientsApi = {
+      getById: jest.fn().mockReturnValue(of({ id: 'patient-1', firstName: 'Jane', lastName: 'Doe', patientNo: 'PAT-1' })),
+      search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+    } as unknown as PatientsApiService;
+    const admissionsApi = {
+      getById: jest.fn().mockReturnValue(of({ id: 'adm-1', patientId: 'patient-1', wardId: 'ward-1', bedId: 'bed-1' })),
+      list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 1, totalPages: 0 } })),
+    } as unknown as AdmissionsApiService;
+    const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
     TestBed.configureTestingModule({
       imports: [NursingConsole],
       providers: [
@@ -90,6 +114,9 @@ describe('NursingConsole', () => {
         { provide: ConfirmationService, useValue: { confirm: jest.fn() } },
         { provide: AuthService, useValue: { hasPermission: () => true } },
         { provide: ActivatedRoute, useValue: { queryParamMap: queryParamMap$ } },
+        { provide: PatientsApiService, useValue: patientsApi },
+        { provide: AdmissionsApiService, useValue: admissionsApi },
+        { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
     const fixture = TestBed.createComponent(NursingConsole);
@@ -103,6 +130,79 @@ describe('NursingConsole', () => {
 
     expect(fixture.componentInstance.admissionIdFilter()).toBe('adm-2');
     expect(api.listTasks).toHaveBeenCalledWith('adm-2', 1, 20);
+  });
+
+  it("resolves a selected patient's active admission and applies it as the filter", async () => {
+    const { fixture, api, admissionsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (admissionsApi.list as jest.Mock).mockReturnValue(
+      of({ data: [{ id: 'adm-resolved', patientId: 'patient-1', wardId: 'ward-1', bedId: 'bed-1' }], meta: { total: 1, page: 1, limit: 1, totalPages: 1 } }),
+    );
+
+    fixture.componentInstance.onPatientSelected('patient-1');
+    await fixture.whenStable();
+
+    expect(admissionsApi.list).toHaveBeenCalledWith({ patientId: 'patient-1', status: 'Admitted', page: 1, limit: 1 });
+    expect(fixture.componentInstance.admissionIdFilter()).toBe('adm-resolved');
+    expect(fixture.componentInstance.selectedAdmission()?.id).toBe('adm-resolved');
+    expect(api.listTasks).toHaveBeenCalledWith('adm-resolved', 1, 20);
+  });
+
+  it('warns and clears the filter when the selected patient has no active admission', async () => {
+    const { fixture, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.onPatientSelected('patient-no-admission');
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.admissionIdFilter()).toBe('');
+    expect(fixture.componentInstance.selectedAdmission()).toBeNull();
+    expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'warn', summary: 'No active admission' }));
+  });
+
+  it('clears the filter and context when the patient picker is cleared', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.selectedAdmission.set({ id: 'adm-1', patientId: 'patient-1', wardId: 'ward-1', bedId: 'bed-1' } as never);
+    fixture.componentInstance.admissionIdFilter.set('adm-1');
+
+    fixture.componentInstance.onPatientSelected(null);
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.admissionIdFilter()).toBe('');
+    expect(fixture.componentInstance.selectedAdmission()).toBeNull();
+    expect(api.listTasks).toHaveBeenLastCalledWith(undefined, 1, 20);
+  });
+
+  it('debounces and searches patients as the picker filter is typed', () => {
+    jest.useFakeTimers();
+    const { fixture, patientsApi } = setup();
+    (patientsApi.search as jest.Mock).mockReturnValue(
+      of({ data: [{ id: 'p1', firstName: 'John', lastName: 'Smith', patientNo: 'PAT-2' }], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } }),
+    );
+
+    fixture.componentInstance.onPatientFilterSearch('jo');
+    expect(patientsApi.search).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(300);
+
+    expect(patientsApi.search).toHaveBeenCalledWith({ page: 1, limit: 10, q: 'jo' });
+    expect(fixture.componentInstance.patientOptions()).toEqual([{ label: 'John Smith (PAT-2)', value: 'p1' }]);
+    jest.useRealTimers();
+  });
+
+  it("resolves the admission context (patient/ward) when arriving via an Admission's link", async () => {
+    const { fixture, admissionsApi, patientsApi } = setup(true, { admissionId: 'adm-from-link' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(admissionsApi.getById).toHaveBeenCalledWith('adm-from-link');
+    expect(patientsApi.getById).toHaveBeenCalledWith('patient-1');
+    expect(fixture.componentInstance.selectedAdmission()?.id).toBe('adm-from-link');
+    expect(fixture.componentInstance.patientOptions()).toEqual([{ label: 'Jane Doe (PAT-1)', value: 'patient-1' }]);
   });
 
   it('creates a task and toasts success', async () => {

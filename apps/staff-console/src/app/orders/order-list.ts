@@ -14,6 +14,13 @@ import { AuthService } from '@org/auth';
 import { OrdersApiService, Order, CreateOrderDto, CreateOrderItemDto } from './orders-api.service.js';
 import { ORDER_ITEM_TYPES, ORDER_PRIORITIES } from './order.model.js';
 import { EntityName } from '../directory/entity-name.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
+
+const PATIENT_SEARCH_DEBOUNCE_MS = 300;
+
+function patientLabel(p: { firstName: string; lastName: string; patientNo: string }): string {
+  return `${p.firstName} ${p.lastName} (${p.patientNo})`;
+}
 
 function emptyItemRow(): CreateOrderItemDto {
   return { itemType: '', itemDescription: '', priority: 'Routine' };
@@ -39,6 +46,7 @@ function emptyItemRow(): CreateOrderItemDto {
 })
 export class OrderList {
   private readonly ordersApi = inject(OrdersApiService);
+  private readonly patientsApi = inject(PatientsApiService);
   private readonly route = inject(ActivatedRoute);
   readonly auth = inject(AuthService);
 
@@ -50,6 +58,16 @@ export class OrderList {
 
   // The backend list endpoint requires patientId (orders are always scoped to one patient).
   readonly patientIdFilter = signal('');
+  // Name picker, replacing a raw-UUID text filter — a doctor doesn't know a patient's UUID by
+  // heart. Searched server-side (unlike Appointments' Doctor/Department pickers, which bulk-load
+  // — the patient list can be far larger).
+  readonly patientOptions = signal<{ label: string; value: string }[]>([]);
+  readonly patientSearching = signal(false);
+  private patientSearchTimer?: ReturnType<typeof setTimeout>;
+
+  readonly createPatientOptions = signal<{ label: string; value: string }[]>([]);
+  readonly createPatientSearching = signal(false);
+  private createPatientSearchTimer?: ReturnType<typeof setTimeout>;
 
   readonly showCreateModal = signal(false);
   readonly saving = signal(false);
@@ -68,6 +86,7 @@ export class OrderList {
       const patientId = params.get('patientId');
       if (patientId) {
         this.patientIdFilter.set(patientId);
+        this.seedPatientOption('filter', patientId);
         this.createForm.set({
           patientId,
           orderedBy: '',
@@ -78,6 +97,58 @@ export class OrderList {
         this.load(0);
       }
     });
+  }
+
+  /** Seeds a picker's options with the one patient it already has an id for (arriving via a
+   *  query param, or already selected in the filter) so the p-select shows a name, not a blank
+   *  value, before the user ever opens the dropdown or types a search. */
+  private seedPatientOption(target: 'filter' | 'create', patientId: string): void {
+    this.patientsApi.getById(patientId).subscribe({
+      next: (patient) => {
+        const option = { label: patientLabel(patient), value: patient.id };
+        if (target === 'filter') this.patientOptions.set([option]);
+        else this.createPatientOptions.set([option]);
+      },
+      error: () => {},
+    });
+  }
+
+  onPatientFilterSearch(query: string): void {
+    clearTimeout(this.patientSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) {
+      this.patientOptions.set([]);
+      return;
+    }
+    this.patientSearchTimer = setTimeout(() => {
+      this.patientSearching.set(true);
+      this.patientsApi.search({ page: 1, limit: 10, q }).subscribe({
+        next: (res) => {
+          this.patientOptions.set(res.data.map((p) => ({ label: patientLabel(p), value: p.id })));
+          this.patientSearching.set(false);
+        },
+        error: () => this.patientSearching.set(false),
+      });
+    }, PATIENT_SEARCH_DEBOUNCE_MS);
+  }
+
+  onCreatePatientSearch(query: string): void {
+    clearTimeout(this.createPatientSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) {
+      this.createPatientOptions.set([]);
+      return;
+    }
+    this.createPatientSearchTimer = setTimeout(() => {
+      this.createPatientSearching.set(true);
+      this.patientsApi.search({ page: 1, limit: 10, q }).subscribe({
+        next: (res) => {
+          this.createPatientOptions.set(res.data.map((p) => ({ label: patientLabel(p), value: p.id })));
+          this.createPatientSearching.set(false);
+        },
+        error: () => this.createPatientSearching.set(false),
+      });
+    }, PATIENT_SEARCH_DEBOUNCE_MS);
   }
 
   load(first: number): void {
@@ -120,6 +191,7 @@ export class OrderList {
       notes: '',
       items: [emptyItemRow()],
     });
+    this.createPatientOptions.set(this.patientOptions());
     this.showCreateModal.set(true);
   }
 
