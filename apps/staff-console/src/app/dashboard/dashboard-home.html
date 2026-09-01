@@ -1,0 +1,152 @@
+<div class="h-full flex flex-col gap-6">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="text-sm text-slate-500 mt-1">Your day at a glance — {{ today | date }}.</p>
+  </div>
+
+  @if (hasNoWidgets()) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-8 text-center text-slate-500">
+    Nothing scoped to your role shows here yet — use the sidebar to get to your work.
+  </div>
+  }
+
+  @if (isReceptionist()) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="font-bold text-slate-800 text-lg">Today's Appointments</h2>
+      <a routerLink="/clinical/appointments" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View all appointments</a>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      @for (status of appointmentStatuses; track status) {
+      <p-tag [value]="status + ': ' + (appointmentStatusCounts()[status] ?? 0)" [severity]="statusSeverity(status)" [rounded]="true"></p-tag>
+      }
+    </div>
+
+    <p-table
+      [value]="todaysAppointments()"
+      [loading]="appointmentsLoading()"
+      [paginator]="true"
+      [rows]="10"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Time</th>
+          <th class="table-header-cell">Patient</th>
+          <th class="table-header-cell">Type</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell w-16">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-appt>
+        <tr>
+          <td>{{ appt.appointmentTime }}</td>
+          <td class="font-medium">{{ displayName(appt) }}</td>
+          <td>{{ appt.appointmentType }}</td>
+          <td><p-tag [value]="appt.status" [severity]="statusSeverity(appt.status)" [rounded]="true"></p-tag></td>
+          <td>
+            <a [routerLink]="['/clinical/appointments', appt.id]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View</a>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-6 text-slate-500">No appointments scheduled for today.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
+
+  @if (isDoctor()) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="font-bold text-slate-800 text-lg">My Schedule Today</h2>
+      <a routerLink="/clinical/patients" class="text-sky-600 hover:text-sky-800 text-sm font-medium">Search all patients</a>
+    </div>
+
+    <p-table
+      [value]="myAppointmentsToday()"
+      [loading]="myAppointmentsLoading()"
+      [paginator]="true"
+      [rows]="10"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Time</th>
+          <th class="table-header-cell">Patient</th>
+          <th class="table-header-cell">Type</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell w-16">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-appt>
+        <tr>
+          <td>{{ appt.appointmentTime }}</td>
+          <td class="font-medium">{{ displayName(appt) }}</td>
+          <td>{{ appt.appointmentType }}</td>
+          <td><p-tag [value]="appt.status" [severity]="statusSeverity(appt.status)" [rounded]="true"></p-tag></td>
+          <td>
+            <a [routerLink]="['/clinical/appointments', appt.id]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View</a>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-6 text-slate-500">No appointments on your schedule today.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
+
+  @if (isNurse()) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="font-bold text-slate-800 text-lg">Pending Nursing Tasks</h2>
+      <a routerLink="/clinical/nursing" class="text-sky-600 hover:text-sky-800 text-sm font-medium">Open Nursing console</a>
+    </div>
+
+    <p-table
+      [value]="pendingTasks()"
+      [loading]="tasksLoading()"
+      [paginator]="true"
+      [rows]="10"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Type</th>
+          <th class="table-header-cell">Description</th>
+          <th class="table-header-cell">Due</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell w-16">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-task>
+        <tr>
+          <td class="font-medium">{{ task.taskType }}</td>
+          <td>{{ task.description }}</td>
+          <td>{{ task.dueAt ? (task.dueAt | date: 'short') : '—' }}</td>
+          <td>
+            <p-tag [value]="task.status" [severity]="task.status === 'InProgress' ? 'info' : 'secondary'" [rounded]="true"></p-tag>
+          </td>
+          <td>
+            <a [routerLink]="['/clinical/nursing']" [queryParams]="{ admissionId: task.admissionId }" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View</a>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-6 text-slate-500">No pending nursing tasks.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
+</div>

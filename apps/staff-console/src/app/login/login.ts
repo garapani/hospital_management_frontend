@@ -25,9 +25,13 @@ import { BrandingService } from '../branding/branding.service.js';
  */
 const ROLE_LANDING_ROUTES: Record<string, string> = {
   'Hospital Admin': '/admin/users',
-  'Receptionist / Front Desk': '/clinical/appointments',
-  Doctor: '/clinical/patients',
-  Nurse: '/clinical/triage',
+  // Receptionist/Doctor/Nurse land on the role-scoped dashboard (today's appointments / my
+  // schedule / pending nursing tasks) instead of an unfiltered hospital-wide list — see
+  // dashboard/dashboard-home.ts. The old destinations (/clinical/appointments, /clinical/patients,
+  // /clinical/triage) are still reachable from the sidebar, just no longer the landing screen.
+  'Receptionist / Front Desk': '/dashboard',
+  Doctor: '/dashboard',
+  Nurse: '/dashboard',
   'Billing/Accounts Staff': '/billing/invoices',
   'Auditor/Compliance': '/admin/audit',
 };

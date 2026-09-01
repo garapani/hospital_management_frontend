@@ -35,9 +35,9 @@ describe('rootRedirectGuard', () => {
   // despite a valid session. It must resolve per-role, the same way login.ts does.
   it.each([
     ['Hospital Admin', '/admin/users'],
-    ['Receptionist / Front Desk', '/clinical/appointments'],
-    ['Doctor', '/clinical/patients'],
-    ['Nurse', '/clinical/triage'],
+    ['Receptionist / Front Desk', '/dashboard'],
+    ['Doctor', '/dashboard'],
+    ['Nurse', '/dashboard'],
     ['Billing/Accounts Staff', '/billing/invoices'],
     ['Auditor/Compliance', '/admin/audit'],
   ])('sends a %s to their role-specific landing page, not a hardcoded route', (role, expectedRoute) => {

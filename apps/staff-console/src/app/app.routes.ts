@@ -65,6 +65,10 @@ export const appRoutes: Route[] = [
     runGuardsAndResolvers: 'always',
     children: [
       {
+        path: 'dashboard',
+        loadComponent: () => import('./dashboard/dashboard-home.js').then((m) => m.DashboardHome),
+      },
+      {
         path: 'billing/invoices',
         loadComponent: () => import('./billing/invoice-list/invoice-list.js').then((m) => m.InvoiceList),
         canActivate: [permissionGuard(Permissions.BILLING_MANAGE)],

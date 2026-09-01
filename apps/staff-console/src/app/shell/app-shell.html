@@ -1,5 +1,16 @@
 <hms-shell-chrome>
   <ng-container shellNav>
+    @if (auth.hasPermission('appointment.read') || auth.hasPermission('nursing.read')) {
+    <a
+      routerLink="/dashboard"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="nav-item"
+    >
+      <i class="pi pi-home text-base"></i>
+      Dashboard
+    </a>
+    }
     @if (auth.hasPermission('billing.manage')) {
     <a
       routerLink="/billing/invoices"

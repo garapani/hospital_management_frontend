@@ -170,9 +170,9 @@ describe('Login redirect', () => {
 
   it.each([
     ['Hospital Admin', '/admin/users'],
-    ['Receptionist / Front Desk', '/clinical/appointments'],
-    ['Doctor', '/clinical/patients'],
-    ['Nurse', '/clinical/triage'],
+    ['Receptionist / Front Desk', '/dashboard'],
+    ['Doctor', '/dashboard'],
+    ['Nurse', '/dashboard'],
     ['Billing/Accounts Staff', '/billing/invoices'],
     ['Auditor/Compliance', '/admin/audit'],
   ])('sends a %s to their role-specific landing page', (role, expectedRoute) => {
