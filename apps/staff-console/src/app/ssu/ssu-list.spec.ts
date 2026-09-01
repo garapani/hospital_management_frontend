@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { ApiError } from '@org/api-client';
@@ -154,6 +154,47 @@ describe('SsuList', () => {
       page: 1,
       limit: 20,
     });
+  });
+
+  it('does not let a slower earlier response overwrite a later response that resolved first', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const slow$ = new Subject<{ data: unknown[]; meta: { total: number; page: number; limit: number; totalPages: number } }>();
+    const fast$ = new Subject<{ data: unknown[]; meta: { total: number; page: number; limit: number; totalPages: number } }>();
+    (api.listCases as jest.Mock).mockReturnValueOnce(slow$).mockReturnValueOnce(fast$);
+
+    fixture.componentInstance.onLazyLoad({ first: 0, rows: 20 });
+    fixture.componentInstance.onLazyLoad({ first: 20, rows: 20 });
+
+    fast$.next({ data: [{ id: 'page2-row' }], meta: { total: 40, page: 2, limit: 20, totalPages: 2 } });
+    fast$.complete();
+    await fixture.whenStable();
+
+    slow$.next({ data: [{ id: 'page1-row' }], meta: { total: 40, page: 1, limit: 20, totalPages: 2 } });
+    slow$.complete();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.cases()).toEqual([{ id: 'page2-row' }]);
+    expect(fixture.componentInstance.firstRecord()).toBe(20);
+  });
+
+  it('does not advance the paginator when a page request fails', async () => {
+    const { fixture, api, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+
+    const page2$ = new Subject<never>();
+    (api.listCases as jest.Mock).mockReturnValueOnce(page2$);
+    fixture.componentInstance.onLazyLoad({ first: 20, rows: 20 });
+    page2$.error(new Error('boom'));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    expect(fixture.componentInstance.loading()).toBe(false);
+    expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error', summary: 'Error' }));
   });
 
   it('searches and selects a patient in the create modal', async () => {

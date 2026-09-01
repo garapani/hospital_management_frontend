@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -8,7 +9,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { MessageService, ConfirmationService } from 'primeng/api';
-import { Observable } from 'rxjs';
+import { EMPTY, Observable, Subject, catchError, map, switchMap } from 'rxjs';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { OtApiService } from './ot-api.service.js';
@@ -72,6 +73,13 @@ export class OtList {
   readonly detailLoading = signal(false);
   readonly detailError = signal(false);
 
+  // switchMap cancels a still-in-flight request the moment a newer page/filter is requested, so a
+  // slow page-2 response can never overwrite a page-3 response that resolved first; firstRecord is
+  // set only once the winning response lands, so the paginator never advances ahead of what the
+  // table is actually showing (previously: set eagerly before the HTTP call, so a failed request
+  // left the paginator on the new page while the table still showed the old one).
+  private readonly loadTrigger = new Subject<{ page: number; limit: number }>();
+
   onLazyLoad(event: TableLazyLoadEvent): void {
     const rows = event.rows ?? this.pageSize();
     const page = Math.floor((event.first ?? 0) / rows) + 1;
@@ -83,26 +91,7 @@ export class OtList {
   }
 
   private load(page: number, limit: number): void {
-    this.loading.set(true);
-    this.firstRecord.set((page - 1) * limit);
-    this.api
-      .list({
-        patientId: this.patientIdFilter() || undefined,
-        status: this.statusFilter() ?? undefined,
-        page,
-        limit,
-      })
-      .subscribe({
-        next: (result) => {
-          this.surgeries.set(result.data);
-          this.totalRecords.set(result.meta.total);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.loading.set(false);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load surgeries.' });
-        },
-      });
+    this.loadTrigger.next({ page, limit });
   }
 
   onPatientFilterSearch(query: string): void {
@@ -231,6 +220,35 @@ export class OtList {
   }
 
   constructor() {
+    this.loadTrigger
+      .pipe(
+        switchMap(({ page, limit }) => {
+          this.loading.set(true);
+          return this.api
+            .list({
+              patientId: this.patientIdFilter() || undefined,
+              status: this.statusFilter() ?? undefined,
+              page,
+              limit,
+            })
+            .pipe(
+              map((result) => ({ result, page, limit })),
+              catchError(() => {
+                this.loading.set(false);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Could not load surgeries.' });
+                return EMPTY;
+              }),
+            );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe(({ result, page, limit }) => {
+        this.firstRecord.set((page - 1) * limit);
+        this.surgeries.set(result.data);
+        this.totalRecords.set(result.meta.total);
+        this.loading.set(false);
+      });
+
     this.load(1, this.pageSize());
   }
 }

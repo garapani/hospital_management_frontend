@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { VaccinationList } from './vaccination-list.js';
 import { VaccinationApiService } from './vaccination-api.service.js';
 import { PatientsApiService } from '../patients/patients-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 describe('VaccinationList', () => {
   function setup(canManage = true) {
@@ -18,6 +19,7 @@ describe('VaccinationList', () => {
     const patientsApi = {
       search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
     } as unknown as PatientsApiService;
+    const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
 
     TestBed.configureTestingModule({
       imports: [VaccinationList],
@@ -26,6 +28,7 @@ describe('VaccinationList', () => {
         { provide: MessageService, useValue: messageService },
         { provide: AuthService, useValue: auth },
         { provide: PatientsApiService, useValue: patientsApi },
+        { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
@@ -39,6 +42,47 @@ describe('VaccinationList', () => {
     await fixture.whenStable();
 
     expect(api.list).toHaveBeenCalledWith({ patientId: undefined, page: 1, limit: 20 });
+  });
+
+  it('does not let a slower earlier response overwrite a later response that resolved first', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const slow$ = new Subject<{ data: unknown[]; meta: { total: number; page: number; limit: number; totalPages: number } }>();
+    const fast$ = new Subject<{ data: unknown[]; meta: { total: number; page: number; limit: number; totalPages: number } }>();
+    (api.list as jest.Mock).mockReturnValueOnce(slow$).mockReturnValueOnce(fast$);
+
+    fixture.componentInstance.onLazyLoad({ first: 0, rows: 20 });
+    fixture.componentInstance.onLazyLoad({ first: 20, rows: 20 });
+
+    fast$.next({ data: [{ id: 'page2-row' }], meta: { total: 40, page: 2, limit: 20, totalPages: 2 } });
+    fast$.complete();
+    await fixture.whenStable();
+
+    slow$.next({ data: [{ id: 'page1-row' }], meta: { total: 40, page: 1, limit: 20, totalPages: 2 } });
+    slow$.complete();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.records()).toEqual([{ id: 'page2-row' }]);
+    expect(fixture.componentInstance.firstRecord()).toBe(20);
+  });
+
+  it('does not advance the paginator when a page request fails', async () => {
+    const { fixture, api, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+
+    const page2$ = new Subject<never>();
+    (api.list as jest.Mock).mockReturnValueOnce(page2$);
+    fixture.componentInstance.onLazyLoad({ first: 20, rows: 20 });
+    page2$.error(new Error('boom'));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    expect(fixture.componentInstance.loading()).toBe(false);
+    expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error', summary: 'Error' }));
   });
 
   it('records a vaccination and toasts success', async () => {

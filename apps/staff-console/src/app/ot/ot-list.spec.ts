@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { MessageService, ConfirmationService, Confirmation } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { OtList } from './ot-list.js';
 import { OtApiService } from './ot-api.service.js';
 import { PatientsApiService } from '../patients/patients-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 describe('OtList', () => {
   function setup(canManage = true) {
@@ -25,6 +26,7 @@ describe('OtList', () => {
     const patientsApi = {
       search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
     } as unknown as PatientsApiService;
+    const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
 
     TestBed.configureTestingModule({
       imports: [OtList],
@@ -34,6 +36,7 @@ describe('OtList', () => {
         { provide: ConfirmationService, useValue: confirmationService },
         { provide: AuthService, useValue: auth },
         { provide: PatientsApiService, useValue: patientsApi },
+        { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
@@ -122,6 +125,49 @@ describe('OtList', () => {
     expect(fixture.componentInstance.detailError()).toBe(true);
     expect(fixture.componentInstance.detailLoading()).toBe(false);
     expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error' }));
+  });
+
+  it('does not let a slower earlier response overwrite a later response that resolved first (superseded requests are cancelled, not just outrun)', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const slow$ = new Subject<{ data: unknown[]; meta: { total: number; page: number; limit: number; totalPages: number } }>();
+    const fast$ = new Subject<{ data: unknown[]; meta: { total: number; page: number; limit: number; totalPages: number } }>();
+    (api.list as jest.Mock).mockReturnValueOnce(slow$).mockReturnValueOnce(fast$);
+
+    fixture.componentInstance.onLazyLoad({ first: 0, rows: 20 }); // triggers `slow$` (page 1)
+    fixture.componentInstance.onLazyLoad({ first: 20, rows: 20 }); // triggers `fast$` (page 2), cancels `slow$`
+
+    // The page-2 (later) request resolves first.
+    fast$.next({ data: [{ id: 'page2-row' }], meta: { total: 40, page: 2, limit: 20, totalPages: 2 } });
+    fast$.complete();
+    await fixture.whenStable();
+
+    // The page-1 request, now superseded, resolves after — should have no effect.
+    slow$.next({ data: [{ id: 'page1-row' }], meta: { total: 40, page: 1, limit: 20, totalPages: 2 } });
+    slow$.complete();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.surgeries()).toEqual([{ id: 'page2-row' }]);
+    expect(fixture.componentInstance.firstRecord()).toBe(20);
+  });
+
+  it('does not advance the paginator when a page request fails, leaving the table on the last successful page', async () => {
+    const { fixture, api, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+
+    const page2$ = new Subject<never>();
+    (api.list as jest.Mock).mockReturnValueOnce(page2$);
+    fixture.componentInstance.onLazyLoad({ first: 20, rows: 20 });
+    page2$.error(new Error('boom'));
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    expect(fixture.componentInstance.loading()).toBe(false);
+    expect(messageService.add).toHaveBeenCalledWith(expect.objectContaining({ severity: 'error', summary: 'Error' }));
   });
 
   it('debounces and searches patients as the filter/schedule pickers are typed', () => {

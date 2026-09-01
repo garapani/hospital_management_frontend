@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
@@ -10,6 +11,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
 import { MessageService } from 'primeng/api';
+import { EMPTY, Subject, catchError, map, switchMap } from 'rxjs';
 import { AuthService } from '@org/auth';
 import { ApiError } from '@org/api-client';
 import { SsuApiService } from './ssu-api.service.js';
@@ -110,7 +112,47 @@ export class SsuList {
 
   readonly canManage = this.auth.hasPermission('ssu.manage');
 
+  // switchMap cancels a still-in-flight request the moment a newer page/filter is requested, so a
+  // slow response can never overwrite a later one that resolved first; firstRecord is set only
+  // once the winning response lands, so the paginator never advances ahead of what the table is
+  // actually showing (previously: set eagerly before the HTTP call, so a failed request left the
+  // paginator on the new page while the table still showed the old one).
+  private readonly loadTrigger = new Subject<{ page: number; limit: number }>();
+
   constructor() {
+    this.loadTrigger
+      .pipe(
+        switchMap(({ page, limit }) => {
+          this.loading.set(true);
+          return this.api
+            .listCases({
+              patientId: this.patientFilter().trim() || undefined,
+              status: this.statusFilter() ?? undefined,
+              page,
+              limit,
+            })
+            .pipe(
+              map((result) => ({ result, page, limit })),
+              catchError(() => {
+                this.loading.set(false);
+                this.messageService.add({
+                  severity: 'error',
+                  summary: 'Error',
+                  detail: 'Could not load SSU cases.',
+                });
+                return EMPTY;
+              }),
+            );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe(({ result, page, limit }) => {
+        this.firstRecord.set((page - 1) * limit);
+        this.cases.set(result.data);
+        this.totalRecords.set(result.meta.total);
+        this.loading.set(false);
+      });
+
     this.load(1, this.pageSize());
   }
 
@@ -125,30 +167,7 @@ export class SsuList {
   }
 
   private load(page: number, limit: number): void {
-    this.loading.set(true);
-    this.firstRecord.set((page - 1) * limit);
-    this.api
-      .listCases({
-        patientId: this.patientFilter().trim() || undefined,
-        status: this.statusFilter() ?? undefined,
-        page,
-        limit,
-      })
-      .subscribe({
-        next: (result) => {
-          this.cases.set(result.data);
-          this.totalRecords.set(result.meta.total);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.loading.set(false);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'Could not load SSU cases.',
-          });
-        },
-      });
+    this.loadTrigger.next({ page, limit });
   }
 
   // ---------- Create Modal ----------
