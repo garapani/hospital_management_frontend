@@ -50,6 +50,11 @@ export class OrderList {
   private readonly route = inject(ActivatedRoute);
   readonly auth = inject(AuthService);
 
+  // Order.list() is always patient-scoped, so browsing here needs patient search — a Pharmacist
+  // has order.read but not patients.read, and would otherwise land on a search box that always
+  // 403s. Gate the search UI on the permission it actually depends on, not order.read alone.
+  readonly canSearchPatients = this.auth.hasPermission('patients.read');
+
   readonly orders = signal<Order[]>([]);
   readonly loading = signal(false);
   readonly totalRecords = signal(0);

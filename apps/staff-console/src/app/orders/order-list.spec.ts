@@ -8,12 +8,12 @@ import { PatientsApiService } from '../patients/patients-api.service.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 describe('OrderList', () => {
-  function setup(queryParams: Record<string, string> = {}) {
+  function setup(queryParams: Record<string, string> = {}, opts: { canSearchPatients?: boolean } = {}) {
     const ordersApi = {
       list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
       create: jest.fn().mockReturnValue(of({ id: 'order-1' })),
     } as unknown as OrdersApiService;
-    const auth = { hasPermission: () => true } as unknown as AuthService;
+    const auth = { hasPermission: (p: string) => (p === 'patients.read' ? (opts.canSearchPatients ?? true) : true) } as unknown as AuthService;
     const activatedRoute = {
       queryParamMap: of(convertToParamMap(queryParams)),
     } as unknown as ActivatedRoute;
@@ -38,6 +38,16 @@ describe('OrderList', () => {
     const fixture = TestBed.createComponent(OrderList);
     return { fixture, ordersApi, patientsApi };
   }
+
+  it('exposes canSearchPatients from the patients.read permission', () => {
+    const { fixture } = setup({}, { canSearchPatients: false });
+    expect(fixture.componentInstance.canSearchPatients).toBe(false);
+  });
+
+  it('defaults canSearchPatients to true when the user holds patients.read', () => {
+    const { fixture } = setup({}, { canSearchPatients: true });
+    expect(fixture.componentInstance.canSearchPatients).toBe(true);
+  });
 
   it('does not fetch orders until a patient ID is provided (backend requires patientId)', async () => {
     const { fixture, ordersApi } = setup();
