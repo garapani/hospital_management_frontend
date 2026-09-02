@@ -117,6 +117,10 @@ export class LabApiService {
     return this.apiClient.getBlob(`/lab/requisitions/${id}/specimen-label.pdf`);
   }
 
+  getReportPdf(id: string): Observable<Blob> {
+    return this.apiClient.getBlob(`/lab/requisitions/${id}/report.pdf`);
+  }
+
   createRequisition(dto: CreateRequisitionDto): Observable<LabRequisition> {
     return this.apiClient.post<LabRequisition>('/lab/requisitions', dto);
   }

@@ -43,6 +43,7 @@ export class LabRequisitionDetail implements OnInit {
   readonly collecting = signal(false);
   readonly verifying = signal(false);
   readonly printingLabel = signal(false);
+  readonly printingReport = signal(false);
 
   readonly enteredResults = signal<DisplayedResult[]>([]);
   readonly resultsViewLoading = signal(false);
@@ -150,6 +151,23 @@ export class LabRequisitionDetail implements OnInit {
       error: () => {
         this.printingLabel.set(false);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the specimen label.' });
+      },
+    });
+  }
+
+  printReport() {
+    const id = this.requisition()?.id;
+    if (!id) return;
+
+    this.printingReport.set(true);
+    this.labApi.getReportPdf(id).subscribe({
+      next: (blob) => {
+        this.printingReport.set(false);
+        openPdfBlobInNewTab(blob);
+      },
+      error: () => {
+        this.printingReport.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the report.' });
       },
     });
   }

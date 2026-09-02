@@ -66,6 +66,7 @@ describe('LabRequisitionDetail', () => {
       getResults: jest.fn().mockReturnValue(of([])),
       verify: jest.fn().mockReturnValue(of({ ...requisition, status: 'Verified' })),
       getSpecimenLabelPdf: jest.fn().mockReturnValue(of(new Blob(['%PDF-fake'], { type: 'application/pdf' }))),
+      getReportPdf: jest.fn().mockReturnValue(of(new Blob(['%PDF-fake'], { type: 'application/pdf' }))),
       ...labApiOverrides,
     } as unknown as LabApiService;
     const auth = { hasPermission: () => true } as unknown as AuthService;
@@ -302,6 +303,45 @@ describe('LabRequisitionDetail', () => {
       await fixture.whenStable();
 
       expect(fixture.componentInstance.printingLabel()).toBe(false);
+      expect(openSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('printReport', () => {
+    let openSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      URL.createObjectURL = jest.fn().mockReturnValue('blob:fake-url');
+      URL.revokeObjectURL = jest.fn();
+      openSpy = jest.spyOn(window, 'open').mockReturnValue(null);
+    });
+
+    afterEach(() => openSpy.mockRestore());
+
+    it('fetches the report and opens it in a new tab', async () => {
+      const { fixture, labApi } = setup();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.printReport();
+      await fixture.whenStable();
+
+      expect(labApi.getReportPdf).toHaveBeenCalledWith('req-1');
+      expect(openSpy).toHaveBeenCalledWith('blob:fake-url', '_blank');
+      expect(fixture.componentInstance.printingReport()).toBe(false);
+    });
+
+    it('toasts an error and clears loading when generating the report fails', async () => {
+      const { fixture } = setup({
+        getReportPdf: jest.fn().mockReturnValue(throwError(() => new Error('boom'))),
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.printReport();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.printingReport()).toBe(false);
       expect(openSpy).not.toHaveBeenCalled();
     });
   });

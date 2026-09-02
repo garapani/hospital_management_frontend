@@ -123,6 +123,9 @@
         @if (r.status !== 'Cancelled') {
         <p-button label="Print Specimen Label" icon="pi pi-print" severity="secondary" [text]="true" [loading]="printingLabel()" (onClick)="printSpecimenLabel()"></p-button>
         }
+        @if (r.status === 'Verified') {
+        <p-button label="View Report" icon="pi pi-file-pdf" severity="secondary" [text]="true" [loading]="printingReport()" (onClick)="printReport()"></p-button>
+        }
         @if (auth.hasPermission('lab.result.enter') && r.status === 'Pending') {
         <p-button label="Collect Sample" icon="pi pi-box" [loading]="collecting()" (onClick)="collectSample()"></p-button>
         }

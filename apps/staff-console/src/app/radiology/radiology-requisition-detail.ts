@@ -36,6 +36,7 @@ export class RadiologyRequisitionDetail implements OnInit {
   readonly loading = signal(true);
   readonly actionLoading = signal(false);
   readonly printingLabel = signal(false);
+  readonly printingReport = signal(false);
 
   readonly showReportModal = signal(false);
   readonly reportText = signal('');
@@ -90,6 +91,23 @@ export class RadiologyRequisitionDetail implements OnInit {
       error: () => {
         this.printingLabel.set(false);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the requisition label.' });
+      },
+    });
+  }
+
+  printReport(): void {
+    const id = this.requisition()?.id;
+    if (!id) return;
+
+    this.printingReport.set(true);
+    this.radiologyApi.getReportPdf(id).subscribe({
+      next: (blob) => {
+        this.printingReport.set(false);
+        openPdfBlobInNewTab(blob);
+      },
+      error: () => {
+        this.printingReport.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the report.' });
       },
     });
   }
