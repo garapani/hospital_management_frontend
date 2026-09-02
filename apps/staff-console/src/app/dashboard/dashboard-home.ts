@@ -10,6 +10,7 @@ import { NursingApiService } from '../nursing/nursing-api.service.js';
 import { NursingTask } from '../nursing/nursing.model.js';
 import { PharmacyDispensingApiService } from '../pharmacy/pharmacy-dispensing-api.service.js';
 import { PendingPharmacyItem } from '../pharmacy/pharmacy-dispensing.model.js';
+import { LabApiService, LabRequisition } from '../lab/lab-api.service.js';
 import { EntityName } from '../directory/entity-name.js';
 import { todayLocal as today } from '../shared/date.util.js';
 
@@ -25,6 +26,7 @@ export class DashboardHome {
   private readonly appointmentsApi = inject(AppointmentsApiService);
   private readonly nursingApi = inject(NursingApiService);
   private readonly pharmacyApi = inject(PharmacyDispensingApiService);
+  private readonly labApi = inject(LabApiService);
   readonly auth = inject(AuthService);
 
   readonly displayName = appointmentDisplayName;
@@ -39,8 +41,10 @@ export class DashboardHome {
   readonly isDoctor = computed(() => this.roles().includes('Doctor'));
   readonly isNurse = computed(() => this.roles().includes('Nurse'));
   readonly isPharmacist = computed(() => this.roles().includes('Pharmacist'));
+  readonly isLabTechnician = computed(() => this.roles().includes('Lab Technician'));
   readonly hasNoWidgets = computed(
-    () => !this.isReceptionist() && !this.isDoctor() && !this.isNurse() && !this.isPharmacist(),
+    () =>
+      !this.isReceptionist() && !this.isDoctor() && !this.isNurse() && !this.isPharmacist() && !this.isLabTechnician(),
   );
 
   readonly todaysAppointments = signal<Appointment[]>([]);
@@ -65,6 +69,9 @@ export class DashboardHome {
   readonly pendingDispenseItems = signal<PendingPharmacyItem[]>([]);
   readonly dispenseItemsLoading = signal(false);
 
+  readonly pendingRequisitions = signal<LabRequisition[]>([]);
+  readonly requisitionsLoading = signal(false);
+
   constructor() {
     if (this.isReceptionist() && this.auth.hasPermission('appointment.read')) {
       this.loadTodaysAppointments();
@@ -77,6 +84,9 @@ export class DashboardHome {
     }
     if (this.isPharmacist() && this.auth.hasPermission('pharmacy.read')) {
       this.loadPendingDispenseItems();
+    }
+    if (this.isLabTechnician() && this.auth.hasPermission('lab.read')) {
+      this.loadPendingRequisitions();
     }
   }
 
@@ -134,6 +144,19 @@ export class DashboardHome {
         this.dispenseItemsLoading.set(false);
       },
       error: () => this.dispenseItemsLoading.set(false),
+    });
+  }
+
+  private loadPendingRequisitions(): void {
+    this.requisitionsLoading.set(true);
+    // Matches the requisitions list screen's own default filter (status: 'Pending') — awaiting
+    // sample collection, the Lab Technician's actual first step on a new order.
+    this.labApi.listRequisitions({ status: 'Pending', limit: DASHBOARD_LIST_LIMIT }).subscribe({
+      next: (res) => {
+        this.pendingRequisitions.set(res.data);
+        this.requisitionsLoading.set(false);
+      },
+      error: () => this.requisitionsLoading.set(false),
     });
   }
 }

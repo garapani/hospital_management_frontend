@@ -193,4 +193,52 @@
     </p-table>
   </div>
   }
+
+  @if (isLabTechnician()) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="font-bold text-slate-800 text-lg">Pending Sample Collection</h2>
+      <a routerLink="/clinical/lab" class="text-sky-600 hover:text-sky-800 text-sm font-medium">Open Lab</a>
+    </div>
+
+    <p-table
+      [value]="pendingRequisitions()"
+      [loading]="requisitionsLoading()"
+      [paginator]="true"
+      [rows]="10"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Requisition #</th>
+          <th class="table-header-cell">Patient</th>
+          <th class="table-header-cell">Specimen</th>
+          <th class="table-header-cell">Ordered</th>
+          <th class="table-header-cell w-16">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-req>
+        <tr>
+          <td class="font-medium">{{ req.requisitionNumber }}</td>
+          <td>
+            @if (req.patientId) {
+            <hms-entity-name type="patient" [id]="req.patientId"></hms-entity-name>
+            } @else { — }
+          </td>
+          <td>{{ req.specimenType }}</td>
+          <td>{{ req.createdAt | date: 'short' }}</td>
+          <td>
+            <a [routerLink]="['/clinical/lab', req.id]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View</a>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-6 text-slate-500">No requisitions pending sample collection.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
 </div>
