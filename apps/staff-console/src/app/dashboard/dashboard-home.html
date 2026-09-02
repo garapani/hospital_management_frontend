@@ -375,4 +375,44 @@
     </p-table>
   </div>
   }
+
+  @if (isHrPayrollAdmin()) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="font-bold text-slate-800 text-lg">Draft Payslips</h2>
+      <a routerLink="/payroll" class="text-sky-600 hover:text-sky-800 text-sm font-medium">Open Payroll</a>
+    </div>
+
+    <p-table
+      [value]="draftPayslips()"
+      [loading]="payslipsLoading()"
+      [paginator]="true"
+      [rows]="10"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Employee</th>
+          <th class="table-header-cell">Period</th>
+          <th class="table-header-cell">Net Amount</th>
+          <th class="table-header-cell">Status</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-payslip>
+        <tr>
+          <td class="font-medium"><hms-entity-name type="employee" [id]="payslip.employeeId"></hms-entity-name></td>
+          <td>{{ payslip.periodMonth }}/{{ payslip.periodYear }}</td>
+          <td class="font-mono">{{ payslip.netAmount | number: '1.2-2' }}</td>
+          <td><p-tag [value]="payslip.status" [severity]="payslip.status === 'Draft' ? 'warn' : 'success'" [rounded]="true"></p-tag></td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="text-center p-6 text-slate-500">No draft payslips.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
 </div>

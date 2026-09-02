@@ -16,6 +16,7 @@ import { RadiologyRequisition } from '../radiology/radiology.model.js';
 import { InvoicesApiService } from '../billing/invoices-api.service.js';
 import { Invoice, invoiceReference, outstandingBalance, statusSeverity as invoiceStatusSeverity } from '../billing/invoice.model.js';
 import { InventoryApiService, LowStockItem } from '../inventory/inventory-api.service.js';
+import { PayrollApiService, Payslip } from '../payroll/payroll-api.service.js';
 import { EntityName } from '../directory/entity-name.js';
 import { todayLocal as today } from '../shared/date.util.js';
 
@@ -35,6 +36,7 @@ export class DashboardHome {
   private readonly radiologyApi = inject(RadiologyApiService);
   private readonly invoicesApi = inject(InvoicesApiService);
   private readonly inventoryApi = inject(InventoryApiService);
+  private readonly payrollApi = inject(PayrollApiService);
   readonly auth = inject(AuthService);
 
   readonly displayName = appointmentDisplayName;
@@ -53,6 +55,7 @@ export class DashboardHome {
   readonly isRadiologyTechnician = computed(() => this.roles().includes('Radiology Technician'));
   readonly isBillingStaff = computed(() => this.roles().includes('Billing/Accounts Staff'));
   readonly isInventoryManager = computed(() => this.roles().includes('Inventory/Store Manager'));
+  readonly isHrPayrollAdmin = computed(() => this.roles().includes('HR/Payroll Admin'));
   readonly hasNoWidgets = computed(
     () =>
       !this.isReceptionist() &&
@@ -62,7 +65,8 @@ export class DashboardHome {
       !this.isLabTechnician() &&
       !this.isRadiologyTechnician() &&
       !this.isBillingStaff() &&
-      !this.isInventoryManager(),
+      !this.isInventoryManager() &&
+      !this.isHrPayrollAdmin(),
   );
 
   readonly todaysAppointments = signal<Appointment[]>([]);
@@ -102,6 +106,9 @@ export class DashboardHome {
   readonly lowStockItems = signal<LowStockItem[]>([]);
   readonly lowStockLoading = signal(false);
 
+  readonly draftPayslips = signal<Payslip[]>([]);
+  readonly payslipsLoading = signal(false);
+
   constructor() {
     if (this.isReceptionist() && this.auth.hasPermission('appointment.read')) {
       this.loadTodaysAppointments();
@@ -126,6 +133,9 @@ export class DashboardHome {
     }
     if (this.isInventoryManager() && this.auth.hasPermission('inventory.read')) {
       this.loadLowStockItems();
+    }
+    if (this.isHrPayrollAdmin() && this.auth.hasPermission('payroll.read')) {
+      this.loadDraftPayslips();
     }
   }
 
@@ -234,6 +244,17 @@ export class DashboardHome {
         this.lowStockLoading.set(false);
       },
       error: () => this.lowStockLoading.set(false),
+    });
+  }
+
+  private loadDraftPayslips(): void {
+    this.payslipsLoading.set(true);
+    this.payrollApi.listPayslips({ page: 1, limit: DASHBOARD_LIST_LIMIT, status: 'Draft' }).subscribe({
+      next: (res) => {
+        this.draftPayslips.set(res.data);
+        this.payslipsLoading.set(false);
+      },
+      error: () => this.payslipsLoading.set(false),
     });
   }
 }

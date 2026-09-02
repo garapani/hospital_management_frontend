@@ -14,6 +14,7 @@ import { RadiologyRequisition } from '../radiology/radiology.model.js';
 import { InvoicesApiService } from '../billing/invoices-api.service.js';
 import { Invoice } from '../billing/invoice.model.js';
 import { InventoryApiService, LowStockItem } from '../inventory/inventory-api.service.js';
+import { PayrollApiService, Payslip } from '../payroll/payroll-api.service.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 function fakeAppointment(overrides: Partial<Appointment> = {}): Appointment {
@@ -147,6 +148,24 @@ function fakeLowStockItem(overrides: Partial<LowStockItem> = {}): LowStockItem {
   };
 }
 
+function fakePayslip(overrides: Partial<Payslip> = {}): Payslip {
+  return {
+    id: 'payslip-1',
+    employeeId: 'employee-1',
+    periodMonth: 9,
+    periodYear: 2026,
+    basicAmount: 30000,
+    allowanceAmount: 3000,
+    grossAmount: 33000,
+    deductionAmount: 1000,
+    netAmount: 32000,
+    status: 'Draft',
+    paidAt: null,
+    createdAt: '2026-09-01T08:00:00Z',
+    ...overrides,
+  };
+}
+
 describe('DashboardHome', () => {
   function setup(options: {
     roles?: string[];
@@ -159,6 +178,7 @@ describe('DashboardHome', () => {
     pendingScans?: RadiologyRequisition[];
     unpaidInvoices?: Invoice[];
     lowStockItems?: LowStockItem[];
+    draftPayslips?: Payslip[];
     appointmentsError?: boolean;
     tasksError?: boolean;
     dispenseItemsError?: boolean;
@@ -166,6 +186,7 @@ describe('DashboardHome', () => {
     scansError?: boolean;
     invoicesError?: boolean;
     lowStockError?: boolean;
+    payslipsError?: boolean;
   } = {}) {
     const { roles = [], permissions = [], sub = 'user-1' } = options;
     const appointmentsApi = {
@@ -227,6 +248,16 @@ describe('DashboardHome', () => {
         options.lowStockError ? throwError(() => new Error('boom')) : of(options.lowStockItems ?? []),
       ),
     } as unknown as InventoryApiService;
+    const payrollApi = {
+      listPayslips: jest.fn().mockReturnValue(
+        options.payslipsError
+          ? throwError(() => new Error('boom'))
+          : of({
+              data: options.draftPayslips ?? [],
+              meta: { total: (options.draftPayslips ?? []).length, page: 1, limit: 100, totalPages: 1 },
+            }),
+      ),
+    } as unknown as PayrollApiService;
     const auth = {
       currentUser: () => ({ sub, roles }),
       hasPermission: (permission: string) => permissions.includes(permission),
@@ -244,17 +275,18 @@ describe('DashboardHome', () => {
         { provide: RadiologyApiService, useValue: radiologyApi },
         { provide: InvoicesApiService, useValue: invoicesApi },
         { provide: InventoryApiService, useValue: inventoryApi },
+        { provide: PayrollApiService, useValue: payrollApi },
         { provide: AuthService, useValue: auth },
         { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
     const fixture = TestBed.createComponent(DashboardHome);
-    return { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi, inventoryApi };
+    return { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi, inventoryApi, payrollApi };
   }
 
   it('shows nothing scoped and makes no calls for a role with no dashboard widget', async () => {
-    const { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi, inventoryApi } = setup({
+    const { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi, inventoryApi, payrollApi } = setup({
       roles: ['Auditor/Compliance'],
       permissions: [],
     });
@@ -269,6 +301,7 @@ describe('DashboardHome', () => {
     expect(radiologyApi.list).not.toHaveBeenCalled();
     expect(invoicesApi.list).not.toHaveBeenCalled();
     expect(inventoryApi.listLowStockItems).not.toHaveBeenCalled();
+    expect(payrollApi.listPayslips).not.toHaveBeenCalled();
   });
 
   it("loads today's appointments and tallies status counts for a Receptionist", async () => {
@@ -405,6 +438,21 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.lowStockItems()).toHaveLength(2);
   });
 
+  it('loads draft payslips for an HR/Payroll Admin', async () => {
+    const draftPayslips = [fakePayslip({ id: 'payslip-1' }), fakePayslip({ id: 'payslip-2' })];
+    const { fixture, payrollApi } = setup({
+      roles: ['HR/Payroll Admin'],
+      permissions: ['payroll.read'],
+      draftPayslips,
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.isHrPayrollAdmin()).toBe(true);
+    expect(payrollApi.listPayslips).toHaveBeenCalledWith({ page: 1, limit: 100, status: 'Draft' });
+    expect(fixture.componentInstance.draftPayslips()).toHaveLength(2);
+  });
+
   it('skips a widget load when the role matches but the permission does not', async () => {
     const { fixture, appointmentsApi } = setup({ roles: ['Doctor'], permissions: [] });
     fixture.detectChanges();
@@ -437,6 +485,7 @@ describe('DashboardHome', () => {
         'Radiology Technician',
         'Billing/Accounts Staff',
         'Inventory/Store Manager',
+        'HR/Payroll Admin',
       ],
       permissions: [
         'appointment.read',
@@ -446,6 +495,7 @@ describe('DashboardHome', () => {
         'radiology.read',
         'billing.read',
         'inventory.read',
+        'payroll.read',
       ],
       appointmentsError: true,
       tasksError: true,
@@ -454,6 +504,7 @@ describe('DashboardHome', () => {
       scansError: true,
       invoicesError: true,
       lowStockError: true,
+      payslipsError: true,
     });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -465,5 +516,6 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.scansLoading()).toBe(false);
     expect(fixture.componentInstance.invoicesLoading()).toBe(false);
     expect(fixture.componentInstance.lowStockLoading()).toBe(false);
+    expect(fixture.componentInstance.payslipsLoading()).toBe(false);
   });
 });
