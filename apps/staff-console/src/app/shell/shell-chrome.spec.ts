@@ -11,12 +11,13 @@ import { BrandingService } from '../branding/branding.service.js';
 import { ShellChrome } from './shell-chrome.js';
 
 describe('ShellChrome user menu', () => {
-  function setup(options: { changePassword?: unknown } = {}) {
+  function setup(options: { changePassword?: unknown; displayName?: string } = {}) {
     const authService = {
       isPlatformAdmin: () => false,
       currentUser: () => ({
         roles: ['Hospital Admin'],
         hospitalId: 'demo',
+        displayName: options.displayName,
       }),
       logout: jest.fn().mockReturnValue(of(undefined)),
       changeOwnPassword:
@@ -79,6 +80,24 @@ describe('ShellChrome user menu', () => {
     expect(text).toContain('Logout');
     expect(text).not.toContain('My Profile');
     expect(text).not.toContain('Settings');
+  });
+
+  it("shows the account's real name and its initials, not the role, once the JWT carries displayName", () => {
+    const { fixture } = setup({ displayName: 'Priya Sharma' });
+    openUserMenu(fixture);
+
+    expect(fixture.componentInstance.userInitials()).toBe('PS');
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Priya Sharma');
+    // The role moves to the subtitle line alongside the tenant id, not lost.
+    expect(text).toContain('Hospital Admin');
+    expect(text).toContain('demo');
+  });
+
+  it('falls back to role-derived initials when displayName is absent (a still-live pre-existing token)', () => {
+    const { fixture } = setup();
+
+    expect(fixture.componentInstance.userInitials()).toBe('HA');
   });
 
   it('changes the password via the signed-in endpoint and toasts success', () => {
@@ -152,6 +171,47 @@ describe('ShellChrome user menu', () => {
     fixture.componentInstance.toggleNotifications();
     expect(fixture.componentInstance.notificationsOpen()).toBe(false);
     expect(notificationsApi.getSummary).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes the user menu on an outside click, but not a click inside it', () => {
+    const { fixture } = setup();
+    openUserMenu(fixture);
+    expect(fixture.componentInstance.userMenuOpen()).toBe(true);
+
+    // A neutral, non-interactive spot inside the open dropdown panel — not the toggle button or
+    // one of the menu's own action buttons, both of which have click handlers that would close (or
+    // navigate away from) the menu themselves, making this assertion pass for the wrong reason.
+    const insideElement = (fixture.nativeElement as HTMLElement).querySelector('div.w-56.surface-panel') as HTMLElement;
+    insideElement.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.userMenuOpen()).toBe(true);
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.userMenuOpen()).toBe(false);
+  });
+
+  it('closes the user menu on Escape', () => {
+    const { fixture } = setup();
+    openUserMenu(fixture);
+    expect(fixture.componentInstance.userMenuOpen()).toBe(true);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.userMenuOpen()).toBe(false);
+  });
+
+  it('closes the notifications panel on an outside click', () => {
+    const { fixture } = setup();
+    fixture.componentInstance.toggleNotifications();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.notificationsOpen()).toBe(true);
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.notificationsOpen()).toBe(false);
   });
 
   it('maps each notification type to a distinct icon/colour', () => {

@@ -64,7 +64,7 @@
       <!-- Right: Actions & User Menu -->
       <div class="flex items-center gap-3">
         <!-- Notifications -->
-        <div class="relative">
+        <div class="relative" #notificationsMenu>
           <button
             class="relative p-2 rounded-full hover:bg-slate-100 transition-colors"
             (click)="toggleNotifications()"
@@ -128,7 +128,7 @@
         </div>
         
         <!-- User Profile Dropdown -->
-        <div class="relative">
+        <div class="relative" #userMenuContainer>
           <button
             class="flex items-center gap-2 p-2 rounded-full hover:bg-slate-100 transition-colors"
             (click)="toggleUserMenu()"
@@ -145,8 +145,11 @@
           @if (userMenuOpen()) {
             <div class="absolute right-0 mt-2 w-56 surface-panel rounded-xl shadow-lg border border-slate-200 py-2 z-50">
               <div class="px-4 py-3 border-b border-slate-200">
-                <p class="text-sm font-semibold text-slate-800">{{ currentUser()?.roles?.[0] || 'Signed in' }}</p>
-                <p class="text-xs text-slate-500">{{ currentUser()?.hospitalId || '—' }}</p>
+                <p class="text-sm font-semibold text-slate-800">{{ displayName() || 'Signed in' }}</p>
+                <p class="text-xs text-slate-500">
+                  @if (currentUser()?.roles?.[0]) { {{ currentUser()?.roles?.[0] }} · }
+                  {{ currentUser()?.hospitalId || '—' }}
+                </p>
               </div>
               <button
                 (click)="openPasswordModal()"

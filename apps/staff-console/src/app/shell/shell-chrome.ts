@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
+import { Component, ElementRef, HostListener, ViewChild, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -46,6 +46,29 @@ export class ShellChrome implements OnInit, OnDestroy {
   readonly notificationsOpen = signal(false);
   readonly sidebarOpen = signal(false);
 
+  @ViewChild('userMenuContainer') private readonly userMenuContainer?: ElementRef<HTMLElement>;
+  @ViewChild('notificationsMenu') private readonly notificationsMenu?: ElementRef<HTMLElement>;
+
+  // Neither dropdown previously closed on an outside click or Escape — only their own toggle
+  // button did (review-comments.md "Shell chrome ships mock placeholder identity, a hardcoded
+  // page title, and inaccessible dropdowns").
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as Node;
+    if (this.userMenuOpen() && !this.userMenuContainer?.nativeElement.contains(target)) {
+      this.userMenuOpen.set(false);
+    }
+    if (this.notificationsOpen() && !this.notificationsMenu?.nativeElement.contains(target)) {
+      this.notificationsOpen.set(false);
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.userMenuOpen.set(false);
+    this.notificationsOpen.set(false);
+  }
+
   readonly unreadCount = signal(0);
   readonly recentNotifications = signal<Notification[]>([]);
   private notificationSubscription?: Subscription;
@@ -56,11 +79,21 @@ export class ShellChrome implements OnInit, OnDestroy {
   readonly passwordSaving = signal(false);
   readonly passwordError = signal<string | null>(null);
 
-  readonly userInitials = computed(() => {
+  // Falls back to the role name when displayName is absent — a still-live token issued before
+  // this field existed (a long-running session that hasn't refreshed yet) shouldn't show a blank
+  // avatar/header in the meantime.
+  readonly displayName = computed(() => {
     const user = this.currentUser();
-    const label = user?.roles[0];
-    if (!label) return 'AU';
-    return label.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+    return user?.displayName || user?.roles[0] || null;
+  });
+
+  readonly userInitials = computed(() => {
+    const label = this.displayName();
+    if (!label) return 'AU'; // "Anonymous User" — no roles/displayName at all (unauthenticated edge case).
+    // [...label] rather than label[i] so a 2-word name outside the BMP (astral-plane characters —
+    // rare, but a surrogate pair split mid-character otherwise produces a mangled avatar glyph)
+    // doesn't corrupt the first letter.
+    return label.split(' ').map((n) => [...n][0]).join('').toUpperCase().slice(0, 2);
   });
 
   logout(): void {

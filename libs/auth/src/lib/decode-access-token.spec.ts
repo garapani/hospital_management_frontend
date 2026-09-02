@@ -48,6 +48,32 @@ describe('decodeAccessToken', () => {
     expect(decodeAccessToken(missingPermissions)).toBeNull();
     expect(decodeAccessToken(nonArrayRoles)).toBeNull();
   });
+
+  it('decodes a non-ASCII displayName without mojibake (atob() alone yields Latin-1, not UTF-8)', () => {
+    const token = encodeFakeJwt({
+      sub: 'account-1',
+      hospitalId: 'hospital-1',
+      roles: ['Doctor'],
+      permissions: [],
+      type: 'access',
+      displayName: 'डॉ. रमेश',
+    });
+
+    expect(decodeAccessToken(token)?.displayName).toBe('डॉ. रमेश');
+  });
+
+  it('normalizes a non-string displayName to undefined rather than letting it reach the UI broken', () => {
+    const token = encodeFakeJwt({
+      sub: 'account-1',
+      hospitalId: 'hospital-1',
+      roles: ['Doctor'],
+      permissions: [],
+      type: 'access',
+      displayName: 12345,
+    });
+
+    expect(decodeAccessToken(token)?.displayName).toBeUndefined();
+  });
 });
 
 describe('isTokenExpired', () => {
