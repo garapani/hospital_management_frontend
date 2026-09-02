@@ -54,6 +54,11 @@ export interface RecordPaymentDto {
   sourceDepositId?: string;
 }
 
+export interface CreateReturnDto {
+  amount: number;
+  reason: string;
+}
+
 export interface Payment {
   id: string;
   invoiceId: string;

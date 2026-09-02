@@ -30,6 +30,12 @@
           @if (canRecordPayment()) {
           <p-button label="Record Payment" icon="pi pi-wallet" size="small" (onClick)="openPaymentModal()"></p-button>
           }
+          @if (canReturn()) {
+          <p-button label="Record Return" icon="pi pi-replay" size="small" severity="warn" (onClick)="openReturnModal()"></p-button>
+          }
+          @if (canCancel()) {
+          <p-button label="Cancel Invoice" icon="pi pi-ban" size="small" severity="danger" [text]="true" (onClick)="openCancelModal()"></p-button>
+          }
         </div>
       </div>
       <div
@@ -145,7 +151,7 @@
   }
 </div>
 
-<p-dialog header="Record Payment" [(visible)]="showPaymentModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+<p-dialog header="Record Payment" [(visible)]="showPaymentModal" [modal]="true" [closable]="!paymentSaving()" [closeOnEscape]="!paymentSaving()" [style]="{ width: '420px' }" styleClass="surface-modal">
   <div class="flex flex-col gap-4 py-4">
     @if (paymentError()) {
     <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
@@ -196,6 +202,68 @@
         (onClick)="submitPayment()"
         [disabled]="!paymentAmount() || !paymentMode()"
       ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Record Return" [(visible)]="showReturnModal" [modal]="true" [closable]="!returnSaving()" [closeOnEscape]="!returnSaving()" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (returnError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ returnError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label for="returnAmount" class="text-sm font-medium text-slate-700">Amount</label>
+      <p-inputNumber
+        inputId="returnAmount"
+        [ngModel]="returnAmount()"
+        (ngModelChange)="returnAmount.set($event)"
+        mode="decimal"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+        [min]="0"
+        [max]="invoice()?.paidAmount ?? 0"
+        styleClass="w-full"
+      ></p-inputNumber>
+      <span class="text-xs text-slate-500">Amount paid: {{ invoice()?.paidAmount | number: '1.2-2' }}</span>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="returnReason" class="text-sm font-medium text-slate-700">Reason</label>
+      <textarea pTextarea id="returnReason" rows="3" [ngModel]="returnReason()" (ngModelChange)="returnReason.set($event)" class="w-full"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Back" severity="secondary" [text]="true" (onClick)="showReturnModal.set(false)"></p-button>
+      <p-button
+        label="Confirm Return"
+        severity="warn"
+        [loading]="returnSaving()"
+        (onClick)="submitReturn()"
+        [disabled]="!returnAmount() || !returnReason().trim()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Cancel Invoice" [(visible)]="showCancelModal" [modal]="true" [closable]="!cancelSaving()" [closeOnEscape]="!cancelSaving()" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (cancelError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ cancelError() }}
+    </div>
+    }
+    <p class="text-sm text-slate-600">
+      This cancels the invoice permanently. This cannot be undone — if the patient has already paid, record a return instead.
+    </p>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Back" severity="secondary" [text]="true" (onClick)="showCancelModal.set(false)"></p-button>
+      <p-button label="Confirm Cancel" severity="danger" [loading]="cancelSaving()" (onClick)="confirmCancel()"></p-button>
     </div>
   </ng-template>
 </p-dialog>

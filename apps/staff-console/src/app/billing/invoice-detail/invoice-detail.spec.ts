@@ -273,5 +273,275 @@ describe('InvoiceDetail', () => {
       expect(component.paymentError()).toBe('Payment amount exceeds outstanding balance');
       expect(component.showPaymentModal()).toBe(true);
     });
+
+    it('treats the payment as recorded (not failed) when the post-save refresh itself fails', async () => {
+      const { fixture, findOne, recordPayment } = setUp();
+      await fixture.whenStable();
+      findOne.mockReturnValue(throwError(() => new Error('boom')));
+
+      const component = fixture.componentInstance;
+      component.openPaymentModal();
+      component.paymentAmount.set(60);
+      component.paymentMode.set('Cash');
+      component.submitPayment();
+      await fixture.whenStable();
+
+      expect(recordPayment).toHaveBeenCalled();
+      expect(component.paymentSaving()).toBe(false);
+      expect(component.showPaymentModal()).toBe(false);
+      expect(component.paymentError()).toBeNull();
+    });
+  });
+
+  describe('Cancel Invoice', () => {
+    function setUp(opts: { canManage?: boolean; invoice?: InvoiceWithReturns } = {}) {
+      const invoice = opts.invoice ?? fakeInvoice({ totalAmount: 100, paidAmount: 0, status: 'Unpaid' });
+      const findOne = jest.fn().mockReturnValue(of(invoice));
+      const cancel = jest.fn().mockReturnValue(of({ ...invoice, status: 'Cancelled' }));
+      const invoicesApi = { findOne, cancel } as unknown as InvoicesApiService;
+
+      TestBed.configureTestingModule({
+        imports: [InvoiceDetail],
+        providers: [
+          { provide: InvoicesApiService, useValue: invoicesApi },
+          { provide: PatientsApiService, useValue: fakePatientsApi() },
+          { provide: AuthService, useValue: fakeAuth(opts.canManage ?? true) },
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: invoice.id })) } },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(InvoiceDetail);
+      fixture.detectChanges();
+      return { fixture, invoice, findOne, cancel };
+    }
+
+    it('allows cancelling an unpaid invoice', async () => {
+      const { fixture } = setUp();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.canCancel()).toBe(true);
+    });
+
+    it('hides Cancel Invoice without billing.manage', async () => {
+      const { fixture } = setUp({ canManage: false });
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.canCancel()).toBe(false);
+    });
+
+    it('hides Cancel Invoice once a payment has been recorded — a return must be used instead', async () => {
+      const { fixture } = setUp({ invoice: fakeInvoice({ totalAmount: 100, paidAmount: 40, status: 'PartiallyPaid' }) });
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.canCancel()).toBe(false);
+    });
+
+    it('hides Cancel Invoice once the invoice is Paid', async () => {
+      const { fixture } = setUp({ invoice: fakeInvoice({ status: 'Paid', paidAmount: 100, totalAmount: 100 }) });
+      await fixture.whenStable();
+      expect(fixture.componentInstance.canCancel()).toBe(false);
+    });
+
+    it('hides Cancel Invoice once the invoice is already Cancelled', async () => {
+      const { fixture } = setUp({ invoice: fakeInvoice({ status: 'Cancelled' }) });
+      await fixture.whenStable();
+      expect(fixture.componentInstance.canCancel()).toBe(false);
+    });
+
+    it('cancels the invoice and refreshes it from the server', async () => {
+      const cancelledInvoice = fakeInvoice({ status: 'Cancelled' });
+      const { fixture, invoice, findOne, cancel } = setUp();
+      await fixture.whenStable();
+      findOne.mockReturnValue(of(cancelledInvoice));
+
+      const component = fixture.componentInstance;
+      component.openCancelModal();
+      component.confirmCancel();
+      await fixture.whenStable();
+
+      expect(cancel).toHaveBeenCalledWith(invoice.id);
+      expect(findOne).toHaveBeenLastCalledWith(invoice.id);
+      expect(component.invoice()).toEqual(cancelledInvoice);
+      expect(component.showCancelModal()).toBe(false);
+    });
+
+    it('surfaces the backend error message and keeps the dialog open on failure', async () => {
+      const invoice = fakeInvoice({ paidAmount: 0 });
+      const findOne = jest.fn().mockReturnValue(of(invoice));
+      const cancel = jest.fn().mockReturnValue(throwError(() => ({ message: 'Invoice has recorded payments' })));
+      const invoicesApi = { findOne, cancel } as unknown as InvoicesApiService;
+
+      TestBed.configureTestingModule({
+        imports: [InvoiceDetail],
+        providers: [
+          { provide: InvoicesApiService, useValue: invoicesApi },
+          { provide: PatientsApiService, useValue: fakePatientsApi() },
+          { provide: AuthService, useValue: fakeAuth() },
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: invoice.id })) } },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(InvoiceDetail);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const component = fixture.componentInstance;
+      component.openCancelModal();
+      component.confirmCancel();
+      await fixture.whenStable();
+
+      expect(component.cancelSaving()).toBe(false);
+      expect(component.cancelError()).toBe('Invoice has recorded payments');
+      expect(component.showCancelModal()).toBe(true);
+    });
+
+    it('treats the cancellation as applied (not failed) when the post-save refresh itself fails', async () => {
+      const { fixture, findOne, cancel } = setUp();
+      await fixture.whenStable();
+      findOne.mockReturnValue(throwError(() => new Error('boom')));
+
+      const component = fixture.componentInstance;
+      component.openCancelModal();
+      component.confirmCancel();
+      await fixture.whenStable();
+
+      expect(cancel).toHaveBeenCalled();
+      expect(component.cancelSaving()).toBe(false);
+      expect(component.showCancelModal()).toBe(false);
+      expect(component.cancelError()).toBeNull();
+    });
+  });
+
+  describe('Record Return', () => {
+    function setUp(opts: { canManage?: boolean; invoice?: InvoiceWithReturns } = {}) {
+      const invoice = opts.invoice ?? fakeInvoice({ totalAmount: 100, paidAmount: 40, status: 'PartiallyPaid' });
+      const findOne = jest.fn().mockReturnValue(of(invoice));
+      const createReturn = jest.fn().mockReturnValue(of({ id: 'return-1' }));
+      const invoicesApi = { findOne, createReturn } as unknown as InvoicesApiService;
+
+      TestBed.configureTestingModule({
+        imports: [InvoiceDetail],
+        providers: [
+          { provide: InvoicesApiService, useValue: invoicesApi },
+          { provide: PatientsApiService, useValue: fakePatientsApi() },
+          { provide: AuthService, useValue: fakeAuth(opts.canManage ?? true) },
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: invoice.id })) } },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(InvoiceDetail);
+      fixture.detectChanges();
+      return { fixture, invoice, findOne, createReturn };
+    }
+
+    it('allows a return once a payment has been recorded', async () => {
+      const { fixture } = setUp();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.canReturn()).toBe(true);
+    });
+
+    it('hides Record Return without billing.manage', async () => {
+      const { fixture } = setUp({ canManage: false });
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.canReturn()).toBe(false);
+    });
+
+    it('hides Record Return when nothing has been paid yet', async () => {
+      const { fixture } = setUp({ invoice: fakeInvoice({ paidAmount: 0, status: 'Unpaid' }) });
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.canReturn()).toBe(false);
+    });
+
+    it('opens the return modal with a blank amount rather than defaulting to a full refund', async () => {
+      const { fixture } = setUp({ invoice: fakeInvoice({ totalAmount: 100, paidAmount: 40, status: 'PartiallyPaid' }) });
+      await fixture.whenStable();
+
+      fixture.componentInstance.openReturnModal();
+      expect(fixture.componentInstance.returnAmount()).toBeNull();
+    });
+
+    it('records a return and refreshes the invoice from the server', async () => {
+      const updatedInvoice = fakeInvoice({ paidAmount: 0, totalAmount: 60, status: 'Unpaid' });
+      const { fixture, invoice, findOne, createReturn } = setUp();
+      await fixture.whenStable();
+      findOne.mockReturnValue(of(updatedInvoice));
+
+      const component = fixture.componentInstance;
+      component.openReturnModal();
+      component.returnAmount.set(40);
+      component.returnReason.set('Overcharged');
+      component.submitReturn();
+      await fixture.whenStable();
+
+      expect(createReturn).toHaveBeenCalledWith(invoice.id, { amount: 40, reason: 'Overcharged' });
+      expect(findOne).toHaveBeenLastCalledWith(invoice.id);
+      expect(component.invoice()).toEqual(updatedInvoice);
+      expect(component.showReturnModal()).toBe(false);
+    });
+
+    it('does not submit without a reason', async () => {
+      const { fixture, createReturn } = setUp();
+      await fixture.whenStable();
+
+      const component = fixture.componentInstance;
+      component.openReturnModal();
+      component.returnReason.set('   ');
+      component.submitReturn();
+
+      expect(createReturn).not.toHaveBeenCalled();
+    });
+
+    it('surfaces the backend error message and keeps the dialog open on failure', async () => {
+      const invoice = fakeInvoice({ paidAmount: 40, totalAmount: 100, status: 'PartiallyPaid' });
+      const findOne = jest.fn().mockReturnValue(of(invoice));
+      const createReturn = jest.fn().mockReturnValue(throwError(() => ({ message: 'Return amount exceeds invoice paidAmount' })));
+      const invoicesApi = { findOne, createReturn } as unknown as InvoicesApiService;
+
+      TestBed.configureTestingModule({
+        imports: [InvoiceDetail],
+        providers: [
+          { provide: InvoicesApiService, useValue: invoicesApi },
+          { provide: PatientsApiService, useValue: fakePatientsApi() },
+          { provide: AuthService, useValue: fakeAuth() },
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: invoice.id })) } },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(InvoiceDetail);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const component = fixture.componentInstance;
+      component.openReturnModal();
+      component.returnAmount.set(999);
+      component.returnReason.set('Overcharged');
+      component.submitReturn();
+      await fixture.whenStable();
+
+      expect(component.returnSaving()).toBe(false);
+      expect(component.returnError()).toBe('Return amount exceeds invoice paidAmount');
+      expect(component.showReturnModal()).toBe(true);
+    });
+
+    it('treats the return as recorded (not failed) when the post-save refresh itself fails, so retrying cannot double it', async () => {
+      const { fixture, findOne, createReturn } = setUp();
+      await fixture.whenStable();
+      findOne.mockReturnValue(throwError(() => new Error('boom')));
+
+      const component = fixture.componentInstance;
+      component.openReturnModal();
+      component.returnAmount.set(40);
+      component.returnReason.set('Overcharged');
+      component.submitReturn();
+      await fixture.whenStable();
+
+      expect(createReturn).toHaveBeenCalledTimes(1);
+      expect(component.returnSaving()).toBe(false);
+      expect(component.showReturnModal()).toBe(false);
+      expect(component.returnError()).toBeNull();
+    });
   });
 });

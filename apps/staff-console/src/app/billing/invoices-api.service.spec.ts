@@ -81,4 +81,31 @@ describe('InvoicesApiService', () => {
     req.flush(payment);
     expect(result).toEqual(payment);
   });
+
+  it('patches the invoice cancel endpoint with no body', () => {
+    let result: unknown;
+    service.cancel('invoice-1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne(
+      'https://gateway.example/api/billing/invoices/invoice-1/cancel',
+    );
+    expect(req.request.method).toBe('PATCH');
+    const cancelled = { id: 'invoice-1', status: 'Cancelled' };
+    req.flush(cancelled);
+    expect(result).toEqual(cancelled);
+  });
+
+  it('posts a return to the invoice returns endpoint', () => {
+    let result: unknown;
+    service.createReturn('invoice-1', { amount: 40, reason: 'Overcharged' }).subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne(
+      'https://gateway.example/api/billing/invoices/invoice-1/returns',
+    );
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ amount: 40, reason: 'Overcharged' });
+    const returnRecord = { id: 'return-1', invoiceId: 'invoice-1', amount: 40, reason: 'Overcharged' };
+    req.flush(returnRecord);
+    expect(result).toEqual(returnRecord);
+  });
 });
