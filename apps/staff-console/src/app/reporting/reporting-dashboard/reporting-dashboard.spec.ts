@@ -142,4 +142,136 @@ describe('ReportingDashboard', () => {
 
     expect(fixture.componentInstance.eventsLoading()).toBe(false);
   });
+
+  describe('exports', () => {
+    let openSpy: jest.SpyInstance;
+    let clickSpy: jest.Mock;
+    let downloadedHref: string;
+    let downloadedFilename: string;
+
+    beforeEach(() => {
+      URL.createObjectURL = jest.fn().mockReturnValue('blob:fake-url');
+      URL.revokeObjectURL = jest.fn();
+      openSpy = jest.spyOn(window, 'open').mockReturnValue(null);
+      clickSpy = jest.fn();
+      downloadedHref = '';
+      downloadedFilename = '';
+      const realCreateElement = document.createElement.bind(document);
+      jest.spyOn(document, 'createElement').mockImplementation((tagName: string, options?: ElementCreationOptions) => {
+        if (tagName === 'a') {
+          return {
+            set href(value: string) {
+              downloadedHref = value;
+            },
+            set download(value: string) {
+              downloadedFilename = value;
+            },
+            click: clickSpy,
+          } as unknown as HTMLAnchorElement;
+        }
+        return realCreateElement(tagName, options);
+      });
+    });
+
+    afterEach(() => {
+      openSpy.mockRestore();
+      jest.restoreAllMocks();
+    });
+
+    const csvBlob = new Blob(['a,b'], { type: 'text/csv' });
+    const pdfBlob = new Blob(['%PDF-fake'], { type: 'application/pdf' });
+    const xlsxBlob = new Blob(['PK'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+    it('exports events as CSV using the current event type filter, then downloads it', async () => {
+      const { fixture, reportingApi } = setup({
+        exportEventsCsv: jest.fn().mockReturnValue(of(csvBlob)),
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.componentInstance.eventTypeFilter.set('OrderPlaced');
+
+      fixture.componentInstance.exportEventsCsv();
+      await fixture.whenStable();
+
+      expect(reportingApi.exportEventsCsv).toHaveBeenCalledWith('OrderPlaced');
+      expect(clickSpy).toHaveBeenCalled();
+      expect(downloadedHref).toBe('blob:fake-url');
+      expect(downloadedFilename).toBe('reporting-events.csv');
+      expect(fixture.componentInstance.exportingEventsCsv()).toBe(false);
+    });
+
+    it('exports events as PDF and opens it in a new tab', async () => {
+      const { fixture, reportingApi } = setup({
+        exportEventsPdf: jest.fn().mockReturnValue(of(pdfBlob)),
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.exportEventsPdf();
+      await fixture.whenStable();
+
+      expect(reportingApi.exportEventsPdf).toHaveBeenCalledWith(undefined);
+      expect(openSpy).toHaveBeenCalledWith('blob:fake-url', '_blank');
+      expect(fixture.componentInstance.exportingEventsPdf()).toBe(false);
+    });
+
+    it('exports events as Excel, then downloads it', async () => {
+      const { fixture, reportingApi } = setup({
+        exportEventsExcel: jest.fn().mockReturnValue(of(xlsxBlob)),
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.exportEventsExcel();
+      await fixture.whenStable();
+
+      expect(reportingApi.exportEventsExcel).toHaveBeenCalledWith(undefined);
+      expect(clickSpy).toHaveBeenCalled();
+      expect(fixture.componentInstance.exportingEventsExcel()).toBe(false);
+    });
+
+    it('exports revenue as CSV, then downloads it', async () => {
+      const { fixture, reportingApi } = setup({
+        exportRevenueCsv: jest.fn().mockReturnValue(of(csvBlob)),
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.exportRevenueCsv();
+      await fixture.whenStable();
+
+      expect(reportingApi.exportRevenueCsv).toHaveBeenCalled();
+      expect(clickSpy).toHaveBeenCalled();
+      expect(fixture.componentInstance.exportingRevenueCsv()).toBe(false);
+    });
+
+    it('exports revenue as Excel, then downloads it', async () => {
+      const { fixture, reportingApi } = setup({
+        exportRevenueExcel: jest.fn().mockReturnValue(of(xlsxBlob)),
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.exportRevenueExcel();
+      await fixture.whenStable();
+
+      expect(reportingApi.exportRevenueExcel).toHaveBeenCalled();
+      expect(clickSpy).toHaveBeenCalled();
+      expect(fixture.componentInstance.exportingRevenueExcel()).toBe(false);
+    });
+
+    it('toasts an error and clears loading when an export fails', async () => {
+      const { fixture } = setup({
+        exportEventsCsv: jest.fn().mockReturnValue(throwError(() => new Error('boom'))),
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.exportEventsCsv();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.exportingEventsCsv()).toBe(false);
+      expect(clickSpy).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -7,6 +7,8 @@ import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TabsModule } from 'primeng/tabs';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { AuthService } from '@org/auth';
 
 import { ReportingApiService } from '../reporting-api.service.js';
@@ -22,6 +24,8 @@ import {
   totalEventCount,
 } from '../reporting.model.js';
 import { EntityName } from '../../directory/entity-name.js';
+import { openPdfBlobInNewTab } from '../../shared/pdf-blob.util.js';
+import { downloadBlob } from '../../shared/download-blob.util.js';
 
 const PAGE_SIZE = 20;
 
@@ -41,11 +45,14 @@ const PAGE_SIZE = 20;
     SelectModule,
     TabsModule,
     EntityName,
+    ToastModule,
   ],
+  providers: [MessageService],
   templateUrl: './reporting-dashboard.html',
 })
 export class ReportingDashboard {
   private readonly reportingApi = inject(ReportingApiService);
+  private readonly messageService = inject(MessageService);
   readonly auth = inject(AuthService);
   readonly subjectRef = reportingEventSubjectRef;
 
@@ -62,6 +69,12 @@ export class ReportingDashboard {
   readonly pageSize = signal(PAGE_SIZE);
   readonly firstRecord = signal(0);
   readonly eventTypeFilter = signal('');
+
+  readonly exportingEventsCsv = signal(false);
+  readonly exportingEventsPdf = signal(false);
+  readonly exportingEventsExcel = signal(false);
+  readonly exportingRevenueCsv = signal(false);
+  readonly exportingRevenueExcel = signal(false);
 
   readonly eventTypes = REPORTING_EVENT_TYPES.map((type) => ({ label: type, value: type }));
   readonly eventCountsByType = computed(() => aggregateEventCounts(this.eventCounts()));
@@ -120,5 +133,79 @@ export class ReportingDashboard {
   applyEventFilter(): void {
     this.firstRecord.set(0);
     this.loadEvents(0);
+  }
+
+  private exportFailed(): void {
+    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the export.' });
+  }
+
+  exportEventsCsv(): void {
+    this.exportingEventsCsv.set(true);
+    this.reportingApi.exportEventsCsv(this.eventTypeFilter() || undefined).subscribe({
+      next: (blob) => {
+        this.exportingEventsCsv.set(false);
+        downloadBlob(blob, 'reporting-events.csv');
+      },
+      error: () => {
+        this.exportingEventsCsv.set(false);
+        this.exportFailed();
+      },
+    });
+  }
+
+  exportEventsPdf(): void {
+    this.exportingEventsPdf.set(true);
+    this.reportingApi.exportEventsPdf(this.eventTypeFilter() || undefined).subscribe({
+      next: (blob) => {
+        this.exportingEventsPdf.set(false);
+        openPdfBlobInNewTab(blob);
+      },
+      error: () => {
+        this.exportingEventsPdf.set(false);
+        this.exportFailed();
+      },
+    });
+  }
+
+  exportEventsExcel(): void {
+    this.exportingEventsExcel.set(true);
+    this.reportingApi.exportEventsExcel(this.eventTypeFilter() || undefined).subscribe({
+      next: (blob) => {
+        this.exportingEventsExcel.set(false);
+        downloadBlob(blob, 'reporting-events.xlsx');
+      },
+      error: () => {
+        this.exportingEventsExcel.set(false);
+        this.exportFailed();
+      },
+    });
+  }
+
+  exportRevenueCsv(): void {
+    this.exportingRevenueCsv.set(true);
+    this.reportingApi.exportRevenueCsv().subscribe({
+      next: (blob) => {
+        this.exportingRevenueCsv.set(false);
+        downloadBlob(blob, 'revenue.csv');
+      },
+      error: () => {
+        this.exportingRevenueCsv.set(false);
+        this.exportFailed();
+      },
+    });
+  }
+
+  exportRevenueExcel(): void {
+    this.exportingRevenueExcel.set(true);
+    this.reportingApi.exportRevenueExcel().subscribe({
+      next: (blob) => {
+        this.exportingRevenueExcel.set(false);
+        downloadBlob(blob, 'revenue.xlsx');
+      },
+      error: () => {
+        this.exportingRevenueExcel.set(false);
+        this.exportFailed();
+      },
+    });
   }
 }

@@ -45,4 +45,28 @@ export class ReportingApiService {
       params: query,
     });
   }
+
+  private eventTypeQuery(eventType?: string): Record<string, string> {
+    return eventType ? { eventType } : {};
+  }
+
+  exportEventsCsv(eventType?: string): Observable<Blob> {
+    return this.apiClient.getBlob('/reporting/events/export.csv', { params: this.eventTypeQuery(eventType) });
+  }
+
+  exportEventsPdf(eventType?: string): Observable<Blob> {
+    return this.apiClient.getBlob('/reporting/events/export.pdf', { params: this.eventTypeQuery(eventType) });
+  }
+
+  exportEventsExcel(eventType?: string): Observable<Blob> {
+    return this.apiClient.getBlob('/reporting/events/export.xlsx', { params: this.eventTypeQuery(eventType) });
+  }
+
+  exportRevenueCsv(): Observable<Blob> {
+    return this.apiClient.getBlob('/reporting/dashboard/revenue/export.csv');
+  }
+
+  exportRevenueExcel(): Observable<Blob> {
+    return this.apiClient.getBlob('/reporting/dashboard/revenue/export.xlsx');
+  }
 }
