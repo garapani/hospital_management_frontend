@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClientService } from '@org/api-client';
 
-import { PharmacyDispensing } from './pharmacy-dispensing.model.js';
+import { PendingPharmacyItem, PharmacyDispensing } from './pharmacy-dispensing.model.js';
 
 export interface CreatePharmacyDispensingDto {
   orderItemId: string;
@@ -34,6 +34,16 @@ export class PharmacyDispensingApiService {
     return this.apiClient.get<PaginatedResponse<PharmacyDispensing>>('/pharmacy/dispensings', {
       params: {
         ...(filters.orderItemId ? { orderItemId: filters.orderItemId } : {}),
+        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.page !== undefined ? { page: filters.page } : {}),
+        ...(filters.limit !== undefined ? { limit: filters.limit } : {}),
+      },
+    });
+  }
+
+  listPendingItems(filters: { status?: string; page?: number; limit?: number } = {}) {
+    return this.apiClient.get<PaginatedResponse<PendingPharmacyItem>>('/pharmacy/dispensings/pending-items', {
+      params: {
         ...(filters.status ? { status: filters.status } : {}),
         ...(filters.page !== undefined ? { page: filters.page } : {}),
         ...(filters.limit !== undefined ? { limit: filters.limit } : {}),

@@ -41,6 +41,15 @@ export interface PharmacyDispensing {
   orderItem?: PharmacyDispensingOrderItem;
 }
 
+/**
+ * A Pharmacy order item awaiting action — the Add Dispensing picker's source
+ * (`GET /pharmacy/dispensings/pending-items`), since a Pharmacist has no patient search access
+ * and would otherwise have no way to find an orderItemId to dispense against.
+ */
+export interface PendingPharmacyItem extends PharmacyDispensingOrderItem {
+  patientId: string | null;
+}
+
 export const DISPENSING_STATUSES: PharmacyDispensingStatus[] = ['Pending', 'Dispensed', 'Cancelled', 'Reversed'];
 
 const STATUS_SEVERITY: Record<string, 'success' | 'warn' | 'danger' | 'info' | 'secondary'> = {

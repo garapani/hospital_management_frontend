@@ -79,12 +79,65 @@
 <p-dialog header="New Dispensing" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '520px' }" styleClass="surface-modal">
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
-      <label for="dispOrderItemId" class="text-sm font-medium text-slate-700">Order Item ID</label>
-      <input id="dispOrderItemId" pInputText [ngModel]="createForm().orderItemId" (ngModelChange)="createForm.set({ ...createForm(), orderItemId: $event })" class="w-full" placeholder="Pharmacy order item UUID" />
+      <label for="dispOrderItem" class="text-sm font-medium text-slate-700">Order Item</label>
+      <p-select
+        inputId="dispOrderItem"
+        [options]="orderItemOptions()"
+        [ngModel]="createForm().orderItemId"
+        (ngModelChange)="onOrderItemChange($event)"
+        [loading]="orderItemsLoading()"
+        [filter]="true"
+        filterPlaceholder="Search by patient or item"
+        placeholder="Select a pending Pharmacy order item"
+        emptyMessage="No Pharmacy order items are awaiting dispensing"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
     </div>
     <div class="flex flex-col gap-2">
-      <label for="dispInventoryItemId" class="text-sm font-medium text-slate-700">Inventory Item ID</label>
-      <input id="dispInventoryItemId" pInputText [ngModel]="createForm().inventoryItemId" (ngModelChange)="createForm.set({ ...createForm(), inventoryItemId: $event })" class="w-full" placeholder="Inventory catalog item UUID" />
+      <label for="dispCategory" class="text-sm font-medium text-slate-700">Category</label>
+      <p-select
+        inputId="dispCategory"
+        [options]="dialogCategories()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="categoryId()"
+        (ngModelChange)="onCategoryChange($event)"
+        placeholder="Select a category"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="dispSubCategory" class="text-sm font-medium text-slate-700">Sub-category</label>
+      <p-select
+        inputId="dispSubCategory"
+        [options]="dialogSubCategories()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="subCategoryId()"
+        (ngModelChange)="onSubCategoryChange($event)"
+        placeholder="Select a sub-category"
+        [disabled]="!categoryId()"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="dispInventoryItem" class="text-sm font-medium text-slate-700">Inventory Item</label>
+      <p-select
+        inputId="dispInventoryItem"
+        [options]="dialogInventoryItems()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="createForm().inventoryItemId"
+        (ngModelChange)="onInventoryItemChange($event)"
+        [loading]="dialogInventoryItemsLoading()"
+        placeholder="Select an item"
+        [disabled]="!subCategoryId()"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
     </div>
     <div class="flex flex-col gap-2">
       <label for="dispQuantity" class="text-sm font-medium text-slate-700">Quantity</label>
