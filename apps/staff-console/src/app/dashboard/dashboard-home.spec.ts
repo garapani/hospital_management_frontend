@@ -13,6 +13,7 @@ import { RadiologyApiService } from '../radiology/radiology-api.service.js';
 import { RadiologyRequisition } from '../radiology/radiology.model.js';
 import { InvoicesApiService } from '../billing/invoices-api.service.js';
 import { Invoice } from '../billing/invoice.model.js';
+import { InventoryApiService, LowStockItem } from '../inventory/inventory-api.service.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 function fakeAppointment(overrides: Partial<Appointment> = {}): Appointment {
@@ -134,6 +135,18 @@ function fakeInvoice(overrides: Partial<Invoice> = {}): Invoice {
   };
 }
 
+function fakeLowStockItem(overrides: Partial<LowStockItem> = {}): LowStockItem {
+  return {
+    itemId: 'item-1',
+    code: 'MED-001',
+    name: 'Paracetamol 500mg',
+    reorderLevel: '50',
+    minimumStock: '20',
+    availableQuantity: '10',
+    ...overrides,
+  };
+}
+
 describe('DashboardHome', () => {
   function setup(options: {
     roles?: string[];
@@ -145,12 +158,14 @@ describe('DashboardHome', () => {
     pendingRequisitions?: LabRequisition[];
     pendingScans?: RadiologyRequisition[];
     unpaidInvoices?: Invoice[];
+    lowStockItems?: LowStockItem[];
     appointmentsError?: boolean;
     tasksError?: boolean;
     dispenseItemsError?: boolean;
     requisitionsError?: boolean;
     scansError?: boolean;
     invoicesError?: boolean;
+    lowStockError?: boolean;
   } = {}) {
     const { roles = [], permissions = [], sub = 'user-1' } = options;
     const appointmentsApi = {
@@ -207,6 +222,11 @@ describe('DashboardHome', () => {
             }),
       ),
     } as unknown as InvoicesApiService;
+    const inventoryApi = {
+      listLowStockItems: jest.fn().mockReturnValue(
+        options.lowStockError ? throwError(() => new Error('boom')) : of(options.lowStockItems ?? []),
+      ),
+    } as unknown as InventoryApiService;
     const auth = {
       currentUser: () => ({ sub, roles }),
       hasPermission: (permission: string) => permissions.includes(permission),
@@ -223,17 +243,18 @@ describe('DashboardHome', () => {
         { provide: LabApiService, useValue: labApi },
         { provide: RadiologyApiService, useValue: radiologyApi },
         { provide: InvoicesApiService, useValue: invoicesApi },
+        { provide: InventoryApiService, useValue: inventoryApi },
         { provide: AuthService, useValue: auth },
         { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
     const fixture = TestBed.createComponent(DashboardHome);
-    return { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi };
+    return { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi, inventoryApi };
   }
 
   it('shows nothing scoped and makes no calls for a role with no dashboard widget', async () => {
-    const { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi } = setup({
+    const { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi, inventoryApi } = setup({
       roles: ['Auditor/Compliance'],
       permissions: [],
     });
@@ -247,6 +268,7 @@ describe('DashboardHome', () => {
     expect(labApi.listRequisitions).not.toHaveBeenCalled();
     expect(radiologyApi.list).not.toHaveBeenCalled();
     expect(invoicesApi.list).not.toHaveBeenCalled();
+    expect(inventoryApi.listLowStockItems).not.toHaveBeenCalled();
   });
 
   it("loads today's appointments and tallies status counts for a Receptionist", async () => {
@@ -368,6 +390,21 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.unpaidInvoices().map((i) => i.id)).toEqual(['inv-3', 'inv-2']);
   });
 
+  it('loads low-stock items for an Inventory/Store Manager', async () => {
+    const lowStockItems = [fakeLowStockItem({ itemId: 'item-1' }), fakeLowStockItem({ itemId: 'item-2' })];
+    const { fixture, inventoryApi } = setup({
+      roles: ['Inventory/Store Manager'],
+      permissions: ['inventory.read'],
+      lowStockItems,
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.isInventoryManager()).toBe(true);
+    expect(inventoryApi.listLowStockItems).toHaveBeenCalled();
+    expect(fixture.componentInstance.lowStockItems()).toHaveLength(2);
+  });
+
   it('skips a widget load when the role matches but the permission does not', async () => {
     const { fixture, appointmentsApi } = setup({ roles: ['Doctor'], permissions: [] });
     fixture.detectChanges();
@@ -390,16 +427,33 @@ describe('DashboardHome', () => {
     expect(nursingApi.listTasks).toHaveBeenCalled();
   });
 
-  it('clears loading flags without throwing when the appointments/tasks/dispensing/requisitions/scans/invoices lookups error', async () => {
+  it('clears loading flags without throwing when every widget lookup errors', async () => {
     const { fixture } = setup({
-      roles: ['Receptionist / Front Desk', 'Nurse', 'Pharmacist', 'Lab Technician', 'Radiology Technician', 'Billing/Accounts Staff'],
-      permissions: ['appointment.read', 'nursing.read', 'pharmacy.read', 'lab.read', 'radiology.read', 'billing.read'],
+      roles: [
+        'Receptionist / Front Desk',
+        'Nurse',
+        'Pharmacist',
+        'Lab Technician',
+        'Radiology Technician',
+        'Billing/Accounts Staff',
+        'Inventory/Store Manager',
+      ],
+      permissions: [
+        'appointment.read',
+        'nursing.read',
+        'pharmacy.read',
+        'lab.read',
+        'radiology.read',
+        'billing.read',
+        'inventory.read',
+      ],
       appointmentsError: true,
       tasksError: true,
       dispenseItemsError: true,
       requisitionsError: true,
       scansError: true,
       invoicesError: true,
+      lowStockError: true,
     });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -410,5 +464,6 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.requisitionsLoading()).toBe(false);
     expect(fixture.componentInstance.scansLoading()).toBe(false);
     expect(fixture.componentInstance.invoicesLoading()).toBe(false);
+    expect(fixture.componentInstance.lowStockLoading()).toBe(false);
   });
 });

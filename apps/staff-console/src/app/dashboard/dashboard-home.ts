@@ -15,6 +15,7 @@ import { RadiologyApiService } from '../radiology/radiology-api.service.js';
 import { RadiologyRequisition } from '../radiology/radiology.model.js';
 import { InvoicesApiService } from '../billing/invoices-api.service.js';
 import { Invoice, invoiceReference, outstandingBalance, statusSeverity as invoiceStatusSeverity } from '../billing/invoice.model.js';
+import { InventoryApiService, LowStockItem } from '../inventory/inventory-api.service.js';
 import { EntityName } from '../directory/entity-name.js';
 import { todayLocal as today } from '../shared/date.util.js';
 
@@ -33,6 +34,7 @@ export class DashboardHome {
   private readonly labApi = inject(LabApiService);
   private readonly radiologyApi = inject(RadiologyApiService);
   private readonly invoicesApi = inject(InvoicesApiService);
+  private readonly inventoryApi = inject(InventoryApiService);
   readonly auth = inject(AuthService);
 
   readonly displayName = appointmentDisplayName;
@@ -50,6 +52,7 @@ export class DashboardHome {
   readonly isLabTechnician = computed(() => this.roles().includes('Lab Technician'));
   readonly isRadiologyTechnician = computed(() => this.roles().includes('Radiology Technician'));
   readonly isBillingStaff = computed(() => this.roles().includes('Billing/Accounts Staff'));
+  readonly isInventoryManager = computed(() => this.roles().includes('Inventory/Store Manager'));
   readonly hasNoWidgets = computed(
     () =>
       !this.isReceptionist() &&
@@ -58,7 +61,8 @@ export class DashboardHome {
       !this.isPharmacist() &&
       !this.isLabTechnician() &&
       !this.isRadiologyTechnician() &&
-      !this.isBillingStaff(),
+      !this.isBillingStaff() &&
+      !this.isInventoryManager(),
   );
 
   readonly todaysAppointments = signal<Appointment[]>([]);
@@ -95,6 +99,9 @@ export class DashboardHome {
   readonly outstandingBalance = outstandingBalance;
   readonly invoiceStatusSeverity = invoiceStatusSeverity;
 
+  readonly lowStockItems = signal<LowStockItem[]>([]);
+  readonly lowStockLoading = signal(false);
+
   constructor() {
     if (this.isReceptionist() && this.auth.hasPermission('appointment.read')) {
       this.loadTodaysAppointments();
@@ -116,6 +123,9 @@ export class DashboardHome {
     }
     if (this.isBillingStaff() && this.auth.hasPermission('billing.read')) {
       this.loadUnpaidInvoices();
+    }
+    if (this.isInventoryManager() && this.auth.hasPermission('inventory.read')) {
+      this.loadLowStockItems();
     }
   }
 
@@ -213,6 +223,17 @@ export class DashboardHome {
         this.invoicesLoading.set(false);
       },
       error: () => this.invoicesLoading.set(false),
+    });
+  }
+
+  private loadLowStockItems(): void {
+    this.lowStockLoading.set(true);
+    this.inventoryApi.listLowStockItems().subscribe({
+      next: (items) => {
+        this.lowStockItems.set(items);
+        this.lowStockLoading.set(false);
+      },
+      error: () => this.lowStockLoading.set(false),
     });
   }
 }
