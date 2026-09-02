@@ -461,4 +461,54 @@
     </p-table>
   </div>
   }
+
+  @if (isAuditor()) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="font-bold text-slate-800 text-lg">Recent Audit Events</h2>
+      <a routerLink="/admin/audit" class="text-sky-600 hover:text-sky-800 text-sm font-medium">Open Audit Trail</a>
+    </div>
+
+    <p-table
+      [value]="recentAuditRecords()"
+      [loading]="auditRecordsLoading()"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Occurred</th>
+          <th class="table-header-cell">Table</th>
+          <th class="table-header-cell">Action</th>
+          <th class="table-header-cell">Record</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-record>
+        <tr>
+          <td class="whitespace-nowrap">{{ record.occurredAt | date: 'medium' }}</td>
+          <td class="font-medium">{{ record.tableName }}</td>
+          <td>
+            <p-tag
+              [value]="record.action"
+              [severity]="record.action === 'create' ? 'success' : record.action === 'delete' ? 'danger' : 'info'"
+              [rounded]="true"
+            ></p-tag>
+          </td>
+          <td class="text-xs text-slate-500">
+            @if (auditDirectoryType(record.tableName); as type) {
+            <hms-entity-name [type]="type" [id]="record.recordId"></hms-entity-name>
+            } @else {
+            <span class="font-mono">{{ record.recordId }}</span>
+            }
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="4" class="text-center p-6 text-slate-500">No recent audit events.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
 </div>

@@ -17,6 +17,8 @@ import { InventoryApiService, LowStockItem } from '../inventory/inventory-api.se
 import { PayrollApiService, Payslip } from '../payroll/payroll-api.service.js';
 import { HelpdeskApiService } from '../helpdesk/helpdesk-api.service.js';
 import { HelpdeskTicket } from '../helpdesk/helpdesk.model.js';
+import { AuditApiService } from '../audit/audit-api.service.js';
+import { AuditRecord } from '../audit/audit.model.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 function fakeAppointment(overrides: Partial<Appointment> = {}): Appointment {
@@ -188,6 +190,20 @@ function fakeHelpdeskTicket(overrides: Partial<HelpdeskTicket> = {}): HelpdeskTi
   };
 }
 
+function fakeAuditRecord(overrides: Partial<AuditRecord> = {}): AuditRecord {
+  return {
+    id: 'audit-1',
+    tableName: 'patients',
+    recordId: 'patient-1',
+    action: 'update',
+    changedByAccountId: 'account-1',
+    correlationId: null,
+    diff: {},
+    occurredAt: '2026-09-01T08:00:00Z',
+    ...overrides,
+  };
+}
+
 describe('DashboardHome', () => {
   function setup(options: {
     roles?: string[];
@@ -202,6 +218,7 @@ describe('DashboardHome', () => {
     lowStockItems?: LowStockItem[];
     draftPayslips?: Payslip[];
     openTickets?: HelpdeskTicket[];
+    recentAuditRecords?: AuditRecord[];
     appointmentsError?: boolean;
     tasksError?: boolean;
     dispenseItemsError?: boolean;
@@ -211,6 +228,7 @@ describe('DashboardHome', () => {
     lowStockError?: boolean;
     payslipsError?: boolean;
     ticketsError?: boolean;
+    auditRecordsError?: boolean;
   } = {}) {
     const { roles = [], permissions = [], sub = 'user-1' } = options;
     const appointmentsApi = {
@@ -289,6 +307,11 @@ describe('DashboardHome', () => {
           : of({ data: options.openTickets ?? [], total: (options.openTickets ?? []).length }),
       ),
     } as unknown as HelpdeskApiService;
+    const auditApi = {
+      list: jest.fn().mockReturnValue(
+        options.auditRecordsError ? throwError(() => new Error('boom')) : of(options.recentAuditRecords ?? []),
+      ),
+    } as unknown as AuditApiService;
     const auth = {
       currentUser: () => ({ sub, roles }),
       hasPermission: (permission: string) => permissions.includes(permission),
@@ -308,13 +331,26 @@ describe('DashboardHome', () => {
         { provide: InventoryApiService, useValue: inventoryApi },
         { provide: PayrollApiService, useValue: payrollApi },
         { provide: HelpdeskApiService, useValue: helpdeskApi },
+        { provide: AuditApiService, useValue: auditApi },
         { provide: AuthService, useValue: auth },
         { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
     const fixture = TestBed.createComponent(DashboardHome);
-    return { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi, inventoryApi, payrollApi, helpdeskApi };
+    return {
+      fixture,
+      appointmentsApi,
+      nursingApi,
+      pharmacyApi,
+      labApi,
+      radiologyApi,
+      invoicesApi,
+      inventoryApi,
+      payrollApi,
+      helpdeskApi,
+      auditApi,
+    };
   }
 
   it('shows nothing scoped and makes no calls for a role with no dashboard widget', async () => {
@@ -329,8 +365,9 @@ describe('DashboardHome', () => {
       inventoryApi,
       payrollApi,
       helpdeskApi,
+      auditApi,
     } = setup({
-      roles: ['Auditor/Compliance'],
+      roles: ['Hospital Admin'],
       permissions: [],
     });
     fixture.detectChanges();
@@ -346,6 +383,7 @@ describe('DashboardHome', () => {
     expect(inventoryApi.listLowStockItems).not.toHaveBeenCalled();
     expect(payrollApi.listPayslips).not.toHaveBeenCalled();
     expect(helpdeskApi.list).not.toHaveBeenCalled();
+    expect(auditApi.list).not.toHaveBeenCalled();
   });
 
   it("loads today's appointments and tallies status counts for a Receptionist", async () => {
@@ -517,6 +555,21 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.openTickets().map((t) => t.id)).toEqual(['t1', 't2']);
   });
 
+  it('loads recent audit records for an Auditor/Compliance', async () => {
+    const records = [fakeAuditRecord({ id: 'audit-1' }), fakeAuditRecord({ id: 'audit-2' })];
+    const { fixture, auditApi } = setup({
+      roles: ['Auditor/Compliance'],
+      permissions: ['audit.read'],
+      recentAuditRecords: records,
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.isAuditor()).toBe(true);
+    expect(auditApi.list).toHaveBeenCalledWith(1, 10);
+    expect(fixture.componentInstance.recentAuditRecords()).toHaveLength(2);
+  });
+
   it('skips a widget load when the role matches but the permission does not', async () => {
     const { fixture, appointmentsApi } = setup({ roles: ['Doctor'], permissions: [] });
     fixture.detectChanges();
@@ -551,6 +604,7 @@ describe('DashboardHome', () => {
         'Inventory/Store Manager',
         'HR/Payroll Admin',
         'Helpdesk Agent',
+        'Auditor/Compliance',
       ],
       permissions: [
         'appointment.read',
@@ -562,6 +616,7 @@ describe('DashboardHome', () => {
         'inventory.read',
         'payroll.read',
         'helpdesk.read',
+        'audit.read',
       ],
       appointmentsError: true,
       tasksError: true,
@@ -572,6 +627,7 @@ describe('DashboardHome', () => {
       lowStockError: true,
       payslipsError: true,
       ticketsError: true,
+      auditRecordsError: true,
     });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -585,5 +641,6 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.lowStockLoading()).toBe(false);
     expect(fixture.componentInstance.payslipsLoading()).toBe(false);
     expect(fixture.componentInstance.ticketsLoading()).toBe(false);
+    expect(fixture.componentInstance.auditRecordsLoading()).toBe(false);
   });
 });

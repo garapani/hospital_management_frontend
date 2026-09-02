@@ -19,6 +19,8 @@ import { InventoryApiService, LowStockItem } from '../inventory/inventory-api.se
 import { PayrollApiService, Payslip } from '../payroll/payroll-api.service.js';
 import { HelpdeskApiService } from '../helpdesk/helpdesk-api.service.js';
 import { HelpdeskTicket } from '../helpdesk/helpdesk.model.js';
+import { AuditApiService } from '../audit/audit-api.service.js';
+import { AuditRecord, auditRecordDirectoryType } from '../audit/audit.model.js';
 import { EntityName } from '../directory/entity-name.js';
 import { todayLocal as today } from '../shared/date.util.js';
 
@@ -40,6 +42,7 @@ export class DashboardHome {
   private readonly inventoryApi = inject(InventoryApiService);
   private readonly payrollApi = inject(PayrollApiService);
   private readonly helpdeskApi = inject(HelpdeskApiService);
+  private readonly auditApi = inject(AuditApiService);
   readonly auth = inject(AuthService);
 
   readonly displayName = appointmentDisplayName;
@@ -60,6 +63,7 @@ export class DashboardHome {
   readonly isInventoryManager = computed(() => this.roles().includes('Inventory/Store Manager'));
   readonly isHrPayrollAdmin = computed(() => this.roles().includes('HR/Payroll Admin'));
   readonly isHelpdeskAgent = computed(() => this.roles().includes('Helpdesk Agent'));
+  readonly isAuditor = computed(() => this.roles().includes('Auditor/Compliance'));
   readonly hasNoWidgets = computed(
     () =>
       !this.isReceptionist() &&
@@ -71,7 +75,8 @@ export class DashboardHome {
       !this.isBillingStaff() &&
       !this.isInventoryManager() &&
       !this.isHrPayrollAdmin() &&
-      !this.isHelpdeskAgent(),
+      !this.isHelpdeskAgent() &&
+      !this.isAuditor(),
   );
 
   readonly todaysAppointments = signal<Appointment[]>([]);
@@ -117,6 +122,10 @@ export class DashboardHome {
   readonly openTickets = signal<HelpdeskTicket[]>([]);
   readonly ticketsLoading = signal(false);
 
+  readonly recentAuditRecords = signal<AuditRecord[]>([]);
+  readonly auditRecordsLoading = signal(false);
+  readonly auditDirectoryType = auditRecordDirectoryType;
+
   constructor() {
     if (this.isReceptionist() && this.auth.hasPermission('appointment.read')) {
       this.loadTodaysAppointments();
@@ -147,6 +156,9 @@ export class DashboardHome {
     }
     if (this.isHelpdeskAgent() && this.auth.hasPermission('helpdesk.read')) {
       this.loadOpenTickets();
+    }
+    if (this.isAuditor() && this.auth.hasPermission('audit.read')) {
+      this.loadRecentAuditRecords();
     }
   }
 
@@ -280,6 +292,19 @@ export class DashboardHome {
         this.ticketsLoading.set(false);
       },
       error: () => this.ticketsLoading.set(false),
+    });
+  }
+
+  private loadRecentAuditRecords(): void {
+    this.auditRecordsLoading.set(true);
+    // AuditApiService.list() is a purpose-built dashboard convenience wrapper around search() —
+    // no date range required, most recent page only.
+    this.auditApi.list(1, 10).subscribe({
+      next: (records) => {
+        this.recentAuditRecords.set(records);
+        this.auditRecordsLoading.set(false);
+      },
+      error: () => this.auditRecordsLoading.set(false),
     });
   }
 }
