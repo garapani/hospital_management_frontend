@@ -42,6 +42,9 @@
         styleClass="w-64"
       ></p-select>
     </div>
+    @if (canManageCatalog) {
+    <p-button label="Add Category" icon="pi pi-plus" size="small" severity="secondary" [text]="true" (onClick)="openAddCategoryModal()"></p-button>
+    }
     <div class="flex flex-col gap-2">
       <label for="filterSubCategory" class="text-xs font-semibold text-slate-600">Sub-category</label>
       <p-select
@@ -58,9 +61,31 @@
         styleClass="w-64"
       ></p-select>
     </div>
+    @if (canManageCatalog) {
+    <p-button
+      label="Add Sub-category"
+      icon="pi pi-plus"
+      size="small"
+      severity="secondary"
+      [text]="true"
+      [disabled]="!selectedCategoryId()"
+      (onClick)="openAddSubCategoryModal()"
+    ></p-button>
+    }
   </div>
 
   <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white p-4">
+    @if (canManageCatalog) {
+    <div class="flex justify-end mb-3">
+      <p-button
+        label="Add Item"
+        icon="pi pi-plus"
+        size="small"
+        [disabled]="!selectedSubCategoryId()"
+        (onClick)="openAddItemModal()"
+      ></p-button>
+    </div>
+    }
     <p-table
       [value]="items()"
       [loading]="itemsLoading()"
@@ -105,3 +130,99 @@
     </p-table>
   </div>
 </div>
+
+<p-dialog header="Add Category" [(visible)]="showAddCategoryModal" [modal]="true" [closable]="!categorySaving()" [closeOnEscape]="!categorySaving()" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (categoryError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ categoryError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label for="newCategoryName" class="text-sm font-medium text-slate-700">Name</label>
+      <input pInputText id="newCategoryName" [ngModel]="categoryName()" (ngModelChange)="categoryName.set($event)" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Back" severity="secondary" [text]="true" (onClick)="showAddCategoryModal.set(false)"></p-button>
+      <p-button label="Add Category" [loading]="categorySaving()" [disabled]="!categoryName().trim()" (onClick)="submitAddCategory()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Add Sub-category" [(visible)]="showAddSubCategoryModal" [modal]="true" [closable]="!subCategorySaving()" [closeOnEscape]="!subCategorySaving()" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (subCategoryError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ subCategoryError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label for="newSubCategoryName" class="text-sm font-medium text-slate-700">Name</label>
+      <input pInputText id="newSubCategoryName" [ngModel]="subCategoryName()" (ngModelChange)="subCategoryName.set($event)" class="w-full" />
+    </div>
+    <div class="flex items-center gap-2">
+      <p-checkbox inputId="newSubCategoryConsumable" [binary]="true" [ngModel]="subCategoryIsConsumable()" (ngModelChange)="subCategoryIsConsumable.set($event)"></p-checkbox>
+      <label for="newSubCategoryConsumable" class="text-sm text-slate-700">Consumable</label>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Back" severity="secondary" [text]="true" (onClick)="showAddSubCategoryModal.set(false)"></p-button>
+      <p-button label="Add Sub-category" [loading]="subCategorySaving()" [disabled]="!subCategoryName().trim()" (onClick)="submitAddSubCategory()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Add Item" [(visible)]="showAddItemModal" [modal]="true" [closable]="!itemSaving()" [closeOnEscape]="!itemSaving()" [style]="{ width: '450px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (itemError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ itemError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label for="newItemName" class="text-sm font-medium text-slate-700">Name</label>
+      <input pInputText id="newItemName" [ngModel]="itemForm().name" (ngModelChange)="itemForm.set({ ...itemForm(), name: $event })" class="w-full" />
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-2">
+        <label for="newItemCode" class="text-sm font-medium text-slate-700">Code</label>
+        <input pInputText id="newItemCode" [ngModel]="itemForm().code" (ngModelChange)="itemForm.set({ ...itemForm(), code: $event })" class="w-full" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="newItemUnit" class="text-sm font-medium text-slate-700">Unit of Measure</label>
+        <input pInputText id="newItemUnit" [ngModel]="itemForm().unitOfMeasure" (ngModelChange)="itemForm.set({ ...itemForm(), unitOfMeasure: $event })" class="w-full" />
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="flex flex-col gap-2">
+        <label for="newItemReorderLevel" class="text-sm font-medium text-slate-700">Reorder Level</label>
+        <p-inputNumber inputId="newItemReorderLevel" [ngModel]="itemForm().reorderLevel" (ngModelChange)="itemForm.set({ ...itemForm(), reorderLevel: $event })" [min]="0" styleClass="w-full" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="newItemMinStock" class="text-sm font-medium text-slate-700">Minimum Stock</label>
+        <p-inputNumber inputId="newItemMinStock" [ngModel]="itemForm().minimumStock" (ngModelChange)="itemForm.set({ ...itemForm(), minimumStock: $event })" [min]="0" styleClass="w-full" />
+      </div>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="newItemSalePrice" class="text-sm font-medium text-slate-700">Sale Price</label>
+      <p-inputNumber inputId="newItemSalePrice" [ngModel]="itemForm().salePrice" (ngModelChange)="itemForm.set({ ...itemForm(), salePrice: $event })" mode="decimal" [minFractionDigits]="2" [maxFractionDigits]="2" [min]="0" styleClass="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Back" severity="secondary" [text]="true" (onClick)="showAddItemModal.set(false)"></p-button>
+      <p-button
+        label="Add Item"
+        [loading]="itemSaving()"
+        [disabled]="!itemForm().name.trim() || !itemForm().code.trim() || !itemForm().unitOfMeasure.trim()"
+        (onClick)="submitAddItem()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

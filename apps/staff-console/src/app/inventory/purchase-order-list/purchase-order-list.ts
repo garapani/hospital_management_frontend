@@ -10,6 +10,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { AuthService } from '@org/auth';
+import { ApiError } from '@org/api-client';
 import { EMPTY, Subject, catchError, switchMap } from 'rxjs';
 
 import {
@@ -50,6 +51,7 @@ interface CreateLine {
 export class PurchaseOrderList {
   private readonly inventoryApi = inject(InventoryApiService);
   readonly auth = inject(AuthService);
+  readonly canManageCatalog = this.auth.hasPermission('inventory.catalog.manage');
 
   readonly purchaseOrders = signal<PurchaseOrder[]>([]);
   readonly loading = signal(false);
@@ -77,6 +79,15 @@ export class PurchaseOrderList {
   readonly lineQuantity = signal(1);
   readonly lineUnitCost = signal(0);
   readonly createLines = signal<CreateLine[]>([]);
+
+  // Add Vendor dialog state.
+  readonly showAddVendorModal = signal(false);
+  readonly newVendorName = signal('');
+  readonly vendorContactPerson = signal('');
+  readonly vendorPhone = signal('');
+  readonly vendorAddress = signal('');
+  readonly vendorSaving = signal(false);
+  readonly vendorError = signal<string | null>(null);
 
   readonly statusSeverity = purchaseOrderStatusSeverity;
 
@@ -290,6 +301,42 @@ export class PurchaseOrderList {
           this.load(0);
         },
         error: () => this.saving.set(false),
+      });
+  }
+
+  openAddVendorModal(): void {
+    this.newVendorName.set('');
+    this.vendorContactPerson.set('');
+    this.vendorPhone.set('');
+    this.vendorAddress.set('');
+    this.vendorError.set(null);
+    this.showAddVendorModal.set(true);
+  }
+
+  submitAddVendor(): void {
+    const name = this.newVendorName().trim();
+    if (!name) {
+      return;
+    }
+    this.vendorSaving.set(true);
+    this.vendorError.set(null);
+    this.inventoryApi
+      .createVendor({
+        name,
+        contactPerson: this.vendorContactPerson().trim() || undefined,
+        phone: this.vendorPhone().trim() || undefined,
+        address: this.vendorAddress().trim() || undefined,
+      })
+      .subscribe({
+        next: (vendor) => {
+          this.vendorSaving.set(false);
+          this.showAddVendorModal.set(false);
+          this.vendors.update((vendors) => [...vendors, vendor]);
+        },
+        error: (err: ApiError) => {
+          this.vendorSaving.set(false);
+          this.vendorError.set(err.message || 'Failed to add the vendor.');
+        },
       });
   }
 }

@@ -15,6 +15,9 @@ describe('PurchaseOrderList', () => {
       listSubCategories: jest.fn().mockReturnValue(of([])),
       listItemsBySubCategory: jest.fn().mockReturnValue(of([])),
       createPurchaseOrder: jest.fn().mockReturnValue(of({ id: 'po-1' })),
+      createVendor: jest.fn().mockReturnValue(
+        of({ id: 'vendor-new', name: 'New Vendor', contactPerson: null, phone: null, address: null }),
+      ),
     } as unknown as InventoryApiService;
     const auth = { hasPermission: () => true } as unknown as AuthService;
 
@@ -200,5 +203,56 @@ describe('PurchaseOrderList', () => {
 
     expect(fixture.componentInstance.saving()).toBe(false);
     expect(fixture.componentInstance.showCreateModal()).toBe(true);
+  });
+
+  describe('Add Vendor', () => {
+    it('adds a vendor, omitting blank optional fields, and appends it to the loaded list', async () => {
+      const { fixture, inventoryApi } = setup();
+      fixture.detectChanges();
+
+      const component = fixture.componentInstance;
+      component.openAddVendorModal();
+      component.newVendorName.set('New Vendor');
+      component.submitAddVendor();
+      await fixture.whenStable();
+
+      expect(inventoryApi.createVendor).toHaveBeenCalledWith({
+        name: 'New Vendor',
+        contactPerson: undefined,
+        phone: undefined,
+        address: undefined,
+      });
+      expect(component.showAddVendorModal()).toBe(false);
+      expect(component.vendors()).toEqual([
+        { id: 'vendor-new', name: 'New Vendor', contactPerson: null, phone: null, address: null },
+      ]);
+    });
+
+    it('does not submit an add-vendor request with a blank name', () => {
+      const { fixture, inventoryApi } = setup();
+      fixture.detectChanges();
+
+      fixture.componentInstance.openAddVendorModal();
+      fixture.componentInstance.newVendorName.set('   ');
+      fixture.componentInstance.submitAddVendor();
+
+      expect(inventoryApi.createVendor).not.toHaveBeenCalled();
+    });
+
+    it('surfaces the backend error and keeps the dialog open when adding a vendor fails', async () => {
+      const { fixture, inventoryApi } = setup();
+      (inventoryApi.createVendor as jest.Mock).mockReturnValue(throwError(() => ({ message: 'Name already exists' })));
+      fixture.detectChanges();
+
+      const component = fixture.componentInstance;
+      component.openAddVendorModal();
+      component.newVendorName.set('Duplicate');
+      component.submitAddVendor();
+      await fixture.whenStable();
+
+      expect(component.vendorSaving()).toBe(false);
+      expect(component.vendorError()).toBe('Name already exists');
+      expect(component.showAddVendorModal()).toBe(true);
+    });
   });
 });

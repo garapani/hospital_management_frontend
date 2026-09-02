@@ -40,6 +40,34 @@ export interface InventoryItem {
   updatedAt: string;
 }
 
+export interface CreateInventoryItemCategoryDto {
+  name: string;
+  displaySequence?: number;
+}
+
+export interface CreateInventoryItemSubCategoryDto {
+  categoryId: string;
+  name: string;
+  isConsumable?: boolean;
+}
+
+export interface CreateInventoryItemDto {
+  subCategoryId: string;
+  name: string;
+  code: string;
+  unitOfMeasure: string;
+  reorderLevel?: number;
+  minimumStock?: number;
+  salePrice?: number;
+}
+
+export interface CreateInventoryVendorDto {
+  name: string;
+  contactPerson?: string;
+  phone?: string;
+  address?: string;
+}
+
 export interface LowStockItem {
   itemId: string;
   code: string;
@@ -182,16 +210,32 @@ export class InventoryApiService {
     return this.api.get<InventoryItemCategory[]>('/inventory/categories');
   }
 
+  createCategory(dto: CreateInventoryItemCategoryDto): Observable<InventoryItemCategory> {
+    return this.api.post<InventoryItemCategory>('/inventory/categories', dto);
+  }
+
   listSubCategories(categoryId: string): Observable<InventoryItemSubCategory[]> {
     return this.api.get<InventoryItemSubCategory[]>(`/inventory/categories/${categoryId}/sub-categories`);
+  }
+
+  createSubCategory(dto: CreateInventoryItemSubCategoryDto): Observable<InventoryItemSubCategory> {
+    return this.api.post<InventoryItemSubCategory>('/inventory/sub-categories', dto);
   }
 
   listItemsBySubCategory(subCategoryId: string): Observable<InventoryItem[]> {
     return this.api.get<InventoryItem[]>(`/inventory/sub-categories/${subCategoryId}/items`);
   }
 
+  createItem(dto: CreateInventoryItemDto): Observable<InventoryItem> {
+    return this.api.post<InventoryItem>('/inventory/items', dto);
+  }
+
   listVendors(): Observable<InventoryVendor[]> {
     return this.api.get<InventoryVendor[]>('/inventory/vendors');
+  }
+
+  createVendor(dto: CreateInventoryVendorDto): Observable<InventoryVendor> {
+    return this.api.post<InventoryVendor>('/inventory/vendors', dto);
   }
 
   listLowStockItems(): Observable<LowStockItem[]> {
