@@ -51,6 +51,8 @@ export class AppointmentList {
   readonly departmentIdFilter = signal('');
 
   readonly checkInActionId = signal<string | null>(null);
+  readonly completeActionId = signal<string | null>(null);
+  readonly noShowActionId = signal<string | null>(null);
 
   readonly showCreateModal = signal(false);
   readonly createForm = signal<CreateAppointmentDto>({
@@ -156,6 +158,28 @@ export class AppointmentList {
         this.load(this.firstRecord());
       },
       error: () => this.checkInActionId.set(null),
+    });
+  }
+
+  complete(appt: Appointment): void {
+    this.completeActionId.set(appt.id);
+    this.appointmentsApi.complete(appt.id).subscribe({
+      next: () => {
+        this.completeActionId.set(null);
+        this.load(this.firstRecord());
+      },
+      error: () => this.completeActionId.set(null),
+    });
+  }
+
+  markNoShow(appt: Appointment): void {
+    this.noShowActionId.set(appt.id);
+    this.appointmentsApi.markNoShow(appt.id).subscribe({
+      next: () => {
+        this.noShowActionId.set(null);
+        this.load(this.firstRecord());
+      },
+      error: () => this.noShowActionId.set(null),
     });
   }
 

@@ -17,6 +17,8 @@ describe('AppointmentList', () => {
       list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
       create: jest.fn().mockReturnValue(of({})),
       checkIn: jest.fn().mockReturnValue(of({ id: 'appt-1', status: 'CheckedIn' })),
+      complete: jest.fn().mockReturnValue(of({ id: 'appt-1', status: 'Completed' })),
+      markNoShow: jest.fn().mockReturnValue(of({ id: 'appt-1', status: 'NoShow' })),
     } as unknown as AppointmentsApiService;
     const usersApi = {
       listDirectory: jest.fn().mockReturnValue(of(overrides.doctors ?? [])),
@@ -200,5 +202,49 @@ describe('AppointmentList', () => {
     fixture.componentInstance.checkIn({ id: 'appt-1' } as Appointment);
 
     expect(fixture.componentInstance.checkInActionId()).toBeNull();
+  });
+
+  it('completes an appointment and reloads the current page', async () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.complete({ id: 'appt-1' } as Appointment);
+
+    expect(appointmentsApi.complete).toHaveBeenCalledWith('appt-1');
+    expect(fixture.componentInstance.completeActionId()).toBeNull();
+  });
+
+  it('clears the complete action flag when complete errors', async () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (appointmentsApi.complete as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));
+
+    fixture.componentInstance.complete({ id: 'appt-1' } as Appointment);
+
+    expect(fixture.componentInstance.completeActionId()).toBeNull();
+  });
+
+  it('marks an appointment as a no-show and reloads the current page', async () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.markNoShow({ id: 'appt-1' } as Appointment);
+
+    expect(appointmentsApi.markNoShow).toHaveBeenCalledWith('appt-1');
+    expect(fixture.componentInstance.noShowActionId()).toBeNull();
+  });
+
+  it('clears the no-show action flag when marking no-show errors', async () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (appointmentsApi.markNoShow as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));
+
+    fixture.componentInstance.markNoShow({ id: 'appt-1' } as Appointment);
+
+    expect(fixture.componentInstance.noShowActionId()).toBeNull();
   });
 });

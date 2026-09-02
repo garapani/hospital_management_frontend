@@ -37,6 +37,8 @@ export class AppointmentDetail implements OnInit {
   readonly cancelRemarks = signal('');
   readonly cancelling = signal(false);
   readonly checkingIn = signal(false);
+  readonly completing = signal(false);
+  readonly markingNoShow = signal(false);
 
   readonly displayName = appointmentDisplayName;
   readonly statusSeverity = appointmentStatusSeverity;
@@ -124,6 +126,34 @@ export class AppointmentDetail implements OnInit {
         this.checkingIn.set(false);
       },
       error: () => this.checkingIn.set(false),
+    });
+  }
+
+  complete() {
+    const id = this.appointment()?.id;
+    if (!id) return;
+
+    this.completing.set(true);
+    this.appointmentsApi.complete(id).subscribe({
+      next: (updated) => {
+        this.appointment.set(updated);
+        this.completing.set(false);
+      },
+      error: () => this.completing.set(false),
+    });
+  }
+
+  markNoShow() {
+    const id = this.appointment()?.id;
+    if (!id) return;
+
+    this.markingNoShow.set(true);
+    this.appointmentsApi.markNoShow(id).subscribe({
+      next: (updated) => {
+        this.appointment.set(updated);
+        this.markingNoShow.set(false);
+      },
+      error: () => this.markingNoShow.set(false),
     });
   }
 }

@@ -103,4 +103,12 @@ export class AppointmentsApiService {
   checkIn(id: string) {
     return this.apiClient.post<Appointment>(`/appointments/${id}/check-in`, {});
   }
+
+  complete(id: string) {
+    return this.apiClient.post<Appointment>(`/appointments/${id}/complete`, {});
+  }
+
+  markNoShow(id: string) {
+    return this.apiClient.post<Appointment>(`/appointments/${id}/no-show`, {});
+  }
 }

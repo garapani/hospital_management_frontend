@@ -65,6 +65,10 @@
         @if (a.status === 'Scheduled') {
         <p-button label="Check In" icon="pi pi-check" [loading]="checkingIn()" (onClick)="checkIn()"></p-button>
         }
+        @if (a.status === 'Scheduled' || a.status === 'CheckedIn') {
+        <p-button label="Complete" icon="pi pi-verified" severity="success" [loading]="completing()" (onClick)="complete()"></p-button>
+        <p-button label="No-Show" icon="pi pi-user-minus" severity="warn" [text]="true" [loading]="markingNoShow()" (onClick)="markNoShow()"></p-button>
+        }
         @if (a.status !== 'Cancelled') {
         <p-button label="Cancel Appointment" icon="pi pi-ban" severity="danger" [text]="true" (onClick)="openCancelModal()"></p-button>
         }

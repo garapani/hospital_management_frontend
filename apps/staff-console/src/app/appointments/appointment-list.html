@@ -98,6 +98,24 @@
               (onClick)="checkIn(appt)"
             ></p-button>
             }
+            @if ((appt.status === 'Scheduled' || appt.status === 'CheckedIn') && auth.hasPermission('appointment.manage')) {
+            <p-button
+              label="Complete"
+              [text]="true"
+              size="small"
+              severity="success"
+              [loading]="completeActionId() === appt.id"
+              (onClick)="complete(appt)"
+            ></p-button>
+            <p-button
+              label="No-Show"
+              [text]="true"
+              size="small"
+              severity="warn"
+              [loading]="noShowActionId() === appt.id"
+              (onClick)="markNoShow(appt)"
+            ></p-button>
+            }
             <a [routerLink]="['/clinical/appointments', appt.id]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View</a>
           </td>
         </tr>

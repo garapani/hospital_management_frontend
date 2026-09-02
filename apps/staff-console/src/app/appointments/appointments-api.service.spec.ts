@@ -74,4 +74,26 @@ describe('AppointmentsApiService', () => {
     req.flush(checkedIn);
     expect(result).toEqual(checkedIn);
   });
+
+  it('completes an appointment', () => {
+    let result: unknown;
+    service.complete('appt-1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('https://gateway.example/api/appointments/appt-1/complete');
+    expect(req.request.method).toBe('POST');
+    const completed = { id: 'appt-1', status: 'Completed' };
+    req.flush(completed);
+    expect(result).toEqual(completed);
+  });
+
+  it('marks an appointment as a no-show', () => {
+    let result: unknown;
+    service.markNoShow('appt-1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('https://gateway.example/api/appointments/appt-1/no-show');
+    expect(req.request.method).toBe('POST');
+    const noShow = { id: 'appt-1', status: 'NoShow' };
+    req.flush(noShow);
+    expect(result).toEqual(noShow);
+  });
 });
