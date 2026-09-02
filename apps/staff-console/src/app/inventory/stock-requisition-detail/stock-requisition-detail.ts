@@ -15,13 +15,14 @@ import { InventoryApiService, StockRequisitionDetail as StockRequisitionDetailMo
 import { requisitionLineRemaining, requisitionStatusSeverity } from '../inventory.model.js';
 import { MasterDataApiService } from '../../master-data/master-data-api.service.js';
 import { Department } from '../../master-data/master-data.model.js';
+import { EntityName } from '../../directory/entity-name.js';
 
 const FULFILLABLE_STATUSES = new Set(['Pending', 'PartiallyFulfilled']);
 
 @Component({
   selector: 'hms-stock-requisition-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, TableModule, DialogModule, InputTextModule, TextareaModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, TableModule, DialogModule, InputTextModule, TextareaModule, EntityName],
   templateUrl: './stock-requisition-detail.html',
 })
 export class StockRequisitionDetail implements OnInit {

@@ -14,11 +14,12 @@ import { AuthService } from '@org/auth';
 
 import { InventoryApiService, InventoryVendor, PurchaseOrderDetail as PurchaseOrderDetailModel, PurchaseOrderItem } from '../inventory-api.service.js';
 import { purchaseOrderStatusSeverity } from '../inventory.model.js';
+import { EntityName } from '../../directory/entity-name.js';
 
 @Component({
   selector: 'hms-purchase-order-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, TableModule, DialogModule, InputTextModule, InputNumberModule, TextareaModule, DecimalPipe],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, TableModule, DialogModule, InputTextModule, InputNumberModule, TextareaModule, DecimalPipe, EntityName],
   templateUrl: './purchase-order-detail.html',
 })
 export class PurchaseOrderDetail implements OnInit {

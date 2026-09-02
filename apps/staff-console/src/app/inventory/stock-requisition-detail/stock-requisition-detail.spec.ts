@@ -6,6 +6,12 @@ import { StockRequisitionDetail } from './stock-requisition-detail.js';
 import { InventoryApiService, StockRequisitionDetail as StockRequisitionDetailModel } from '../inventory-api.service.js';
 import { MasterDataApiService } from '../../master-data/master-data-api.service.js';
 import { Department } from '../../master-data/master-data.model.js';
+import { DirectoryResolverService } from '../../directory/directory-resolver.service.js';
+
+const directoryResolverProvider = {
+  provide: DirectoryResolverService,
+  useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
+};
 
 describe('StockRequisitionDetail', () => {
   const requisition: StockRequisitionDetailModel = {
@@ -53,6 +59,7 @@ describe('StockRequisitionDetail', () => {
         { provide: MasterDataApiService, useValue: masterDataApi },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
+        directoryResolverProvider,
       ],
     });
 

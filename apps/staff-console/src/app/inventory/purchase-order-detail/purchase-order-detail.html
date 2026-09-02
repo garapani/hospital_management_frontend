@@ -72,7 +72,7 @@
       >
         <ng-template pTemplate="header">
           <tr>
-            <th class="table-header-cell">Item ID</th>
+            <th class="table-header-cell">Item</th>
             <th class="table-header-cell">Ordered Qty</th>
             <th class="table-header-cell">Received Qty</th>
             <th class="table-header-cell">Unit Cost</th>
@@ -84,7 +84,7 @@
         </ng-template>
         <ng-template pTemplate="body" let-line>
           <tr>
-            <td class="font-mono text-xs">{{ line.itemId }}</td>
+            <td><hms-entity-name type="item" [id]="line.itemId"></hms-entity-name></td>
             <td>{{ line.orderedQuantity }}</td>
             <td>{{ line.receivedQuantity }}</td>
             <td class="font-mono">{{ line.unitCost | number: '1.2-2' }}</td>
@@ -126,8 +126,8 @@
   @if (receiveLine(); as line) {
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
-      <label for="receiveItem" class="text-sm font-medium text-slate-700">Item</label>
-      <input id="receiveItem" pInputText [ngModel]="line.itemId" disabled class="w-full font-mono text-xs" />
+      <label class="text-sm font-medium text-slate-700">Item</label>
+      <div class="font-medium text-slate-900"><hms-entity-name type="item" [id]="line.itemId"></hms-entity-name></div>
     </div>
     <div class="flex flex-col gap-2">
       <label for="receiveQuantity" class="text-sm font-medium text-slate-700">Quantity Received</label>

@@ -68,7 +68,7 @@
       <p-table [value]="r.items" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
         <ng-template pTemplate="header">
           <tr>
-            <th class="table-header-cell">Item ID</th>
+            <th class="table-header-cell">Item</th>
             <th class="table-header-cell">Requested</th>
             <th class="table-header-cell">Fulfilled</th>
             <th class="table-header-cell">Remaining</th>
@@ -77,7 +77,7 @@
         </ng-template>
         <ng-template pTemplate="body" let-line>
           <tr>
-            <td class="font-mono text-xs">{{ line.itemId }}</td>
+            <td><hms-entity-name type="item" [id]="line.itemId"></hms-entity-name></td>
             <td>{{ line.requestedQuantity }}</td>
             <td>{{ line.fulfilledQuantity }}</td>
             <td>{{ remaining(line) }}</td>
@@ -119,8 +119,8 @@
   @if (fulfillLine(); as line) {
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
-      <label for="fulfillItem" class="text-sm font-medium text-slate-700">Item</label>
-      <input id="fulfillItem" pInputText [ngModel]="line.itemId" disabled class="w-full font-mono text-xs" />
+      <label class="text-sm font-medium text-slate-700">Item</label>
+      <div class="font-medium text-slate-900"><hms-entity-name type="item" [id]="line.itemId"></hms-entity-name></div>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">

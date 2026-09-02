@@ -4,6 +4,12 @@ import { of, throwError } from 'rxjs';
 import { AuthService } from '@org/auth';
 import { PurchaseOrderDetail } from './purchase-order-detail.js';
 import { InventoryApiService, PurchaseOrderDetail as PurchaseOrderDetailModel } from '../inventory-api.service.js';
+import { DirectoryResolverService } from '../../directory/directory-resolver.service.js';
+
+const directoryResolverProvider = {
+  provide: DirectoryResolverService,
+  useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
+};
 
 describe('PurchaseOrderDetail', () => {
   const purchaseOrder: PurchaseOrderDetailModel = {
@@ -50,6 +56,7 @@ describe('PurchaseOrderDetail', () => {
         { provide: InventoryApiService, useValue: inventoryApi },
         { provide: ActivatedRoute, useValue: activatedRoute },
         { provide: AuthService, useValue: auth },
+        directoryResolverProvider,
       ],
     });
 
