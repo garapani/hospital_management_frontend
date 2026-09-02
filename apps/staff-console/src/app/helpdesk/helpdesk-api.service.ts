@@ -25,6 +25,10 @@ export class HelpdeskApiService {
     return this.apiClient.get<TicketListResult>('/helpdesk/tickets', { params: query });
   }
 
+  getById(id: string): Observable<HelpdeskTicket> {
+    return this.apiClient.get<HelpdeskTicket>(`/helpdesk/tickets/${id}`);
+  }
+
   create(dto: CreateTicketDto): Observable<HelpdeskTicket> {
     return this.apiClient.post<HelpdeskTicket>('/helpdesk/tickets', dto);
   }

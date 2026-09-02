@@ -11,7 +11,10 @@ export interface HelpdeskTicket {
   priority: HelpdeskTicketPriority;
   status: HelpdeskTicketStatus;
   requesterAccountId: string;
+  /** Backend-joined display name (accounts.displayName) — null only if the account was hard-deleted. */
+  requesterName: string | null;
   assigneeAccountId: string | null;
+  assigneeName: string | null;
   resolvedBy: string | null;
   resolvedAt: string | null;
   closedAt: string | null;

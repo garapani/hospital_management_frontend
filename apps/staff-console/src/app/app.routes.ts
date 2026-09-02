@@ -137,6 +137,16 @@ export const appRoutes: Route[] = [
       {
         path: 'helpdesk',
         loadComponent: () => import('./helpdesk/helpdesk-list.js').then((m) => m.HelpdeskList),
+        // OR'd with HELPDESK_CREATE: every staff role can raise a ticket, but only
+        // Helpdesk Agent/Hospital Admin/Super Admin hold HELPDESK_READ — a create-only role
+        // still needs to reach this screen to see and file their own tickets.
+        canActivate: [permissionGuard([Permissions.HELPDESK_READ, Permissions.HELPDESK_CREATE])],
+      },
+      {
+        path: 'helpdesk/:id',
+        // Not OR'd with HELPDESK_CREATE — GET /helpdesk/tickets/:id is HELPDESK_READ-only on the
+        // backend, so a create-only user reaching this route would always 403.
+        loadComponent: () => import('./helpdesk/helpdesk-ticket-detail.js').then((m) => m.HelpdeskTicketDetail),
         canActivate: [permissionGuard(Permissions.HELPDESK_READ)],
       },
       {

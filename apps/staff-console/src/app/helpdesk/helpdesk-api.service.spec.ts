@@ -40,6 +40,14 @@ describe('HelpdeskApiService', () => {
     req.flush({ data: [], total: 0 });
   });
 
+  it('fetches a single ticket by id', () => {
+    service.getById('t1').subscribe();
+
+    const req = httpMock.expectOne('https://gateway.example/api/helpdesk/tickets/t1');
+    expect(req.request.method).toBe('GET');
+    req.flush({});
+  });
+
   it('creates a ticket', () => {
     const dto = { title: 'Printer broken', description: 'Ward 3 printer offline' };
     service.create(dto).subscribe();

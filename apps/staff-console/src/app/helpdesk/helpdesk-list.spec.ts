@@ -1,12 +1,14 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { HelpdeskList } from './helpdesk-list.js';
 import { HelpdeskApiService } from './helpdesk-api.service.js';
 
 describe('HelpdeskList', () => {
-  function setup() {
+  function setup(opts: { canRead?: boolean; canCreate?: boolean } = {}) {
     const api = {
       list: jest.fn().mockReturnValue(of({ data: [], total: 0 })),
       create: jest.fn().mockReturnValue(of({ id: 't1', ticketNumber: 'HD-0001' })),
@@ -16,12 +18,17 @@ describe('HelpdeskList', () => {
       close: jest.fn().mockReturnValue(of({})),
     } as unknown as HelpdeskApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
+    const auth = {
+      hasPermission: (p: string) => (p === 'helpdesk.read' ? (opts.canRead ?? true) : (opts.canCreate ?? true)),
+    } as unknown as AuthService;
 
     TestBed.configureTestingModule({
       imports: [HelpdeskList],
       providers: [
+        provideRouter([]),
         { provide: HelpdeskApiService, useValue: api },
         { provide: MessageService, useValue: messageService },
+        { provide: AuthService, useValue: auth },
       ],
     });
 
@@ -35,6 +42,36 @@ describe('HelpdeskList', () => {
     await fixture.whenStable();
 
     expect(api.list).toHaveBeenCalledWith({ q: undefined, status: undefined, page: 1, limit: 20 });
+  });
+
+  it('exposes canRead from the helpdesk.read permission', () => {
+    const { fixture } = setup({ canRead: false });
+    expect(fixture.componentInstance.canRead).toBe(false);
+  });
+
+  it('does not fetch the ticket list when the user lacks helpdesk.read', async () => {
+    const { fixture, api } = setup({ canRead: false });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(api.list).not.toHaveBeenCalled();
+  });
+
+  it('exposes canCreate from the helpdesk.create permission', () => {
+    const { fixture } = setup({ canCreate: false });
+    expect(fixture.componentInstance.canCreate).toBe(false);
+  });
+
+  it('does not refresh the ticket list after creating a ticket when the user lacks helpdesk.read', async () => {
+    const { fixture, api } = setup({ canRead: false });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.createForm.set({ title: 'Printer broken', description: 'Ward 3' });
+    fixture.componentInstance.submitCreate();
+    await fixture.whenStable();
+
+    expect(api.list).not.toHaveBeenCalled();
   });
 
   it('creates a ticket and toasts success', async () => {

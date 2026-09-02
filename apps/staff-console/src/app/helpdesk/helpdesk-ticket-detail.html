@@ -1,0 +1,93 @@
+<p-toast></p-toast>
+
+@if (loading()) {
+<div class="surface-panel p-6 text-sm text-slate-500">Loading ticket…</div>
+} @else if (!ticket()) {
+<div class="surface-panel p-6 text-sm text-slate-500">Ticket not found.</div>
+} @else {
+<div class="flex flex-col gap-6">
+  <div class="surface-panel p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <button type="button" (click)="goBack()" class="text-sm text-sky-600 hover:text-sky-800 mb-2">&larr; Back to Helpdesk</button>
+        <h1 class="page-title font-mono">{{ ticket()!.ticketNumber }}</h1>
+        <p class="page-subtitle">{{ ticket()!.title }}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <p-tag [value]="ticket()!.priority" [severity]="priorityColor(ticket()!.priority)" styleClass="rounded-full px-3"></p-tag>
+        <p-tag
+          [value]="ticket()!.status"
+          [severity]="ticket()!.status === 'Resolved' || ticket()!.status === 'Closed' ? 'success' : ticket()!.status === 'InProgress' ? 'info' : 'secondary'"
+          styleClass="rounded-full px-3"
+        ></p-tag>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+      <div>
+        <span class="text-slate-500">Requester</span>
+        <p class="font-medium">{{ ticket()!.requesterName ?? ticket()!.requesterAccountId }}</p>
+      </div>
+      <div>
+        <span class="text-slate-500">Assignee</span>
+        <p class="font-medium">{{ ticket()!.assigneeName ?? (ticket()!.assigneeAccountId ? ticket()!.assigneeAccountId : 'Unassigned') }}</p>
+      </div>
+      <div>
+        <span class="text-slate-500">Category</span>
+        <p class="font-medium">{{ ticket()!.category ?? '—' }}</p>
+      </div>
+      <div>
+        <span class="text-slate-500">Resolved</span>
+        <p class="font-medium">{{ ticket()!.resolvedAt ? (ticket()!.resolvedAt | date: 'medium') : '—' }}</p>
+      </div>
+    </div>
+
+    <div>
+      <span class="text-sm text-slate-500">Description</span>
+      <p class="mt-1 whitespace-pre-wrap text-sm">{{ ticket()!.description }}</p>
+    </div>
+
+    @if (canManage) {
+    <div class="flex gap-2 pt-2 border-t border-slate-200">
+      <p-button label="Assign" [text]="true" size="small" [loading]="actionLoading()" (onClick)="openAssignModal()"></p-button>
+      @if (ticket()!.status === 'Open') {
+      <p-button label="Start" [text]="true" size="small" [loading]="actionLoading()" (onClick)="start()"></p-button>
+      }
+      @if (ticket()!.status === 'InProgress') {
+      <p-button label="Resolve" [text]="true" size="small" [loading]="actionLoading()" (onClick)="resolveTicket()"></p-button>
+      }
+      @if (ticket()!.status === 'Resolved') {
+      <p-button label="Close" [text]="true" size="small" [loading]="actionLoading()" (onClick)="close()"></p-button>
+      }
+    </div>
+    }
+  </div>
+</div>
+}
+
+<!-- Assign Modal -->
+<p-dialog header="Assign Ticket" [(visible)]="showAssignModal" [modal]="true" [style]="{ width: '420px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="assigneeSelect" class="text-sm font-medium text-slate-700">Assignee</label>
+      <p-select
+        inputId="assigneeSelect"
+        [options]="assigneeOptions()"
+        optionLabel="displayName"
+        optionValue="id"
+        [ngModel]="selectedAssigneeId()"
+        (ngModelChange)="selectedAssigneeId.set($event)"
+        [loading]="assigneeOptionsLoading()"
+        placeholder="Select a Helpdesk Agent or Admin"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showAssignModal.set(false)"></p-button>
+      <p-button label="Assign" [loading]="assigning()" (onClick)="submitAssign()" [disabled]="!selectedAssigneeId()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

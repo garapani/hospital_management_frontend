@@ -19,15 +19,19 @@ export const authGuard: CanActivateFn = () => {
   return inject(Router).createUrlTree(['/login']);
 };
 
-/** 
- * Permission guard that checks if user has the required permission.
+/**
+ * Permission guard that checks if user has the required permission(s).
  * hasPermission() is false when unauthenticated too, so this alone covers both cases.
- * @param permission - The permission string to check against user's claims
+ * @param permission - A permission string, or an array checked with OR semantics (any one
+ *   grants access) — for a screen reachable by more than one permission, e.g. a worklist a
+ *   read-scoped role and a create-only role both need (Development-Standards.md, Helpdesk
+ *   reachability pattern).
  */
-export function permissionGuard(permission: string): CanActivateFn {
+export function permissionGuard(permission: string | string[]): CanActivateFn {
+  const permissions = Array.isArray(permission) ? permission : [permission];
   return () => {
     const authService = inject(AuthService);
-    if (authService.hasPermission(permission)) {
+    if (permissions.some((p) => authService.hasPermission(p))) {
       return true;
     }
     return inject(Router).createUrlTree(['/login']);

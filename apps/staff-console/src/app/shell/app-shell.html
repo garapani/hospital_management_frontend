@@ -253,7 +253,7 @@
     </a>
     }
     }
-    @if (auth.hasPermission('fraction.read') || auth.hasPermission('helpdesk.read') || auth.hasPermission('ssu.read')) {
+    @if (auth.hasPermission('fraction.read') || auth.hasPermission('helpdesk.read') || auth.hasPermission('helpdesk.create') || auth.hasPermission('ssu.read')) {
     <div class="nav-section-label">
       Back Office
     </div>
@@ -267,7 +267,7 @@
       <i class="pi pi-percentage text-base"></i>
       Doctor Revenue Share
     </a>
-    } @if (auth.hasPermission('helpdesk.read')) {
+    } @if (auth.hasPermission('helpdesk.read') || auth.hasPermission('helpdesk.create')) {
     <a
       routerLink="/helpdesk"
       routerLinkActive="nav-item-active"

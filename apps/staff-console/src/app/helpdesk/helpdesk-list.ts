@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
@@ -9,6 +10,7 @@ import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { Observable } from 'rxjs';
 import { ApiError } from '@org/api-client';
+import { AuthService } from '@org/auth';
 import { HelpdeskApiService } from './helpdesk-api.service.js';
 import { CreateTicketDto, HELPDESK_TICKET_PRIORITIES, HelpdeskTicket, HelpdeskTicketPriority, HelpdeskTicketStatus } from './helpdesk.model.js';
 
@@ -16,13 +18,23 @@ const DEFAULT_PAGE_SIZE = 20;
 const EMPTY_FORM: CreateTicketDto = { title: '', description: '' };
 
 @Component({
-  imports: [FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, SelectModule],
+  imports: [FormsModule, RouterModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, SelectModule],
   selector: 'hms-helpdesk-list',
   templateUrl: './helpdesk-list.html',
 })
 export class HelpdeskList {
   private readonly api = inject(HelpdeskApiService);
   private readonly messageService = inject(MessageService);
+  readonly auth = inject(AuthService);
+
+  // GET /helpdesk/tickets is helpdesk.read-only on the backend — a create-only role (most staff
+  // roles, who can raise a ticket but not browse everyone else's) would otherwise land on this
+  // screen (see the OR'd route guard in app.routes.ts) and have every list request 403.
+  readonly canRead = this.auth.hasPermission('helpdesk.read');
+  // Helpdesk Agent holds helpdesk.read/manage but not helpdesk.create (seed-rbac-catalog.ts) — the
+  // New Ticket button needs its own gate, separate from canRead, or that role sees a button whose
+  // Save always 403s.
+  readonly canCreate = this.auth.hasPermission('helpdesk.create');
 
   readonly priorities = HELPDESK_TICKET_PRIORITIES;
   readonly statusOptions: { label: string; value: HelpdeskTicketStatus | null }[] = [
@@ -85,7 +97,9 @@ export class HelpdeskList {
       next: (ticket) => {
         this.createSaving.set(false);
         this.showCreateModal.set(false);
-        this.load(1, this.pageSize());
+        if (this.canRead) {
+          this.load(1, this.pageSize());
+        }
         this.messageService.add({ severity: 'success', summary: 'Ticket created', detail: ticket.ticketNumber });
       },
       error: (err: ApiError) => {
@@ -130,6 +144,8 @@ export class HelpdeskList {
   }
 
   constructor() {
-    this.load(1, this.pageSize());
+    if (this.canRead) {
+      this.load(1, this.pageSize());
+    }
   }
 }
