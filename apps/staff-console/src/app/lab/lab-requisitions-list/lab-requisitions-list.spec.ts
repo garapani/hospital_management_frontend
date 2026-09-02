@@ -4,11 +4,18 @@ import { of, throwError } from 'rxjs';
 import { AuthService } from '@org/auth';
 import { LabRequisitionsList } from './lab-requisitions-list.js';
 import { LabApiService, LabRequisition } from '../lab-api.service.js';
+import { DirectoryResolverService } from '../../directory/directory-resolver.service.js';
+
+const directoryResolverProvider = {
+  provide: DirectoryResolverService,
+  useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
+};
 
 describe('LabRequisitionsList', () => {
   const requisition: LabRequisition = {
     id: 'req-1',
     orderItemId: 'order-item-1',
+    patientId: 'patient-1',
     testId: 'test-1',
     requisitionNumber: 'LAB-0001',
     specimenType: 'Blood',
@@ -36,6 +43,7 @@ describe('LabRequisitionsList', () => {
         provideRouter([]),
         { provide: LabApiService, useValue: labApi },
         { provide: AuthService, useValue: auth },
+        directoryResolverProvider,
       ],
     });
 
@@ -102,6 +110,7 @@ describe('LabRequisitionsList', () => {
         provideRouter([]),
         { provide: LabApiService, useValue: labApiFail },
         { provide: AuthService, useValue: auth },
+        directoryResolverProvider,
       ],
     });
     const failingFixture = TestBed.createComponent(LabRequisitionsList);

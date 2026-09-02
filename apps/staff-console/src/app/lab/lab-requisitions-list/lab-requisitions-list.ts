@@ -13,6 +13,7 @@ import { AuthService } from '@org/auth';
 
 import { LabApiService, LabRequisition, LabRequisitionStatus } from '../lab-api.service.js';
 import { labRequisitionStatusSeverity } from '../lab.model.js';
+import { EntityName } from '../../directory/entity-name.js';
 
 const STATUS_OPTIONS: { label: string; value: LabRequisitionStatus | null }[] = [
   { label: 'All', value: null },
@@ -26,7 +27,7 @@ const STATUS_OPTIONS: { label: string; value: LabRequisitionStatus | null }[] = 
 @Component({
   selector: 'hms-lab-requisitions-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, TableModule, ButtonModule, TagModule, InputTextModule, SelectModule, ToastModule],
+  imports: [CommonModule, RouterModule, FormsModule, TableModule, ButtonModule, TagModule, InputTextModule, SelectModule, ToastModule, EntityName],
   providers: [MessageService],
   templateUrl: './lab-requisitions-list.html',
 })

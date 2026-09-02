@@ -5,11 +5,18 @@ import { ConfirmationService, Confirmation } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { LabRequisitionDetail } from './lab-requisition-detail.js';
 import { LabApiService, LabRequisition, LabTestComponent } from '../lab-api.service.js';
+import { DirectoryResolverService } from '../../directory/directory-resolver.service.js';
+
+const directoryResolverProvider = {
+  provide: DirectoryResolverService,
+  useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
+};
 
 describe('LabRequisitionDetail', () => {
   const requisition: LabRequisition = {
     id: 'req-1',
     orderItemId: 'order-item-1',
+    patientId: 'patient-1',
     testId: 'test-1',
     requisitionNumber: 'LAB-0001',
     specimenType: 'Blood',
@@ -70,6 +77,7 @@ describe('LabRequisitionDetail', () => {
         { provide: LabApiService, useValue: labApi },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
+        directoryResolverProvider,
       ],
     });
 

@@ -13,6 +13,7 @@ import { AuthService } from '@org/auth';
 
 import { RadiologyApiService } from './radiology-api.service.js';
 import { RADIOLOGY_STATUSES, RadiologyRequisition, radiologyStatusSeverity } from './radiology.model.js';
+import { EntityName } from '../directory/entity-name.js';
 
 @Component({
   selector: 'hms-radiology-requisitions-list',
@@ -27,6 +28,7 @@ import { RADIOLOGY_STATUSES, RadiologyRequisition, radiologyStatusSeverity } fro
     InputTextModule,
     SelectModule,
     ToastModule,
+    EntityName,
   ],
   providers: [MessageService],
   templateUrl: './radiology-requisitions-list.html',

@@ -6,6 +6,12 @@ import { AuthService } from '@org/auth';
 import { RadiologyRequisitionDetail } from './radiology-requisition-detail.js';
 import { RadiologyApiService } from './radiology-api.service.js';
 import { RadiologyRequisition } from './radiology.model.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
+
+const directoryResolverProvider = {
+  provide: DirectoryResolverService,
+  useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
+};
 
 function autoAcceptConfirms(fixture: { debugElement: { injector: { get(token: unknown): ConfirmationService } } }) {
   const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
@@ -19,6 +25,7 @@ describe('RadiologyRequisitionDetail', () => {
   const requisition: RadiologyRequisition = {
     id: 'rad-1',
     orderItemId: 'order-item-1',
+    patientId: 'patient-1',
     imagingItemId: 'img-item-1',
     requisitionNumber: 'RR-2026-0001',
     status: 'Scanned',
@@ -59,6 +66,7 @@ describe('RadiologyRequisitionDetail', () => {
         { provide: RadiologyApiService, useValue: radiologyApi },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
+        directoryResolverProvider,
       ],
     });
 
@@ -89,6 +97,7 @@ describe('RadiologyRequisitionDetail', () => {
         { provide: RadiologyApiService, useValue: radiologyApi },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
+        directoryResolverProvider,
       ],
     });
     const fixture = TestBed.createComponent(RadiologyRequisitionDetail);

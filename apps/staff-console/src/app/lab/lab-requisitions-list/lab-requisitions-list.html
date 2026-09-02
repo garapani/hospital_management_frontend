@@ -47,6 +47,7 @@
       <ng-template pTemplate="header">
         <tr>
           <th class="table-header-cell">Requisition #</th>
+          <th class="table-header-cell">Patient</th>
           <th class="table-header-cell">Order Item</th>
           <th class="table-header-cell">Test</th>
           <th class="table-header-cell">Specimen</th>
@@ -57,6 +58,13 @@
       <ng-template pTemplate="body" let-req>
         <tr [class]="'status-rail-' + statusSeverity(req.status)">
           <td class="font-medium font-mono text-xs">{{ req.requisitionNumber }}</td>
+          <td>
+            @if (req.patientId) {
+            <hms-entity-name type="patient" [id]="req.patientId"></hms-entity-name>
+            } @else {
+            <span class="text-slate-400">—</span>
+            }
+          </td>
           <td class="font-mono text-xs">{{ req.orderItemId }}</td>
           <td class="font-mono text-xs">{{ req.testId }}</td>
           <td>{{ req.specimenType }}</td>
@@ -68,7 +76,7 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="6" class="text-center p-6 text-slate-500">No requisitions match the current filters.</td>
+          <td colspan="7" class="text-center p-6 text-slate-500">No requisitions match the current filters.</td>
         </tr>
       </ng-template>
     </p-table>

@@ -15,6 +15,7 @@ import { AuthService } from '@org/auth';
 
 import { LabApiService, LabRequisition, LabResult, LabTestComponent } from '../lab-api.service.js';
 import { labRequisitionStatusSeverity, componentReferenceRange, computeIsAbnormal, hasNumericRange } from '../lab.model.js';
+import { EntityName } from '../../directory/entity-name.js';
 
 export interface DisplayedResult {
   component: LabTestComponent;
@@ -24,7 +25,7 @@ export interface DisplayedResult {
 @Component({
   selector: 'hms-lab-requisition-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, DialogModule, ToastModule, ConfirmDialogModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, DialogModule, ToastModule, ConfirmDialogModule, EntityName],
   providers: [MessageService, ConfirmationService],
   templateUrl: './lab-requisition-detail.html',
 })

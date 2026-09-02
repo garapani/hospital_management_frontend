@@ -21,6 +21,8 @@ export interface RadiologyOrderItem {
 export interface RadiologyRequisition {
   id: string;
   orderItemId: string;
+  /** Resolved server-side via the order item's order — null only if the join somehow misses. */
+  patientId: string | null;
   imagingItemId: string;
   requisitionNumber: string;
   status: string; // 'Pending' | 'Scanned' | 'ReportEntered' | 'Verified' | 'Cancelled'

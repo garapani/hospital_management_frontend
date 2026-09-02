@@ -7,6 +7,8 @@ export type LabRequisitionStatus = 'Pending' | 'SampleCollected' | 'ResultsEnter
 export interface LabRequisition {
   id: string;
   orderItemId: string;
+  /** Resolved server-side via the order item's order — null only if the join somehow misses. */
+  patientId: string | null;
   testId: string;
   requisitionNumber: string;
   specimenType: string;

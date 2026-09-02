@@ -5,6 +5,12 @@ import { MessageService } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { RadiologyRequisitionsList } from './radiology-requisitions-list.js';
 import { RadiologyApiService } from './radiology-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
+
+const directoryResolverProvider = {
+  provide: DirectoryResolverService,
+  useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
+};
 
 describe('RadiologyRequisitionsList', () => {
   function setup(queryParams: Record<string, string> = {}) {
@@ -24,6 +30,7 @@ describe('RadiologyRequisitionsList', () => {
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
         MessageService,
+        directoryResolverProvider,
       ],
     });
 
@@ -96,6 +103,7 @@ describe('RadiologyRequisitionsList', () => {
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
         MessageService,
+        directoryResolverProvider,
       ],
     });
     const fixture = TestBed.createComponent(RadiologyRequisitionsList);

@@ -14,11 +14,12 @@ import { AuthService } from '@org/auth';
 
 import { RadiologyApiService } from './radiology-api.service.js';
 import { NON_TERMINAL_RADIOLOGY_STATUSES, RadiologyRequisition, radiologyStatusSeverity } from './radiology.model.js';
+import { EntityName } from '../directory/entity-name.js';
 
 @Component({
   selector: 'hms-radiology-requisition-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, DialogModule, ToastModule, ConfirmDialogModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, DialogModule, ToastModule, ConfirmDialogModule, EntityName],
   providers: [MessageService, ConfirmationService],
   templateUrl: './radiology-requisition-detail.html',
 })
