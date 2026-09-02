@@ -152,7 +152,7 @@
               <div class="px-4 py-3 border-b border-slate-200">
                 <p class="text-sm font-semibold text-slate-800">{{ displayName() || 'Signed in' }}</p>
                 <p class="text-xs text-slate-500">
-                  @if (currentUser()?.roles?.[0]) { {{ currentUser()?.roles?.[0] }} · }
+                  @if (roleLabel()) { {{ roleLabel() }} · }
                   {{ currentUser()?.hospitalId || '—' }}
                 </p>
               </div>

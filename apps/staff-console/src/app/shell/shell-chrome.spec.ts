@@ -11,11 +11,11 @@ import { BrandingService } from '../branding/branding.service.js';
 import { ShellChrome } from './shell-chrome.js';
 
 describe('ShellChrome user menu', () => {
-  function setup(options: { changePassword?: unknown; displayName?: string } = {}) {
+  function setup(options: { changePassword?: unknown; displayName?: string; roles?: string[] } = {}) {
     const authService = {
       isPlatformAdmin: () => false,
       currentUser: () => ({
-        roles: ['Hospital Admin'],
+        roles: options.roles ?? ['Hospital Admin'],
         hospitalId: 'demo',
         displayName: options.displayName,
       }),
@@ -98,6 +98,15 @@ describe('ShellChrome user menu', () => {
     const { fixture } = setup();
 
     expect(fixture.componentInstance.userInitials()).toBe('HA');
+  });
+
+  it('shows every assigned role in the header, not just the first, for a multi-role account', () => {
+    const { fixture } = setup({ roles: ['Receptionist / Front Desk', 'Nurse'] });
+    openUserMenu(fixture);
+
+    expect(fixture.componentInstance.roleLabel()).toBe('Receptionist / Front Desk, Nurse');
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Receptionist / Front Desk, Nurse');
   });
 
   it('changes the password via the signed-in endpoint and toasts success', () => {

@@ -87,6 +87,10 @@ export class ShellChrome implements OnInit, OnDestroy {
     return user?.displayName || user?.roles[0] || null;
   });
 
+  // A user can hold more than one role (e.g. Front Desk covering Nurse duties) — show all of
+  // them, not just roles[0], or the header would arbitrarily hide half of what the account can do.
+  readonly roleLabel = computed(() => this.currentUser()?.roles.join(', ') || null);
+
   readonly userInitials = computed(() => {
     const label = this.displayName();
     if (!label) return 'AU'; // "Anonymous User" — no roles/displayName at all (unauthenticated edge case).
