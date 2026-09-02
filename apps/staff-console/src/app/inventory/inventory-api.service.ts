@@ -40,6 +40,15 @@ export interface InventoryItem {
   updatedAt: string;
 }
 
+export interface LowStockItem {
+  itemId: string;
+  code: string;
+  name: string;
+  reorderLevel: string;
+  minimumStock: string;
+  availableQuantity: string;
+}
+
 export interface InventoryVendor {
   id: string;
   name: string;
@@ -183,6 +192,10 @@ export class InventoryApiService {
 
   listVendors(): Observable<InventoryVendor[]> {
     return this.api.get<InventoryVendor[]>('/inventory/vendors');
+  }
+
+  listLowStockItems(): Observable<LowStockItem[]> {
+    return this.api.get<LowStockItem[]>('/inventory/purchase-orders/stock-balances/low-stock');
   }
 
   // ---- Procurement (purchase orders) ----

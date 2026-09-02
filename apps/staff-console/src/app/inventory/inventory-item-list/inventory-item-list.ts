@@ -13,6 +13,7 @@ import {
   InventoryItem,
   InventoryItemCategory,
   InventoryItemSubCategory,
+  LowStockItem,
 } from '../inventory-api.service.js';
 
 @Component({
@@ -35,6 +36,8 @@ export class InventoryItemList {
   readonly selectedCategoryId = signal('');
   readonly selectedSubCategoryId = signal('');
 
+  readonly lowStockItems = signal<LowStockItem[]>([]);
+
   // switchMap cancels a still-in-flight sub-category/item lookup the moment a newer category/
   // sub-category is picked, so a slow response to an earlier pick can never land after — and
   // overwrite — a faster response to a later one. See Development-Standards.md §120/§125.
@@ -43,6 +46,7 @@ export class InventoryItemList {
 
   constructor() {
     this.loadCategories();
+    this.loadLowStockItems();
 
     this.categoryChangeTrigger
       .pipe(
@@ -95,6 +99,15 @@ export class InventoryItemList {
         this.categoriesLoading.set(false);
       },
       error: () => this.categoriesLoading.set(false),
+    });
+  }
+
+  loadLowStockItems(): void {
+    // Best-effort: a failed low-stock lookup shouldn't block the rest of the screen, so it just
+    // leaves the banner hidden rather than surfacing an error of its own.
+    this.inventoryApi.listLowStockItems().subscribe({
+      next: (items) => this.lowStockItems.set(items),
+      error: () => this.lowStockItems.set([]),
     });
   }
 

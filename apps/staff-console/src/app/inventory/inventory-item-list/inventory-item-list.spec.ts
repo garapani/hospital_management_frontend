@@ -1,14 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import { Subject, of, throwError } from 'rxjs';
 import { InventoryItemList } from './inventory-item-list.js';
-import { InventoryApiService, InventoryItem, InventoryItemSubCategory } from '../inventory-api.service.js';
+import { InventoryApiService, InventoryItem, InventoryItemSubCategory, LowStockItem } from '../inventory-api.service.js';
 
 describe('InventoryItemList', () => {
-  function setup() {
+  function setup(opts: { lowStockItems?: LowStockItem[] | 'error' } = {}) {
     const inventoryApi = {
       listCategories: jest.fn().mockReturnValue(of([])),
       listSubCategories: jest.fn().mockReturnValue(of([])),
       listItemsBySubCategory: jest.fn().mockReturnValue(of([])),
+      listLowStockItems: jest.fn().mockReturnValue(
+        opts.lowStockItems === 'error' ? throwError(() => new Error('boom')) : of(opts.lowStockItems ?? []),
+      ),
     } as unknown as InventoryApiService;
 
     TestBed.configureTestingModule({
@@ -26,6 +29,28 @@ describe('InventoryItemList', () => {
     await fixture.whenStable();
 
     expect(inventoryApi.listCategories).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads low-stock items on init and exposes them for the banner', async () => {
+    const lowStockItems: LowStockItem[] = [
+      { itemId: 'item-1', code: 'PCM-001', name: 'Paracetamol', reorderLevel: '20', minimumStock: '10', availableQuantity: '5' },
+    ];
+    const { fixture, inventoryApi } = setup({ lowStockItems });
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(inventoryApi.listLowStockItems).toHaveBeenCalledTimes(1);
+    expect(fixture.componentInstance.lowStockItems()).toEqual(lowStockItems);
+  });
+
+  it('leaves the low-stock list empty (no banner) rather than failing the page when the lookup errors', async () => {
+    const { fixture } = setup({ lowStockItems: 'error' });
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.lowStockItems()).toEqual([]);
   });
 
   it('loads sub-categories when a category is selected and resets dependent state', async () => {

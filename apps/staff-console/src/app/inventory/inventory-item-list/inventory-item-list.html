@@ -4,6 +4,28 @@
     <p class="text-sm text-slate-500 mt-1">Browse the item catalog by category and sub-category.</p>
   </div>
 
+  @if (lowStockItems().length > 0) {
+  <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3" role="status">
+    <i class="pi pi-exclamation-triangle text-amber-600 mt-0.5"></i>
+    <div class="flex-1">
+      <p class="text-sm font-semibold text-amber-800">
+        {{ lowStockItems().length }} item{{ lowStockItems().length === 1 ? '' : 's' }} at or below reorder level
+      </p>
+      <ul class="mt-2 flex flex-col gap-1">
+        @for (item of lowStockItems().slice(0, 5); track item.itemId) {
+        <li class="text-sm text-amber-700 flex items-center justify-between gap-4">
+          <span>{{ item.name }} <span class="font-mono text-xs text-amber-600">({{ item.code }})</span></span>
+          <span class="font-mono text-xs">{{ item.availableQuantity }} available / reorder at {{ item.reorderLevel }}</span>
+        </li>
+        }
+      </ul>
+      @if (lowStockItems().length > 5) {
+      <p class="text-xs text-amber-600 mt-1">+ {{ lowStockItems().length - 5 }} more</p>
+      }
+    </div>
+  </div>
+  }
+
   <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-wrap items-end gap-3">
     <div class="flex flex-col gap-2">
       <label for="filterCategory" class="text-xs font-semibold text-slate-600">Category</label>
