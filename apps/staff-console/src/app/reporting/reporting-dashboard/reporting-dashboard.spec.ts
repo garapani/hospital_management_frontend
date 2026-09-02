@@ -4,6 +4,7 @@ import { AuthService } from '@org/auth';
 import { ReportingDashboard } from './reporting-dashboard.js';
 import { ReportingApiService } from '../reporting-api.service.js';
 import { EventCountRow, ReportingEvent, RevenueRow } from '../reporting.model.js';
+import { DirectoryResolverService } from '../../directory/directory-resolver.service.js';
 
 describe('ReportingDashboard', () => {
   const DEFAULT_EVENTS = { items: [], total: 0 };
@@ -22,6 +23,7 @@ describe('ReportingDashboard', () => {
       providers: [
         { provide: ReportingApiService, useValue: reportingApi },
         { provide: AuthService, useValue: auth },
+        { provide: DirectoryResolverService, useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService },
       ],
     });
 

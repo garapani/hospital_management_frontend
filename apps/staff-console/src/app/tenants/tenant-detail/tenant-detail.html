@@ -632,7 +632,7 @@
           <p class="text-xs text-slate-500">
             {{ event.occurredAt | date: 'medium' }}
             @if (event.changedByAccountId) {
-            • by account {{ event.changedByAccountId.slice(0, 8) }}
+            • by <hms-entity-name type="doctor" [id]="event.changedByAccountId"></hms-entity-name>
             }
           </p>
         </div>

@@ -17,9 +17,11 @@ import {
   REPORTING_EVENT_TYPES,
   aggregateEventCounts,
   eventTypeSeverity,
+  reportingEventSubjectRef,
   sumRevenue,
   totalEventCount,
 } from '../reporting.model.js';
+import { EntityName } from '../../directory/entity-name.js';
 
 const PAGE_SIZE = 20;
 
@@ -38,12 +40,14 @@ const PAGE_SIZE = 20;
     InputTextModule,
     SelectModule,
     TabsModule,
+    EntityName,
   ],
   templateUrl: './reporting-dashboard.html',
 })
 export class ReportingDashboard {
   private readonly reportingApi = inject(ReportingApiService);
   readonly auth = inject(AuthService);
+  readonly subjectRef = reportingEventSubjectRef;
 
   readonly activeTab = signal('overview');
 

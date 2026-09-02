@@ -70,7 +70,7 @@
       </ng-template>
       <ng-template pTemplate="body" let-slip>
         <tr>
-          <td class="font-mono text-slate-600 border-b border-slate-200">{{ slip.employeeId }}</td>
+          <td class="text-slate-700 border-b border-slate-200"><hms-entity-name type="employee" [id]="slip.employeeId"></hms-entity-name></td>
           <td class="text-slate-700 border-b border-slate-200">
             {{ monthNames[slip.periodMonth] }} {{ slip.periodYear }}
           </td>

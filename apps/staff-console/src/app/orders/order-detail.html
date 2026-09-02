@@ -4,13 +4,7 @@
   <div class="flex items-center gap-4">
     <p-button icon="pi pi-arrow-left" [text]="true" severity="secondary" ariaLabel="Back to orders" (onClick)="goBack()"></p-button>
     <div>
-      <h1 class="page-title">
-        @if (order(); as o) {
-        Order {{ o.id }}
-        } @else {
-        Order
-        }
-      </h1>
+      <h1 class="page-title">Order</h1>
       @if (order(); as o) {
       <p class="text-sm text-slate-500 mt-1">Placed {{ o.orderedAt | date: 'medium' }}</p>
       }
@@ -52,13 +46,13 @@
         @if (o.sourceAppointmentId) {
         <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Source Appointment</div>
-          <div class="font-medium text-slate-900 font-mono text-xs">{{ o.sourceAppointmentId }}</div>
+          <a [routerLink]="['/clinical/appointments', o.sourceAppointmentId]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View Appointment</a>
         </div>
         }
         @if (o.sourceAdmissionId) {
         <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Source Admission</div>
-          <div class="font-medium text-slate-900 font-mono text-xs">{{ o.sourceAdmissionId }}</div>
+          <a [routerLink]="['/admissions', o.sourceAdmissionId]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View Admission</a>
         </div>
         }
         @if (o.notes) {

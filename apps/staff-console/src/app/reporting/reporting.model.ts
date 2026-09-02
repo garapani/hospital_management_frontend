@@ -46,6 +46,40 @@ export const REPORTING_EVENT_TYPES = [
   'BedTransferred',
 ];
 
+/**
+ * `entityId` is a raw table PK (an Order, Payment, Deposit, BedTransfer row — none of which have
+ * a human-readable "name" of their own), so it isn't worth resolving directly. Every event's
+ * `payload` already carries a patient/invoice/bed reference though (built by
+ * `ReportingSubscriber.buildPayload` per event type) — that's the thing worth showing resolved.
+ * Returns null for an event type this doesn't recognize, so the caller can fall back to entityId.
+ */
+export function reportingEventSubjectRef(
+  event: Pick<ReportingEvent, 'eventType' | 'payload'>,
+): { type: 'patient' | 'invoice' | 'bed'; id: string } | null {
+  switch (event.eventType) {
+    case 'OrderPlaced':
+    case 'InvoiceCreated':
+    case 'DepositReceived':
+    case 'PatientAdmitted': {
+      const patientId = event.payload['patientId'];
+      return typeof patientId === 'string' ? { type: 'patient', id: patientId } : null;
+    }
+    case 'PaymentRecorded':
+    case 'InvoiceReturned': {
+      const invoiceId = event.payload['invoiceId'];
+      return typeof invoiceId === 'string' ? { type: 'invoice', id: invoiceId } : null;
+    }
+    case 'BedTransferred': {
+      // The arrival bed — "where the patient is now" is more useful at a glance than where
+      // they came from.
+      const toBedId = event.payload['toBedId'];
+      return typeof toBedId === 'string' ? { type: 'bed', id: toBedId } : null;
+    }
+    default:
+      return null;
+  }
+}
+
 const EVENT_TYPE_SEVERITY: Record<string, 'success' | 'warn' | 'danger' | 'info' | 'secondary'> = {
   OrderPlaced: 'info',
   InvoiceCreated: 'warn',

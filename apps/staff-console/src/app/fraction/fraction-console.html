@@ -70,8 +70,8 @@
             <p-table [value]="entries()" [loading]="entriesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
               <ng-template pTemplate="header">
                 <tr>
-                  <th class="table-header-cell">Invoice ID</th>
-                  <th class="table-header-cell">Doctor ID</th>
+                  <th class="table-header-cell">Invoice</th>
+                  <th class="table-header-cell">Doctor</th>
                   <th class="table-header-cell text-right">Fraction %</th>
                   <th class="table-header-cell text-right">Base Amount</th>
                   <th class="table-header-cell text-right">Share Amount</th>
@@ -80,7 +80,7 @@
               </ng-template>
               <ng-template pTemplate="body" let-entry>
                 <tr>
-                  <td class="font-mono">{{ entry.invoiceId }}</td>
+                  <td><hms-entity-name type="invoice" [id]="entry.invoiceId"></hms-entity-name></td>
                   <td><hms-entity-name type="doctor" [id]="entry.doctorId"></hms-entity-name></td>
                   <td class="text-right font-mono">{{ entry.fractionPercent | number: '1.2-2' }}%</td>
                   <td class="text-right font-mono">{{ entry.baseAmount | number: '1.2-2' }}</td>

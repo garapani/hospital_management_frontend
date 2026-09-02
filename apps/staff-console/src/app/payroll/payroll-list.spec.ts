@@ -4,6 +4,7 @@ import { ConfirmationService, Confirmation } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { PayrollList } from './payroll-list.js';
 import { PayrollApiService } from './payroll-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 describe('PayrollList', () => {
   function setup() {
@@ -21,6 +22,7 @@ describe('PayrollList', () => {
       providers: [
         { provide: PayrollApiService, useValue: payrollApi },
         { provide: AuthService, useValue: auth },
+        { provide: DirectoryResolverService, useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService },
       ],
     });
 

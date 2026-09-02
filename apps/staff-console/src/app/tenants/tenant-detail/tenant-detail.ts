@@ -28,6 +28,7 @@ import {
   tenantStatusLabel,
   tenantStatusSeverity,
 } from '../tenant.model.js';
+import { EntityName } from '../../directory/entity-name.js';
 
 interface SelectOption {
   label: string;
@@ -48,6 +49,7 @@ interface SelectOption {
     TextareaModule,
     FormsModule,
     MessageModule,
+    EntityName,
   ],
   selector: 'hms-tenant-detail',
   templateUrl: './tenant-detail.html',

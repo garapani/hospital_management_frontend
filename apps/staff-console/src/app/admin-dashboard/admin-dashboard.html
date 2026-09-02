@@ -82,7 +82,9 @@
               {{ log.tableName }} · {{ log.action }}
             </p>
             <p class="text-xs text-slate-500 truncate">
-              {{ log.changedByAccountId ? 'account ' + log.changedByAccountId.slice(0, 8) : 'System' }}
+              @if (log.changedByAccountId) {
+              <hms-entity-name type="doctor" [id]="log.changedByAccountId"></hms-entity-name>
+              } @else { System }
               • {{ log.occurredAt | date: 'short' }}
             </p>
           </div>

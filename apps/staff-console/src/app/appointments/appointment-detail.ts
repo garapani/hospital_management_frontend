@@ -12,11 +12,12 @@ import { ApiError } from '@org/api-client';
 
 import { AppointmentsApiService, Appointment } from './appointments-api.service.js';
 import { appointmentDisplayName, appointmentStatusSeverity } from './appointment.model.js';
+import { EntityName } from '../directory/entity-name.js';
 
 @Component({
   selector: 'hms-appointment-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, DialogModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, InputTextModule, TextareaModule, DialogModule, EntityName],
   templateUrl: './appointment-detail.html',
 })
 export class AppointmentDetail implements OnInit {

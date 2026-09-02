@@ -13,7 +13,7 @@
         }
       </h1>
       @if (requisition(); as r) {
-      <p class="text-sm text-slate-500 mt-1">Lab requisition for order item {{ r.orderItemId }}</p>
+      <p class="text-sm text-slate-500 mt-1">Lab requisition for <hms-entity-name type="orderItem" [id]="r.orderItemId"></hms-entity-name></p>
       }
     </div>
   </div>
@@ -42,12 +42,12 @@
           <div class="font-medium text-slate-900 font-mono text-xs">{{ r.requisitionNumber }}</div>
         </div>
         <div class="surface-card p-3">
-          <div class="text-xs text-slate-500 mb-1">Order Item ID</div>
-          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.orderItemId }}</div>
+          <div class="text-xs text-slate-500 mb-1">Order Item</div>
+          <div class="font-medium text-slate-900"><hms-entity-name type="orderItem" [id]="r.orderItemId"></hms-entity-name></div>
         </div>
         <div class="surface-card p-3">
-          <div class="text-xs text-slate-500 mb-1">Test ID</div>
-          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.testId }}</div>
+          <div class="text-xs text-slate-500 mb-1">Test</div>
+          <div class="font-medium text-slate-900"><hms-entity-name type="test" [id]="r.testId"></hms-entity-name></div>
         </div>
         <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Specimen Type</div>

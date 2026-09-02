@@ -9,6 +9,7 @@ import { SubscriptionsApiService } from '../subscriptions-api.service.js';
 import { Tenant } from '../tenant.model.js';
 import { Subscription, SubscriptionInvoice } from '../subscription.model.js';
 import { BrandingApiService } from '../../branding/branding-api.service.js';
+import { DirectoryResolverService } from '../../directory/directory-resolver.service.js';
 
 describe('TenantDetail package change', () => {
   function setup() {
@@ -123,6 +124,7 @@ describe('TenantDetail package change', () => {
         { provide: BrandingApiService, useValue: brandingApi },
         { provide: MessageService, useValue: messageService },
         { provide: Router, useValue: { navigate: jest.fn() } },
+        { provide: DirectoryResolverService, useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService },
       ],
     });
 
@@ -181,6 +183,7 @@ describe('TenantDetail package change', () => {
         { provide: BrandingApiService, useValue: brandingApi },
         { provide: MessageService, useValue: { add: jest.fn() } },
         { provide: Router, useValue: { navigate: jest.fn() } },
+        { provide: DirectoryResolverService, useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService },
       ],
     });
     const fixture = TestBed.createComponent(TenantDetail);

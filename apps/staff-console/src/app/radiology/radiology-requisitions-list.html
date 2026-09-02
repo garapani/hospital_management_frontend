@@ -53,7 +53,7 @@
           <th class="table-header-cell">Requisition #</th>
           <th class="table-header-cell">Patient</th>
           <th class="table-header-cell">Order Item</th>
-          <th class="table-header-cell">Imaging Item ID</th>
+          <th class="table-header-cell">Imaging Item</th>
           <th class="table-header-cell">Status</th>
           <th class="table-header-cell">Created</th>
           <th class="table-header-cell w-24">Actions</th>
@@ -70,7 +70,7 @@
             }
           </td>
           <td class="font-medium">{{ req.orderItem?.itemDescription ?? req.orderItemId }}</td>
-          <td class="font-mono text-xs">{{ req.imagingItemId }}</td>
+          <td><hms-entity-name type="imagingItem" [id]="req.imagingItemId"></hms-entity-name></td>
           <td><p-tag [value]="req.status" [severity]="statusSeverity(req.status)" [rounded]="true"></p-tag></td>
           <td>{{ req.createdAt | date }}</td>
           <td>

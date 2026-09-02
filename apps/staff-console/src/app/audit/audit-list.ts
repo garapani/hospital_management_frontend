@@ -9,7 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { AuditApiService } from './audit-api.service.js';
-import { AuditRecord } from './audit.model.js';
+import { AuditRecord, auditRecordDirectoryType } from './audit.model.js';
 import { toLocalDateTimeString } from '../shared/date.util.js';
 import { EntityName } from '../directory/entity-name.js';
 
@@ -32,6 +32,7 @@ import { EntityName } from '../directory/entity-name.js';
 export class AuditList {
   private readonly auditApi = inject(AuditApiService);
   private readonly messageService = inject(MessageService);
+  readonly directoryType = auditRecordDirectoryType;
 
   readonly records = signal<AuditRecord[]>([]);
   readonly totalRecords = signal(0);

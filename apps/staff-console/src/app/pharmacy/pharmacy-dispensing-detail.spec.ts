@@ -6,6 +6,12 @@ import { AuthService } from '@org/auth';
 import { PharmacyDispensingDetail } from './pharmacy-dispensing-detail.js';
 import { PharmacyDispensingApiService } from './pharmacy-dispensing-api.service.js';
 import { PharmacyDispensing } from './pharmacy-dispensing.model.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
+
+const directoryResolverProvider = {
+  provide: DirectoryResolverService,
+  useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
+};
 
 describe('PharmacyDispensingDetail', () => {
   const dispensing: PharmacyDispensing = {
@@ -49,6 +55,7 @@ describe('PharmacyDispensingDetail', () => {
         { provide: PharmacyDispensingApiService, useValue: pharmacyApi },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
+        directoryResolverProvider,
       ],
     });
 
@@ -86,6 +93,7 @@ describe('PharmacyDispensingDetail', () => {
         { provide: PharmacyDispensingApiService, useValue: pharmacyApi },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
+        directoryResolverProvider,
       ],
     });
     const fixture = TestBed.createComponent(PharmacyDispensingDetail);

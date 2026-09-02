@@ -14,11 +14,12 @@ import { AuthService } from '@org/auth';
 import { PharmacyDispensingApiService } from './pharmacy-dispensing-api.service.js';
 import { dispensingStatusSeverity, PharmacyDispensing } from './pharmacy-dispensing.model.js';
 import { openPdfBlobInNewTab } from '../shared/pdf-blob.util.js';
+import { EntityName } from '../directory/entity-name.js';
 
 @Component({
   selector: 'hms-pharmacy-dispensing-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, DialogModule, TextareaModule, ToastModule, ConfirmDialogModule],
+  imports: [CommonModule, RouterModule, FormsModule, ButtonModule, TagModule, DialogModule, TextareaModule, ToastModule, ConfirmDialogModule, EntityName],
   providers: [MessageService, ConfirmationService],
   templateUrl: './pharmacy-dispensing-detail.html',
 })

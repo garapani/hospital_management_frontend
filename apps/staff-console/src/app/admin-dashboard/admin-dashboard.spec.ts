@@ -6,6 +6,7 @@ import { AdminDashboard } from './admin-dashboard.js';
 import { TenantsApiService } from '../tenants/tenants-api.service.js';
 import { UsersApiService } from '../users/users-api.service.js';
 import { AuditApiService } from '../audit/audit-api.service.js';
+import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 describe('AdminDashboard (platform overview)', () => {
   function setup(overrides: { auditList?: unknown; tenantsList?: unknown } = {}) {
@@ -57,6 +58,7 @@ describe('AdminDashboard (platform overview)', () => {
         { provide: UsersApiService, useValue: usersApi },
         { provide: AuditApiService, useValue: auditApi },
         { provide: MessageService, useValue: messageService },
+        { provide: DirectoryResolverService, useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService },
       ],
     });
 

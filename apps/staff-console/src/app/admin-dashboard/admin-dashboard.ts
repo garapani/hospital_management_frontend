@@ -13,6 +13,7 @@ import { UsersApiService } from '../users/users-api.service.js';
 import { AuditApiService } from '../audit/audit-api.service.js';
 import { AuditRecord } from '../audit/audit.model.js';
 import { Tenant } from '../tenants/tenant.model.js';
+import { EntityName } from '../directory/entity-name.js';
 
 interface StatCard {
   title: string;
@@ -32,6 +33,7 @@ interface StatCard {
     TagModule,
     ChartModule,
     ProgressSpinnerModule,
+    EntityName,
   ],
   selector: 'hms-admin-dashboard',
   templateUrl: './admin-dashboard.html',

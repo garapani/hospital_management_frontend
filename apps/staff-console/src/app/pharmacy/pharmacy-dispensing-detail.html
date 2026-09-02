@@ -35,17 +35,13 @@
         <div class="font-medium text-slate-900">{{ d.quantity }}</div>
       </div>
       <div class="surface-card p-3">
-        <div class="text-xs text-slate-500 mb-1">Order Item ID</div>
-        <div class="font-medium text-slate-900 font-mono text-xs">{{ d.orderItemId }}</div>
-      </div>
-      <div class="surface-card p-3">
-        <div class="text-xs text-slate-500 mb-1">Inventory Item ID</div>
-        <div class="font-medium text-slate-900 font-mono text-xs">{{ d.inventoryItemId }}</div>
+        <div class="text-xs text-slate-500 mb-1">Inventory Item</div>
+        <div class="font-medium text-slate-900"><hms-entity-name type="item" [id]="d.inventoryItemId"></hms-entity-name></div>
       </div>
       @if (d.dispensedBy) {
       <div class="surface-card p-3">
         <div class="text-xs text-slate-500 mb-1">Dispensed By</div>
-        <div class="font-medium text-slate-900 font-mono text-xs">{{ d.dispensedBy }}</div>
+        <div class="font-medium text-slate-900"><hms-entity-name type="doctor" [id]="d.dispensedBy"></hms-entity-name></div>
       </div>
       }
       @if (d.dispensedAt) {

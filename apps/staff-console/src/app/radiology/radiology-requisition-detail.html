@@ -46,12 +46,8 @@
           <div class="font-medium text-slate-900">{{ r.orderItem?.priority ?? 'N/A' }}</div>
         </div>
         <div class="surface-card p-3">
-          <div class="text-xs text-slate-500 mb-1">Order Item ID</div>
-          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.orderItemId }}</div>
-        </div>
-        <div class="surface-card p-3">
-          <div class="text-xs text-slate-500 mb-1">Imaging Item ID</div>
-          <div class="font-medium text-slate-900 font-mono text-xs">{{ r.imagingItemId }}</div>
+          <div class="text-xs text-slate-500 mb-1">Imaging Item</div>
+          <div class="font-medium text-slate-900"><hms-entity-name type="imagingItem" [id]="r.imagingItemId"></hms-entity-name></div>
         </div>
         @if (r.scannedAt) {
         <div class="surface-card p-3">

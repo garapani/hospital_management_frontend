@@ -65,8 +65,8 @@
             <span class="text-slate-400">—</span>
             }
           </td>
-          <td class="font-mono text-xs">{{ req.orderItemId }}</td>
-          <td class="font-mono text-xs">{{ req.testId }}</td>
+          <td><hms-entity-name type="orderItem" [id]="req.orderItemId"></hms-entity-name></td>
+          <td><hms-entity-name type="test" [id]="req.testId"></hms-entity-name></td>
           <td>{{ req.specimenType }}</td>
           <td><p-tag [value]="req.status" [severity]="statusSeverity(req.status)" [rounded]="true"></p-tag></td>
           <td>

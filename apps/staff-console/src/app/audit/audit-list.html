@@ -136,8 +136,12 @@
             ></p-tag>
             }
           </td>
-          <td class="text-xs font-mono text-slate-500">
-            {{ record.recordId }}
+          <td class="text-xs text-slate-500">
+            @if (directoryType(record.tableName); as type) {
+            <hms-entity-name [type]="type" [id]="record.recordId"></hms-entity-name>
+            } @else {
+            <span class="font-mono">{{ record.recordId }}</span>
+            }
           </td>
           <td class="text-xs text-slate-500">
             @if (record.changedByAccountId) {
@@ -184,6 +188,9 @@
       </div>
       <div>
         <div class="text-slate-500 mb-1">Record ID</div>
+        @if (directoryType(record.tableName); as type) {
+        <div class="font-medium text-slate-900"><hms-entity-name [type]="type" [id]="record.recordId"></hms-entity-name></div>
+        }
         <div class="font-mono text-slate-900 text-xs">
           {{ record.recordId }}
         </div>

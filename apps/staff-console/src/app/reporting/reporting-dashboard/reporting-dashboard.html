@@ -117,7 +117,7 @@
                 <ng-template pTemplate="header">
                   <tr>
                     <th class="table-header-cell">Event</th>
-                    <th class="table-header-cell">Entity ID</th>
+                    <th class="table-header-cell">Subject</th>
                     <th class="table-header-cell">Payload</th>
                     <th class="table-header-cell">Occurred At</th>
                     <th class="table-header-cell">Correlation ID</th>
@@ -128,7 +128,13 @@
                     <td>
                       <p-tag [value]="event.eventType" [severity]="severity(event.eventType)" [rounded]="true"></p-tag>
                     </td>
-                    <td class="font-mono text-slate-600">{{ event.entityId }}</td>
+                    <td>
+                      @if (subjectRef(event); as ref) {
+                      <hms-entity-name [type]="ref.type" [id]="ref.id"></hms-entity-name>
+                      } @else {
+                      <span class="font-mono text-xs text-slate-500">{{ event.entityId }}</span>
+                      }
+                    </td>
                     <td class="max-w-[240px]">
                       <span class="block truncate font-mono text-xs text-slate-500">{{ event.payload | json }}</span>
                     </td>

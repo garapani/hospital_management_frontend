@@ -37,12 +37,20 @@
           <div class="font-medium text-slate-900">{{ a.contactNumber }}</div>
         </div>
         <div class="surface-card p-3">
-          <div class="text-xs text-slate-500 mb-1">Doctor ID</div>
-          <div class="font-medium text-slate-900 font-mono text-xs">{{ a.doctorId || 'N/A' }}</div>
+          <div class="text-xs text-slate-500 mb-1">Doctor</div>
+          <div class="font-medium text-slate-900">
+            @if (a.doctorId) {
+            <hms-entity-name type="doctor" [id]="a.doctorId"></hms-entity-name>
+            } @else { N/A }
+          </div>
         </div>
         <div class="surface-card p-3">
-          <div class="text-xs text-slate-500 mb-1">Department ID</div>
-          <div class="font-medium text-slate-900 font-mono text-xs">{{ a.departmentId || 'N/A' }}</div>
+          <div class="text-xs text-slate-500 mb-1">Department</div>
+          <div class="font-medium text-slate-900">
+            @if (a.departmentId) {
+            <hms-entity-name type="department" [id]="a.departmentId"></hms-entity-name>
+            } @else { N/A }
+          </div>
         </div>
         <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Patient Record</div>

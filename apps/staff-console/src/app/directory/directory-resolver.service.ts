@@ -13,6 +13,12 @@ const REQUEST_FIELD: Record<DirectoryEntityType, keyof DirectoryResolveRequest> 
   ward: 'wardIds',
   bed: 'bedIds',
   item: 'itemIds',
+  orderItem: 'orderItemIds',
+  test: 'testIds',
+  imagingItem: 'imagingItemIds',
+  invoice: 'invoiceIds',
+  employee: 'employeeIds',
+  department: 'departmentIds',
 };
 
 const RESULT_FIELD: Record<DirectoryEntityType, keyof DirectoryResolveResult> = {
@@ -21,6 +27,12 @@ const RESULT_FIELD: Record<DirectoryEntityType, keyof DirectoryResolveResult> = 
   ward: 'wards',
   bed: 'beds',
   item: 'items',
+  orderItem: 'orderItems',
+  test: 'tests',
+  imagingItem: 'imagingItems',
+  invoice: 'invoices',
+  employee: 'employees',
+  department: 'departments',
 };
 
 interface PendingBatch {

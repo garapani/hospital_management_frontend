@@ -13,6 +13,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { AuthService } from '@org/auth';
 import { PayrollApiService, Payslip, RunPayrollDto } from './payroll-api.service.js';
+import { EntityName } from '../directory/entity-name.js';
 
 const MONTHS = [
   { label: 'January', value: 1 },
@@ -64,6 +65,7 @@ function currentYear(): number {
     MessageModule,
     ToastModule,
     ConfirmDialogModule,
+    EntityName,
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './payroll-list.html',
