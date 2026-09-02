@@ -37,8 +37,31 @@ describe('DirectoryResolverService', () => {
 
     expect(directoryApi.resolve).toHaveBeenCalledTimes(1);
     expect(directoryApi.resolve).toHaveBeenCalledWith({ patientIds: ['patient-1'], doctorIds: ['doctor-1'] });
-    expect(results).toContain('Jane Doe');
+    expect(results).toContain('Jane Doe (PAT-1)');
     expect(results).toContain('Dr. Smith');
+  });
+
+  it('appends patientNo for a resolved patient, but shows other types by name alone', async () => {
+    const { service } = setup({
+      patients: { 'patient-1': { displayName: 'Jane Doe', patientNo: 'PAT-1' } },
+      doctors: { 'doctor-1': { displayName: 'Dr. Smith' } },
+      wards: { 'ward-1': { displayName: 'General Ward' } },
+      beds: {},
+      items: {},
+    });
+
+    let patientName: string | null = 'unset';
+    let doctorName: string | null = 'unset';
+    let wardName: string | null = 'unset';
+    service.resolve('patient', 'patient-1').subscribe((n) => (patientName = n));
+    service.resolve('doctor', 'doctor-1').subscribe((n) => (doctorName = n));
+    service.resolve('ward', 'ward-1').subscribe((n) => (wardName = n));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(patientName).toBe('Jane Doe (PAT-1)');
+    expect(doctorName).toBe('Dr. Smith');
+    expect(wardName).toBe('General Ward');
   });
 
   it('caches a resolved id and never calls the API for it again', async () => {
@@ -55,7 +78,7 @@ describe('DirectoryResolverService', () => {
     let cached: string | null = 'unset';
     service.resolve('patient', 'patient-1').subscribe((n) => (cached = n));
     expect(directoryApi.resolve).toHaveBeenCalledTimes(1);
-    expect(cached).toBe('Jane Doe');
+    expect(cached).toBe('Jane Doe (PAT-1)');
   });
 
   it('resolves null for an id the backend does not return (deleted/cross-tenant/unknown)', async () => {

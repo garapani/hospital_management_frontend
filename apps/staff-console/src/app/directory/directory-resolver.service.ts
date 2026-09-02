@@ -91,9 +91,24 @@ export class DirectoryResolverService {
       const separatorIndex = key.indexOf(':');
       const type = key.slice(0, separatorIndex) as DirectoryEntityType;
       const id = key.slice(separatorIndex + 1);
-      const name = result?.[RESULT_FIELD[type]]?.[id]?.displayName ?? null;
+      const name = this.formatName(type, result?.[RESULT_FIELD[type]]?.[id]);
       this.cache.set(key, name);
       callbacks.forEach((callback) => callback(name));
     }
+  }
+
+  /**
+   * A resolved name is shown on its own everywhere — no raw UUID suffix (that was a debugging
+   * affordance that shipped; found live 2026-09-02 across Nursing, OT, and every other
+   * `<hms-entity-name>` consumer). Patient is the one type with a second human-readable
+   * identifier worth surfacing (`patientNo`, e.g. "Asha Verma (PAT-2026-00001)") — matching what
+   * every patient-search picker in this app already shows; every other type shows the bare name.
+   */
+  private formatName(type: DirectoryEntityType, entry: { displayName: string; patientNo?: string } | undefined): string | null {
+    if (!entry) return null;
+    if (type === 'patient' && entry.patientNo) {
+      return `${entry.displayName} (${entry.patientNo})`;
+    }
+    return entry.displayName;
   }
 }

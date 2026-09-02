@@ -28,7 +28,7 @@ describe('EntityName', () => {
     expect(fixture.componentInstance.resolvedName()).toBeNull();
   });
 
-  it('renders the resolved name alongside the id once resolved', () => {
+  it('renders only the resolved name once resolved, not the raw id', () => {
     const { fixture, resolver } = setup('Jane Doe');
     fixture.componentRef.setInput('type', 'patient');
     fixture.componentRef.setInput('id', 'patient-1');
@@ -36,8 +36,8 @@ describe('EntityName', () => {
 
     expect(resolver.resolve).toHaveBeenCalledWith('patient', 'patient-1');
     expect(fixture.componentInstance.resolvedName()).toBe('Jane Doe');
-    expect(fixture.nativeElement.textContent).toContain('Jane Doe');
-    expect(fixture.nativeElement.textContent).toContain('patient-1');
+    expect(fixture.nativeElement.textContent.trim()).toBe('Jane Doe');
+    expect(fixture.nativeElement.textContent).not.toContain('patient-1');
   });
 
   it('re-resolves when the id input changes', () => {
