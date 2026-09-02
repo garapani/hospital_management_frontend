@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { InventoryItemList } from './inventory-item-list.js';
-import { InventoryApiService, InventoryItem } from '../inventory-api.service.js';
+import { InventoryApiService, InventoryItem, InventoryItemSubCategory } from '../inventory-api.service.js';
 
 describe('InventoryItemList', () => {
   function setup() {
@@ -84,6 +84,23 @@ describe('InventoryItemList', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.categoriesLoading()).toBe(false);
+  });
+
+  it('does not let a slower earlier category response overwrite a later one that resolved first', async () => {
+    const { fixture, inventoryApi } = setup();
+    const firstResponse$ = new Subject<InventoryItemSubCategory[]>();
+    const secondResponse$ = new Subject<InventoryItemSubCategory[]>();
+    (inventoryApi.listSubCategories as jest.Mock).mockReturnValueOnce(firstResponse$).mockReturnValueOnce(secondResponse$);
+    fixture.detectChanges();
+
+    fixture.componentInstance.onCategoryChange('cat-1');
+    fixture.componentInstance.onCategoryChange('cat-2');
+    secondResponse$.next([{ id: 'sub-2', categoryId: 'cat-2', name: 'Syrups', isConsumable: true, createdAt: '', updatedAt: '' }]);
+    firstResponse$.next([{ id: 'sub-1', categoryId: 'cat-1', name: 'Tablets', isConsumable: true, createdAt: '', updatedAt: '' }]);
+
+    expect(fixture.componentInstance.subCategories()).toEqual([
+      { id: 'sub-2', categoryId: 'cat-2', name: 'Syrups', isConsumable: true, createdAt: '', updatedAt: '' },
+    ]);
   });
 
   it('clears the loading flag when the items request errors', async () => {

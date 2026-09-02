@@ -1,11 +1,11 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { WardSupplyConsole } from './ward-supply-console.js';
 import { WardSupplyApiService } from './ward-supply-api.service.js';
-import { InventoryApiService } from '../inventory/inventory-api.service.js';
+import { InventoryApiService, InventoryItemSubCategory } from '../inventory/inventory-api.service.js';
 import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
@@ -162,6 +162,24 @@ describe('WardSupplyConsole', () => {
     fixture.componentInstance.onLineSubCategoryChange('sub1');
     await fixture.whenStable();
     expect(inventoryApi.listItemsBySubCategory).toHaveBeenCalledWith('sub1');
+  });
+
+  it('does not let a slower earlier line-category response overwrite a later one that resolved first', async () => {
+    const { fixture, inventoryApi } = setup();
+    const firstResponse$ = new Subject<InventoryItemSubCategory[]>();
+    const secondResponse$ = new Subject<InventoryItemSubCategory[]>();
+    (inventoryApi.listSubCategories as jest.Mock).mockReturnValueOnce(firstResponse$).mockReturnValueOnce(secondResponse$);
+    fixture.detectChanges();
+
+    fixture.componentInstance.openReceiveModal();
+    fixture.componentInstance.onLineCategoryChange('cat-1');
+    fixture.componentInstance.onLineCategoryChange('cat-2');
+    secondResponse$.next([{ id: 'sub-2', categoryId: 'cat-2', name: 'Syrups', isConsumable: true, createdAt: '', updatedAt: '' }]);
+    firstResponse$.next([{ id: 'sub-1', categoryId: 'cat-1', name: 'Tablets', isConsumable: true, createdAt: '', updatedAt: '' }]);
+
+    expect(fixture.componentInstance.dialogSubCategories()).toEqual([
+      { id: 'sub-2', categoryId: 'cat-2', name: 'Syrups', isConsumable: true, createdAt: '', updatedAt: '' },
+    ]);
   });
 
   it('paginates the transactions tab on lazy-load', async () => {

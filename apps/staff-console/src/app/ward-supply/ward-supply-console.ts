@@ -1,6 +1,8 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { EMPTY, Subject, catchError, switchMap } from 'rxjs';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
@@ -82,10 +84,49 @@ export class WardSupplyConsole {
   readonly consumeSaving = signal(false);
   readonly consumeError = signal<string | null>(null);
 
+  // switchMap cancels a still-in-flight sub-category/item lookup the moment a newer category/
+  // sub-category is picked, so a slow response to an earlier pick can never land after — and
+  // overwrite — a faster response to a later one. See Development-Standards.md §120/§125.
+  private readonly categoryChangeTrigger = new Subject<string>();
+  private readonly subCategoryChangeTrigger = new Subject<string>();
+
   constructor() {
     this.loadDepartments();
     this.loadBalances();
     this.loadTransactions(0);
+
+    this.categoryChangeTrigger
+      .pipe(
+        switchMap((categoryId) => {
+          if (!categoryId) {
+            return EMPTY;
+          }
+          return this.inventoryApi.listSubCategories(categoryId).pipe(catchError(() => EMPTY));
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe((subCategories) => this.dialogSubCategories.set(subCategories));
+
+    this.subCategoryChangeTrigger
+      .pipe(
+        switchMap((subCategoryId) => {
+          if (!subCategoryId) {
+            return EMPTY;
+          }
+          this.dialogItemsLoading.set(true);
+          return this.inventoryApi.listItemsBySubCategory(subCategoryId).pipe(
+            catchError(() => {
+              this.dialogItemsLoading.set(false);
+              return EMPTY;
+            }),
+          );
+        }),
+        takeUntilDestroyed(),
+      )
+      .subscribe((items) => {
+        this.dialogItems.set(items);
+        this.dialogItemsLoading.set(false);
+      });
   }
 
   loadDepartments(): void {
@@ -159,29 +200,13 @@ export class WardSupplyConsole {
     this.lineSubCategoryId.set('');
     this.dialogSubCategories.set([]);
     this.dialogItems.set([]);
-    if (!categoryId) {
-      return;
-    }
-    this.inventoryApi.listSubCategories(categoryId).subscribe({
-      next: (subCategories) => this.dialogSubCategories.set(subCategories),
-      error: () => this.dialogSubCategories.set([]),
-    });
+    this.categoryChangeTrigger.next(categoryId ?? '');
   }
 
   onLineSubCategoryChange(subCategoryId: string | null): void {
     this.lineSubCategoryId.set(subCategoryId ?? '');
     this.dialogItems.set([]);
-    if (!subCategoryId) {
-      return;
-    }
-    this.dialogItemsLoading.set(true);
-    this.inventoryApi.listItemsBySubCategory(subCategoryId).subscribe({
-      next: (items) => {
-        this.dialogItems.set(items);
-        this.dialogItemsLoading.set(false);
-      },
-      error: () => this.dialogItemsLoading.set(false),
-    });
+    this.subCategoryChangeTrigger.next(subCategoryId ?? '');
   }
 
   private resetDialogCatalogState(): void {

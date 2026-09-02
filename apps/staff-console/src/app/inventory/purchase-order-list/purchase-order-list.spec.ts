@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { AuthService } from '@org/auth';
 import { PurchaseOrderList } from './purchase-order-list.js';
-import { InventoryApiService, PurchaseOrder } from '../inventory-api.service.js';
+import { InventoryApiService, InventoryItemSubCategory, PurchaseOrder } from '../inventory-api.service.js';
 
 describe('PurchaseOrderList', () => {
   function setup() {
@@ -109,6 +109,23 @@ describe('PurchaseOrderList', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.loading()).toBe(false);
+  });
+
+  it('does not let a slower earlier line-category response overwrite a later one that resolved first', async () => {
+    const { fixture, inventoryApi } = setup();
+    const firstResponse$ = new Subject<InventoryItemSubCategory[]>();
+    const secondResponse$ = new Subject<InventoryItemSubCategory[]>();
+    (inventoryApi.listSubCategories as jest.Mock).mockReturnValueOnce(firstResponse$).mockReturnValueOnce(secondResponse$);
+    fixture.detectChanges();
+
+    fixture.componentInstance.onLineCategoryChange('cat-1');
+    fixture.componentInstance.onLineCategoryChange('cat-2');
+    secondResponse$.next([{ id: 'sub-2', categoryId: 'cat-2', name: 'Syrups', isConsumable: true, createdAt: '', updatedAt: '' }]);
+    firstResponse$.next([{ id: 'sub-1', categoryId: 'cat-1', name: 'Tablets', isConsumable: true, createdAt: '', updatedAt: '' }]);
+
+    expect(fixture.componentInstance.dialogSubCategories()).toEqual([
+      { id: 'sub-2', categoryId: 'cat-2', name: 'Syrups', isConsumable: true, createdAt: '', updatedAt: '' },
+    ]);
   });
 
   it('adds a draft line and submits the create form with the expected payload', async () => {
