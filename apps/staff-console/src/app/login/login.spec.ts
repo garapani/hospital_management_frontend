@@ -175,6 +175,12 @@ describe('Login redirect', () => {
     ['Nurse', '/dashboard'],
     ['Billing/Accounts Staff', '/billing/invoices'],
     ['Auditor/Compliance', '/admin/audit'],
+    ['Inventory/Store Manager', '/inventory'],
+    ['HR/Payroll Admin', '/employees'],
+    ['Lab Technician', '/clinical/lab'],
+    ['Radiology Technician', '/clinical/radiology'],
+    ['Pharmacist', '/clinical/pharmacy'],
+    ['Helpdesk Agent', '/helpdesk'],
   ])('sends a %s to their role-specific landing page', (role, expectedRoute) => {
     const { component, navigate } = setup({ roles: [role] });
     component.usernameControl.setValue('someuser');
@@ -195,9 +201,22 @@ describe('Login redirect', () => {
     expect(navigate).toHaveBeenCalledWith('/billing/invoices');
   });
 
+  it('falls back to permission-priority routing for the new tenant-landing-candidate permissions too', () => {
+    const { component, navigate } = setup({ roles: ['Some Future Role'], permissions: ['inventory.read'] });
+    component.usernameControl.setValue('someuser');
+    component.passwordControl.setValue('secret');
+
+    component.submit();
+
+    expect(navigate).toHaveBeenCalledWith('/inventory');
+  });
+
   it('keeps a tenant user with no matching role or permission on the login page with an explanatory message', () => {
-    const { component, navigate } = setup({ roles: ['Lab Technician'], permissions: ['lab.read'] });
-    component.usernameControl.setValue('demo.labtech');
+    // A role/permission combination that genuinely matches nothing in ROLE_LANDING_ROUTES or
+    // TENANT_LANDING_CANDIDATES — not Lab Technician, which used to be exactly this case (the bug
+    // this whole describe block exists to guard against) until it was added to both tables.
+    const { component, navigate } = setup({ roles: ['Some Unmapped Role'], permissions: ['some.unmapped.permission'] });
+    component.usernameControl.setValue('demo.unmapped');
     component.passwordControl.setValue('Demo@12345!');
 
     component.submit();

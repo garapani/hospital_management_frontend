@@ -34,6 +34,17 @@ const ROLE_LANDING_ROUTES: Record<string, string> = {
   Nurse: '/dashboard',
   'Billing/Accounts Staff': '/billing/invoices',
   'Auditor/Compliance': '/admin/audit',
+  // These six roles were never added here (or to TENANT_LANDING_CANDIDATES below) when their
+  // screens shipped — every login for them authenticated successfully, then dead-ended on "no
+  // accessible screens," even though /inventory, /employees, /clinical/lab, /clinical/radiology,
+  // /clinical/pharmacy and /helpdesk all worked fine once reached by direct URL (found during the
+  // 2026-09-02 role-based review, review-comments.md).
+  'Inventory/Store Manager': '/inventory',
+  'HR/Payroll Admin': '/employees',
+  'Lab Technician': '/clinical/lab',
+  'Radiology Technician': '/clinical/radiology',
+  Pharmacist: '/clinical/pharmacy',
+  'Helpdesk Agent': '/helpdesk',
 };
 
 /**
@@ -46,6 +57,12 @@ const TENANT_LANDING_CANDIDATES: Array<{ permission: string; route: string }> = 
   { permission: 'patients.read', route: '/clinical/patients' },
   { permission: 'appointment.read', route: '/clinical/appointments' },
   { permission: 'triage.read', route: '/clinical/triage' },
+  { permission: 'lab.read', route: '/clinical/lab' },
+  { permission: 'radiology.read', route: '/clinical/radiology' },
+  { permission: 'pharmacy.read', route: '/clinical/pharmacy' },
+  { permission: 'inventory.read', route: '/inventory' },
+  { permission: 'helpdesk.read', route: '/helpdesk' },
+  { permission: 'employee.read', route: '/employees' },
   { permission: 'identity.accounts.manage', route: '/admin/users' },
   { permission: 'master-data.manage', route: '/admin/master-data' },
   { permission: 'reporting.read', route: '/admin/audit' },

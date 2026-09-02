@@ -40,6 +40,12 @@ describe('rootRedirectGuard', () => {
     ['Nurse', '/dashboard'],
     ['Billing/Accounts Staff', '/billing/invoices'],
     ['Auditor/Compliance', '/admin/audit'],
+    ['Inventory/Store Manager', '/inventory'],
+    ['HR/Payroll Admin', '/employees'],
+    ['Lab Technician', '/clinical/lab'],
+    ['Radiology Technician', '/clinical/radiology'],
+    ['Pharmacist', '/clinical/pharmacy'],
+    ['Helpdesk Agent', '/helpdesk'],
   ])('sends a %s to their role-specific landing page, not a hardcoded route', (role, expectedRoute) => {
     setup(true, { roles: [role] });
     expect(run()?.toString()).toBe(expectedRoute);
@@ -51,7 +57,10 @@ describe('rootRedirectGuard', () => {
   });
 
   it('sends a tenant user with no matching role or permission to /login rather than looping', () => {
-    setup(true, { roles: ['Lab Technician'], permissions: ['lab.read'] });
+    // A role/permission combination that genuinely matches nothing — not Lab Technician, which
+    // used to be exactly this case (the bug this whole file exists to guard against) until it was
+    // added to ROLE_LANDING_ROUTES/TENANT_LANDING_CANDIDATES.
+    setup(true, { roles: ['Some Unmapped Role'], permissions: ['some.unmapped.permission'] });
     expect(run()?.toString()).toBe('/login');
   });
 
