@@ -294,11 +294,13 @@
   styleClass="surface-modal"
 >
   <div class="flex flex-col gap-4 py-4">
+    @if (targetCase(); as case_) {
     <p class="text-sm text-slate-600">
-      You are approving case <span class="font-mono font-semibold text-slate-800">{{ targetCase()?.caseNumber }}</span>
-      with a <span class="font-semibold text-emerald-600">{{ targetCase()?.subsidyPercent }}%</span> subsidy for patient
-      <span class="font-medium text-slate-800"><hms-entity-name type="patient" [id]="targetCase()?.patientId"></hms-entity-name></span>.
+      You are approving case <span class="font-mono font-semibold text-slate-800">{{ case_.caseNumber }}</span>
+      with a <span class="font-semibold text-emerald-600">{{ case_.subsidyPercent }}%</span> subsidy for patient
+      <span class="font-medium text-slate-800"><hms-entity-name type="patient" [id]="case_.patientId"></hms-entity-name></span>.
     </p>
+    }
     <div class="flex flex-col gap-2">
       <label for="ssuApproveNotes" class="text-sm font-medium text-slate-700">Decision Notes (optional)</label>
       <textarea
@@ -334,10 +336,12 @@
   styleClass="surface-modal"
 >
   <div class="flex flex-col gap-4 py-4">
+    @if (targetCase(); as case_) {
     <p class="text-sm text-slate-600">
-      You are rejecting case <span class="font-mono font-semibold text-slate-800">{{ targetCase()?.caseNumber }}</span>
-      for patient <span class="font-medium text-slate-800"><hms-entity-name type="patient" [id]="targetCase()?.patientId"></hms-entity-name></span>.
+      You are rejecting case <span class="font-mono font-semibold text-slate-800">{{ case_.caseNumber }}</span>
+      for patient <span class="font-medium text-slate-800"><hms-entity-name type="patient" [id]="case_.patientId"></hms-entity-name></span>.
     </p>
+    }
     @if (rejectError()) {
     <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
       <i class="pi pi-exclamation-circle"></i>
