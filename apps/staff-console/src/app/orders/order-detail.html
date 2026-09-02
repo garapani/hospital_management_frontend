@@ -91,8 +91,14 @@
             <td><p-tag [value]="item.status" [severity]="itemStatusSeverity(item.status)" [rounded]="true"></p-tag></td>
             <td class="text-slate-500">{{ item.cancelReason || '—' }}</td>
             <td class="text-right">
-              @if (item.status === 'Pending' && auth.hasPermission('order.manage')) {
               <div class="flex justify-end gap-1">
+                @if (item.status === 'Pending' && item.itemType === 'Lab' && auth.hasPermission('lab.requisition.create')) {
+                <p-button label="Create Lab Requisition" severity="info" [text]="true" size="small" (onClick)="openLabRequisitionModal(item)"></p-button>
+                }
+                @if (item.status === 'Pending' && item.itemType === 'Radiology' && auth.hasPermission('radiology.requisition.create')) {
+                <p-button label="Create Radiology Requisition" severity="info" [text]="true" size="small" (onClick)="openRadiologyRequisitionModal(item)"></p-button>
+                }
+                @if (item.status === 'Pending' && auth.hasPermission('order.manage')) {
                 <p-button
                   label="Complete"
                   severity="success"
@@ -109,8 +115,8 @@
                   [loading]="actionItemId() === item.id"
                   (onClick)="openCancelModal(item)"
                 ></p-button>
+                }
               </div>
-              }
             </td>
           </tr>
         </ng-template>
@@ -147,5 +153,103 @@
       [disabled]="!cancelReason().trim()"
       (onClick)="confirmCancelItem()"
     ></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Create Lab Requisition Modal -->
+<p-dialog header="Create Lab Requisition" [(visible)]="showLabRequisitionModal" [modal]="true" [style]="{ width: '480px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="labReqCategory" class="text-sm font-medium text-slate-700">Category</label>
+      <p-select
+        inputId="labReqCategory"
+        [options]="labCategories()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="labCategoryId()"
+        (ngModelChange)="onLabCategoryChange($event)"
+        placeholder="Select a category"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="labReqTest" class="text-sm font-medium text-slate-700">Test</label>
+      <p-select
+        inputId="labReqTest"
+        [options]="labTests()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="labTestId()"
+        (ngModelChange)="onLabTestChange($event)"
+        [loading]="labTestsLoading()"
+        placeholder="Select a test"
+        [disabled]="!labCategoryId()"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="labReqSpecimen" class="text-sm font-medium text-slate-700">Specimen Type</label>
+      <input id="labReqSpecimen" pInputText [ngModel]="labSpecimenType()" (ngModelChange)="labSpecimenType.set($event)" class="w-full" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showLabRequisitionModal.set(false)"></p-button>
+      <p-button
+        label="Create"
+        [loading]="labRequisitionSaving()"
+        (onClick)="submitLabRequisition()"
+        [disabled]="!labTestId() || !labSpecimenType().trim()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Create Radiology Requisition Modal -->
+<p-dialog header="Create Radiology Requisition" [(visible)]="showRadiologyRequisitionModal" [modal]="true" [style]="{ width: '480px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    <div class="flex flex-col gap-2">
+      <label for="radReqImagingType" class="text-sm font-medium text-slate-700">Imaging Type</label>
+      <p-select
+        inputId="radReqImagingType"
+        [options]="radiologyImagingTypes()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="radiologyImagingTypeId()"
+        (ngModelChange)="onRadiologyImagingTypeChange($event)"
+        placeholder="Select an imaging type"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="radReqImagingItem" class="text-sm font-medium text-slate-700">Imaging Item</label>
+      <p-select
+        inputId="radReqImagingItem"
+        [options]="radiologyImagingItems()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="radiologyImagingItemId()"
+        (ngModelChange)="radiologyImagingItemId.set($event)"
+        [loading]="radiologyImagingItemsLoading()"
+        placeholder="Select an item"
+        [disabled]="!radiologyImagingTypeId()"
+        styleClass="w-full"
+        [appendTo]="'body'"
+      ></p-select>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showRadiologyRequisitionModal.set(false)"></p-button>
+      <p-button
+        label="Create"
+        [loading]="radiologyRequisitionSaving()"
+        (onClick)="submitRadiologyRequisition()"
+        [disabled]="!radiologyImagingItemId()"
+      ></p-button>
+    </div>
   </ng-template>
 </p-dialog>

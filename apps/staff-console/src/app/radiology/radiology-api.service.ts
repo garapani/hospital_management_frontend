@@ -3,6 +3,7 @@ import { ApiClientService } from '@org/api-client';
 import { Observable } from 'rxjs';
 
 import {
+  CreateRadiologyRequisitionDto,
   EnterReportDto,
   PaginatedRadiologyRequisitions,
   RadiologyImagingItem,
@@ -41,6 +42,10 @@ export class RadiologyApiService {
 
   getById(id: string): Observable<RadiologyRequisition> {
     return this.apiClient.get<RadiologyRequisition>(`/radiology/requisitions/${id}`);
+  }
+
+  create(dto: CreateRadiologyRequisitionDto): Observable<RadiologyRequisition> {
+    return this.apiClient.post<RadiologyRequisition>('/radiology/requisitions', dto);
   }
 
   markScanned(id: string): Observable<RadiologyRequisition> {

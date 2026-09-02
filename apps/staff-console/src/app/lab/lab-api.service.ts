@@ -88,6 +88,12 @@ export interface EnterResultDto {
   enteredBy?: string;
 }
 
+export interface CreateRequisitionDto {
+  orderItemId: string;
+  testId: string;
+  specimenType: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LabApiService {
   private readonly apiClient = inject(ApiClientService);
@@ -105,6 +111,10 @@ export class LabApiService {
 
   getRequisition(id: string): Observable<LabRequisition> {
     return this.apiClient.get<LabRequisition>(`/lab/requisitions/${id}`);
+  }
+
+  createRequisition(dto: CreateRequisitionDto): Observable<LabRequisition> {
+    return this.apiClient.post<LabRequisition>('/lab/requisitions', dto);
   }
 
   collectSample(id: string, sampleCollectedBy?: string): Observable<LabRequisition> {

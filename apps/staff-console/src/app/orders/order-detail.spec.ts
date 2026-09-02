@@ -6,12 +6,28 @@ import { AuthService } from '@org/auth';
 import { OrderDetail } from './order-detail.js';
 import { OrdersApiService, OrderWithItems } from './orders-api.service.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
+import { LabApiService } from '../lab/lab-api.service.js';
+import { RadiologyApiService } from '../radiology/radiology-api.service.js';
 
 const auth = { hasPermission: () => true } as unknown as AuthService;
 const directoryResolverProvider = {
   provide: DirectoryResolverService,
   useValue: { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService,
 };
+function makeLabApiStub(): LabApiService {
+  return {
+    listCategories: jest.fn().mockReturnValue(of([{ id: 'cat-1', name: 'Hematology' }])),
+    listTestsByCategory: jest.fn().mockReturnValue(of([{ id: 'test-1', name: 'CBC', specimenType: 'Blood' }])),
+    createRequisition: jest.fn().mockReturnValue(of({ id: 'req-1' })),
+  } as unknown as LabApiService;
+}
+function makeRadiologyApiStub(): RadiologyApiService {
+  return {
+    listImagingTypes: jest.fn().mockReturnValue(of([{ id: 'type-1', name: 'X-Ray' }])),
+    listItemsByType: jest.fn().mockReturnValue(of([{ id: 'item-1', name: 'Chest X-Ray' }])),
+    create: jest.fn().mockReturnValue(of({ id: 'req-1' })),
+  } as unknown as RadiologyApiService;
+}
 
 describe('OrderDetail', () => {
   const order: OrderWithItems = {
@@ -62,6 +78,8 @@ describe('OrderDetail', () => {
       ...ordersApiOverrides,
     } as unknown as OrdersApiService;
     const activatedRoute = { paramMap: of(convertToParamMap({ id: 'order-1' })) } as unknown as ActivatedRoute;
+    const labApi = makeLabApiStub();
+    const radiologyApi = makeRadiologyApiStub();
 
     TestBed.configureTestingModule({
       imports: [OrderDetail],
@@ -70,12 +88,14 @@ describe('OrderDetail', () => {
         { provide: OrdersApiService, useValue: ordersApi },
         { provide: ActivatedRoute, useValue: activatedRoute },
         { provide: AuthService, useValue: auth },
+        { provide: LabApiService, useValue: labApi },
+        { provide: RadiologyApiService, useValue: radiologyApi },
         directoryResolverProvider,
       ],
     });
 
     const fixture = TestBed.createComponent(OrderDetail);
-    return { fixture, ordersApi };
+    return { fixture, ordersApi, labApi, radiologyApi };
   }
 
   it('loads the order with its line items', async () => {
@@ -101,6 +121,8 @@ describe('OrderDetail', () => {
         { provide: OrdersApiService, useValue: ordersApi },
         { provide: ActivatedRoute, useValue: activatedRoute },
         { provide: AuthService, useValue: auth },
+        { provide: LabApiService, useValue: makeLabApiStub() },
+        { provide: RadiologyApiService, useValue: makeRadiologyApiStub() },
         directoryResolverProvider,
       ],
     });
@@ -124,6 +146,8 @@ describe('OrderDetail', () => {
         { provide: OrdersApiService, useValue: ordersApi },
         { provide: ActivatedRoute, useValue: activatedRoute },
         { provide: AuthService, useValue: auth },
+        { provide: LabApiService, useValue: makeLabApiStub() },
+        { provide: RadiologyApiService, useValue: makeRadiologyApiStub() },
         directoryResolverProvider,
       ],
     });
@@ -190,5 +214,94 @@ describe('OrderDetail', () => {
     fixture.componentInstance.goBack();
 
     expect(navigateSpy).toHaveBeenCalledWith(['/clinical/orders']);
+  });
+
+  it('cascades category -> test for the lab requisition picker and pre-fills specimenType from the selected test', async () => {
+    const { fixture, labApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openLabRequisitionModal(order.items[0]);
+    await fixture.whenStable();
+    expect(labApi.listCategories).toHaveBeenCalledTimes(1);
+
+    fixture.componentInstance.onLabCategoryChange('cat-1');
+    await fixture.whenStable();
+    expect(labApi.listTestsByCategory).toHaveBeenCalledWith('cat-1');
+
+    fixture.componentInstance.onLabTestChange('test-1');
+    expect(fixture.componentInstance.labSpecimenType()).toBe('Blood');
+  });
+
+  it('creates a lab requisition against the item that opened the modal', async () => {
+    const { fixture, labApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openLabRequisitionModal(order.items[0]);
+    fixture.componentInstance.labTestId.set('test-1');
+    fixture.componentInstance.labSpecimenType.set('Blood');
+    fixture.componentInstance.submitLabRequisition();
+    await fixture.whenStable();
+
+    expect(labApi.createRequisition).toHaveBeenCalledWith({ orderItemId: 'item-1', testId: 'test-1', specimenType: 'Blood' });
+    expect(fixture.componentInstance.showLabRequisitionModal()).toBe(false);
+  });
+
+  it('does not submit a lab requisition without a test or specimen type', async () => {
+    const { fixture, labApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openLabRequisitionModal(order.items[0]);
+    fixture.componentInstance.submitLabRequisition();
+
+    expect(labApi.createRequisition).not.toHaveBeenCalled();
+  });
+
+  it('cascades imaging type -> item for the radiology requisition picker', async () => {
+    const { fixture, radiologyApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openRadiologyRequisitionModal(order.items[1]);
+    await fixture.whenStable();
+    expect(radiologyApi.listImagingTypes).toHaveBeenCalledTimes(1);
+
+    fixture.componentInstance.onRadiologyImagingTypeChange('type-1');
+    await fixture.whenStable();
+    expect(radiologyApi.listItemsByType).toHaveBeenCalledWith('type-1');
+  });
+
+  it('creates a radiology requisition against the item that opened the modal', async () => {
+    const { fixture, radiologyApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.openRadiologyRequisitionModal(order.items[1]);
+    fixture.componentInstance.radiologyImagingItemId.set('item-1');
+    fixture.componentInstance.submitRadiologyRequisition();
+    await fixture.whenStable();
+
+    expect(radiologyApi.create).toHaveBeenCalledWith({ orderItemId: 'item-2', imagingItemId: 'item-1' });
+    expect(fixture.componentInstance.showRadiologyRequisitionModal()).toBe(false);
+  });
+
+  it('surfaces an error toast and keeps the modal open when creating a lab requisition fails', async () => {
+    const { fixture, labApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (labApi.createRequisition as jest.Mock).mockReturnValue(
+      throwError(() => ({ status: 409, message: 'Order item already has a non-cancelled requisition' })),
+    );
+
+    fixture.componentInstance.openLabRequisitionModal(order.items[0]);
+    fixture.componentInstance.labTestId.set('test-1');
+    fixture.componentInstance.labSpecimenType.set('Blood');
+    fixture.componentInstance.submitLabRequisition();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.labRequisitionSaving()).toBe(false);
+    expect(fixture.componentInstance.showLabRequisitionModal()).toBe(true);
   });
 });

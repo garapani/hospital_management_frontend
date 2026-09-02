@@ -68,6 +68,11 @@ export interface EnterReportDto {
   reportEnteredBy?: string;
 }
 
+export interface CreateRadiologyRequisitionDto {
+  orderItemId: string;
+  imagingItemId: string;
+}
+
 export interface RadiologyListFilters {
   orderItemId?: string;
   status?: string;

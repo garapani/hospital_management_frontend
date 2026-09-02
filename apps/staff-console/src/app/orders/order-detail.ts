@@ -6,6 +6,8 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
 import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
@@ -16,6 +18,9 @@ import { ApiError } from '@org/api-client';
 import { OrdersApiService, OrderItem, OrderWithItems } from './orders-api.service.js';
 import { orderItemStatusSeverity, orderItemTypeSeverity, orderPrioritySeverity } from './order.model.js';
 import { EntityName } from '../directory/entity-name.js';
+import { LabApiService, LabTest, LabTestCategory } from '../lab/lab-api.service.js';
+import { RadiologyApiService } from '../radiology/radiology-api.service.js';
+import { RadiologyImagingItem, RadiologyImagingType } from '../radiology/radiology.model.js';
 
 @Component({
   selector: 'hms-order-detail',
@@ -29,6 +34,8 @@ import { EntityName } from '../directory/entity-name.js';
     TagModule,
     TableModule,
     DialogModule,
+    InputTextModule,
+    SelectModule,
     TextareaModule,
     ToastModule,
     ConfirmDialogModule,
@@ -38,11 +45,36 @@ import { EntityName } from '../directory/entity-name.js';
 })
 export class OrderDetail implements OnInit {
   private readonly ordersApi = inject(OrdersApiService);
+  private readonly labApi = inject(LabApiService);
+  private readonly radiologyApi = inject(RadiologyApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
+
+  // Neither Lab nor Radiology Technician had any UI path to create a requisition at all, despite
+  // holding *.requisition.create — this is the only screen that already knows a Pending Lab/
+  // Radiology order item's id, so requisition creation lives here rather than duplicating an
+  // order-item picker inside the lab/radiology modules themselves.
+  readonly showLabRequisitionModal = signal(false);
+  readonly labCategories = signal<LabTestCategory[]>([]);
+  readonly labTests = signal<LabTest[]>([]);
+  readonly labTestsLoading = signal(false);
+  readonly labCategoryId = signal('');
+  readonly labTestId = signal('');
+  readonly labSpecimenType = signal('');
+  readonly labRequisitionSaving = signal(false);
+  private labRequisitionItem: OrderItem | null = null;
+
+  readonly showRadiologyRequisitionModal = signal(false);
+  readonly radiologyImagingTypes = signal<RadiologyImagingType[]>([]);
+  readonly radiologyImagingItems = signal<RadiologyImagingItem[]>([]);
+  readonly radiologyImagingItemsLoading = signal(false);
+  readonly radiologyImagingTypeId = signal('');
+  readonly radiologyImagingItemId = signal('');
+  readonly radiologyRequisitionSaving = signal(false);
+  private radiologyRequisitionItem: OrderItem | null = null;
 
   readonly order = signal<OrderWithItems | null>(null);
   readonly loading = signal(true);
@@ -142,6 +174,116 @@ export class OrderDetail implements OnInit {
     this.order.set({
       ...current,
       items: current.items.map((i) => (i.id === updated.id ? updated : i)),
+    });
+  }
+
+  openLabRequisitionModal(item: OrderItem): void {
+    this.labRequisitionItem = item;
+    this.labCategoryId.set('');
+    this.labTestId.set('');
+    this.labSpecimenType.set('');
+    this.labTests.set([]);
+    this.showLabRequisitionModal.set(true);
+    this.labApi.listCategories().subscribe({
+      next: (categories) => this.labCategories.set(categories),
+      error: () => this.labCategories.set([]),
+    });
+  }
+
+  onLabCategoryChange(categoryId: string | null): void {
+    this.labCategoryId.set(categoryId ?? '');
+    this.labTestId.set('');
+    this.labSpecimenType.set('');
+    this.labTests.set([]);
+    if (!categoryId) return;
+    this.labTestsLoading.set(true);
+    this.labApi.listTestsByCategory(categoryId).subscribe({
+      next: (tests) => {
+        this.labTests.set(tests);
+        this.labTestsLoading.set(false);
+      },
+      error: () => {
+        this.labTests.set([]);
+        this.labTestsLoading.set(false);
+      },
+    });
+  }
+
+  onLabTestChange(testId: string | null): void {
+    this.labTestId.set(testId ?? '');
+    // Pre-fills from the test's catalog default, but stays editable — the DTO accepts a
+    // specimenType independent of the test, for the (uncommon but real) case the observed
+    // specimen differs from the test's usual one.
+    const test = this.labTests().find((t) => t.id === testId);
+    this.labSpecimenType.set(test?.specimenType ?? '');
+  }
+
+  submitLabRequisition(): void {
+    const item = this.labRequisitionItem;
+    const testId = this.labTestId();
+    const specimenType = this.labSpecimenType().trim();
+    if (!item || !testId || !specimenType) return;
+
+    this.labRequisitionSaving.set(true);
+    this.labApi.createRequisition({ orderItemId: item.id, testId, specimenType }).subscribe({
+      next: () => {
+        this.labRequisitionSaving.set(false);
+        this.showLabRequisitionModal.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Lab requisition created' });
+      },
+      error: (err: ApiError) => {
+        this.labRequisitionSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.message || 'Failed to create the requisition.' });
+      },
+    });
+  }
+
+  openRadiologyRequisitionModal(item: OrderItem): void {
+    this.radiologyRequisitionItem = item;
+    this.radiologyImagingTypeId.set('');
+    this.radiologyImagingItemId.set('');
+    this.radiologyImagingItems.set([]);
+    this.showRadiologyRequisitionModal.set(true);
+    this.radiologyApi.listImagingTypes().subscribe({
+      next: (types) => this.radiologyImagingTypes.set(types),
+      error: () => this.radiologyImagingTypes.set([]),
+    });
+  }
+
+  onRadiologyImagingTypeChange(imagingTypeId: string | null): void {
+    this.radiologyImagingTypeId.set(imagingTypeId ?? '');
+    this.radiologyImagingItemId.set('');
+    this.radiologyImagingItems.set([]);
+    if (!imagingTypeId) return;
+    this.radiologyImagingItemsLoading.set(true);
+    this.radiologyApi.listItemsByType(imagingTypeId).subscribe({
+      next: (items) => {
+        this.radiologyImagingItems.set(items);
+        this.radiologyImagingItemsLoading.set(false);
+      },
+      error: () => {
+        this.radiologyImagingItems.set([]);
+        this.radiologyImagingItemsLoading.set(false);
+      },
+    });
+  }
+
+  submitRadiologyRequisition(): void {
+    const item = this.radiologyRequisitionItem;
+    const imagingItemId = this.radiologyImagingItemId();
+    if (!item || !imagingItemId) return;
+
+    this.radiologyRequisitionSaving.set(true);
+    this.radiologyApi.create({ orderItemId: item.id, imagingItemId }).subscribe({
+      next: () => {
+        this.radiologyRequisitionSaving.set(false);
+        this.showRadiologyRequisitionModal.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Radiology requisition created' });
+      },
+      error: (err: ApiError) => {
+        this.radiologyRequisitionSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: err.message || 'Failed to create the requisition.' });
+      },
     });
   }
 }
