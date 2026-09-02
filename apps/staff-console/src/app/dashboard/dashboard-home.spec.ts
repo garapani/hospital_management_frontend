@@ -11,6 +11,8 @@ import { PendingPharmacyItem } from '../pharmacy/pharmacy-dispensing.model.js';
 import { LabApiService, LabRequisition } from '../lab/lab-api.service.js';
 import { RadiologyApiService } from '../radiology/radiology-api.service.js';
 import { RadiologyRequisition } from '../radiology/radiology.model.js';
+import { InvoicesApiService } from '../billing/invoices-api.service.js';
+import { Invoice } from '../billing/invoice.model.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 function fakeAppointment(overrides: Partial<Appointment> = {}): Appointment {
@@ -111,6 +113,27 @@ function fakeRadiologyRequisition(overrides: Partial<RadiologyRequisition> = {})
   };
 }
 
+function fakeInvoice(overrides: Partial<Invoice> = {}): Invoice {
+  return {
+    id: 'inv-1',
+    patientId: 'patient-1',
+    invoiceNumber: 1,
+    financialYear: '2026-27',
+    subtotal: 1000,
+    discountAmount: 0,
+    taxableAmount: 1000,
+    taxAmount: 0,
+    totalAmount: 1000,
+    paidAmount: 0,
+    status: 'Unpaid',
+    notes: null,
+    createdBy: 'user-1',
+    createdAt: '2026-09-01T08:00:00Z',
+    updatedAt: '2026-09-01T08:00:00Z',
+    ...overrides,
+  };
+}
+
 describe('DashboardHome', () => {
   function setup(options: {
     roles?: string[];
@@ -121,11 +144,13 @@ describe('DashboardHome', () => {
     pendingDispenseItems?: PendingPharmacyItem[];
     pendingRequisitions?: LabRequisition[];
     pendingScans?: RadiologyRequisition[];
+    unpaidInvoices?: Invoice[];
     appointmentsError?: boolean;
     tasksError?: boolean;
     dispenseItemsError?: boolean;
     requisitionsError?: boolean;
     scansError?: boolean;
+    invoicesError?: boolean;
   } = {}) {
     const { roles = [], permissions = [], sub = 'user-1' } = options;
     const appointmentsApi = {
@@ -172,6 +197,16 @@ describe('DashboardHome', () => {
             }),
       ),
     } as unknown as RadiologyApiService;
+    const invoicesApi = {
+      list: jest.fn().mockReturnValue(
+        options.invoicesError
+          ? throwError(() => new Error('boom'))
+          : of({
+              data: options.unpaidInvoices ?? [],
+              meta: { total: (options.unpaidInvoices ?? []).length, page: 1, limit: 100, totalPages: 1 },
+            }),
+      ),
+    } as unknown as InvoicesApiService;
     const auth = {
       currentUser: () => ({ sub, roles }),
       hasPermission: (permission: string) => permissions.includes(permission),
@@ -187,17 +222,18 @@ describe('DashboardHome', () => {
         { provide: PharmacyDispensingApiService, useValue: pharmacyApi },
         { provide: LabApiService, useValue: labApi },
         { provide: RadiologyApiService, useValue: radiologyApi },
+        { provide: InvoicesApiService, useValue: invoicesApi },
         { provide: AuthService, useValue: auth },
         { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
     const fixture = TestBed.createComponent(DashboardHome);
-    return { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi };
+    return { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi };
   }
 
   it('shows nothing scoped and makes no calls for a role with no dashboard widget', async () => {
-    const { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi } = setup({
+    const { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi } = setup({
       roles: ['Auditor/Compliance'],
       permissions: [],
     });
@@ -210,6 +246,7 @@ describe('DashboardHome', () => {
     expect(pharmacyApi.listPendingItems).not.toHaveBeenCalled();
     expect(labApi.listRequisitions).not.toHaveBeenCalled();
     expect(radiologyApi.list).not.toHaveBeenCalled();
+    expect(invoicesApi.list).not.toHaveBeenCalled();
   });
 
   it("loads today's appointments and tallies status counts for a Receptionist", async () => {
@@ -311,6 +348,26 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.pendingScans()).toHaveLength(2);
   });
 
+  it('loads unpaid/partially-paid invoices for Billing/Accounts Staff, sorted oldest first, excluding paid/cancelled ones', async () => {
+    const invoices = [
+      fakeInvoice({ id: 'inv-1', status: 'Paid', createdAt: '2026-09-01T00:00:00Z' }),
+      fakeInvoice({ id: 'inv-2', status: 'Unpaid', createdAt: '2026-09-01T12:00:00Z' }),
+      fakeInvoice({ id: 'inv-3', status: 'PartiallyPaid', createdAt: '2026-09-01T06:00:00Z' }),
+      fakeInvoice({ id: 'inv-4', status: 'Cancelled', createdAt: '2026-09-01T03:00:00Z' }),
+    ];
+    const { fixture, invoicesApi } = setup({
+      roles: ['Billing/Accounts Staff'],
+      permissions: ['billing.read'],
+      unpaidInvoices: invoices,
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.isBillingStaff()).toBe(true);
+    expect(invoicesApi.list).toHaveBeenCalledWith({ limit: 100 });
+    expect(fixture.componentInstance.unpaidInvoices().map((i) => i.id)).toEqual(['inv-3', 'inv-2']);
+  });
+
   it('skips a widget load when the role matches but the permission does not', async () => {
     const { fixture, appointmentsApi } = setup({ roles: ['Doctor'], permissions: [] });
     fixture.detectChanges();
@@ -333,15 +390,16 @@ describe('DashboardHome', () => {
     expect(nursingApi.listTasks).toHaveBeenCalled();
   });
 
-  it('clears loading flags without throwing when the appointments/tasks/dispensing/requisitions/scans lookups error', async () => {
+  it('clears loading flags without throwing when the appointments/tasks/dispensing/requisitions/scans/invoices lookups error', async () => {
     const { fixture } = setup({
-      roles: ['Receptionist / Front Desk', 'Nurse', 'Pharmacist', 'Lab Technician', 'Radiology Technician'],
-      permissions: ['appointment.read', 'nursing.read', 'pharmacy.read', 'lab.read', 'radiology.read'],
+      roles: ['Receptionist / Front Desk', 'Nurse', 'Pharmacist', 'Lab Technician', 'Radiology Technician', 'Billing/Accounts Staff'],
+      permissions: ['appointment.read', 'nursing.read', 'pharmacy.read', 'lab.read', 'radiology.read', 'billing.read'],
       appointmentsError: true,
       tasksError: true,
       dispenseItemsError: true,
       requisitionsError: true,
       scansError: true,
+      invoicesError: true,
     });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -351,5 +409,6 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.dispenseItemsLoading()).toBe(false);
     expect(fixture.componentInstance.requisitionsLoading()).toBe(false);
     expect(fixture.componentInstance.scansLoading()).toBe(false);
+    expect(fixture.componentInstance.invoicesLoading()).toBe(false);
   });
 });

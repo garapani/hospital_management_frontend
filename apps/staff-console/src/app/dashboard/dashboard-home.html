@@ -289,4 +289,48 @@
     </p-table>
   </div>
   }
+
+  @if (isBillingStaff()) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="font-bold text-slate-800 text-lg">Unpaid Invoices</h2>
+      <a routerLink="/billing/invoices" class="text-sky-600 hover:text-sky-800 text-sm font-medium">Open Billing</a>
+    </div>
+
+    <p-table
+      [value]="unpaidInvoices()"
+      [loading]="invoicesLoading()"
+      [paginator]="true"
+      [rows]="10"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Invoice</th>
+          <th class="table-header-cell">Patient</th>
+          <th class="table-header-cell">Outstanding</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell w-16">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-invoice>
+        <tr>
+          <td class="font-medium">{{ invoiceReference(invoice) }}</td>
+          <td><hms-entity-name type="patient" [id]="invoice.patientId"></hms-entity-name></td>
+          <td class="font-mono">{{ outstandingBalance(invoice) | number: '1.2-2' }}</td>
+          <td><p-tag [value]="invoice.status" [severity]="invoiceStatusSeverity(invoice.status)" [rounded]="true"></p-tag></td>
+          <td>
+            <a [routerLink]="['/billing/invoices', invoice.id]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View</a>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-6 text-slate-500">No unpaid invoices.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
 </div>

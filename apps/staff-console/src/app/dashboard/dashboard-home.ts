@@ -13,6 +13,8 @@ import { PendingPharmacyItem } from '../pharmacy/pharmacy-dispensing.model.js';
 import { LabApiService, LabRequisition } from '../lab/lab-api.service.js';
 import { RadiologyApiService } from '../radiology/radiology-api.service.js';
 import { RadiologyRequisition } from '../radiology/radiology.model.js';
+import { InvoicesApiService } from '../billing/invoices-api.service.js';
+import { Invoice, invoiceReference, outstandingBalance, statusSeverity as invoiceStatusSeverity } from '../billing/invoice.model.js';
 import { EntityName } from '../directory/entity-name.js';
 import { todayLocal as today } from '../shared/date.util.js';
 
@@ -30,6 +32,7 @@ export class DashboardHome {
   private readonly pharmacyApi = inject(PharmacyDispensingApiService);
   private readonly labApi = inject(LabApiService);
   private readonly radiologyApi = inject(RadiologyApiService);
+  private readonly invoicesApi = inject(InvoicesApiService);
   readonly auth = inject(AuthService);
 
   readonly displayName = appointmentDisplayName;
@@ -46,6 +49,7 @@ export class DashboardHome {
   readonly isPharmacist = computed(() => this.roles().includes('Pharmacist'));
   readonly isLabTechnician = computed(() => this.roles().includes('Lab Technician'));
   readonly isRadiologyTechnician = computed(() => this.roles().includes('Radiology Technician'));
+  readonly isBillingStaff = computed(() => this.roles().includes('Billing/Accounts Staff'));
   readonly hasNoWidgets = computed(
     () =>
       !this.isReceptionist() &&
@@ -53,7 +57,8 @@ export class DashboardHome {
       !this.isNurse() &&
       !this.isPharmacist() &&
       !this.isLabTechnician() &&
-      !this.isRadiologyTechnician(),
+      !this.isRadiologyTechnician() &&
+      !this.isBillingStaff(),
   );
 
   readonly todaysAppointments = signal<Appointment[]>([]);
@@ -84,6 +89,12 @@ export class DashboardHome {
   readonly pendingScans = signal<RadiologyRequisition[]>([]);
   readonly scansLoading = signal(false);
 
+  readonly unpaidInvoices = signal<Invoice[]>([]);
+  readonly invoicesLoading = signal(false);
+  readonly invoiceReference = invoiceReference;
+  readonly outstandingBalance = outstandingBalance;
+  readonly invoiceStatusSeverity = invoiceStatusSeverity;
+
   constructor() {
     if (this.isReceptionist() && this.auth.hasPermission('appointment.read')) {
       this.loadTodaysAppointments();
@@ -102,6 +113,9 @@ export class DashboardHome {
     }
     if (this.isRadiologyTechnician() && this.auth.hasPermission('radiology.read')) {
       this.loadPendingScans();
+    }
+    if (this.isBillingStaff() && this.auth.hasPermission('billing.read')) {
+      this.loadUnpaidInvoices();
     }
   }
 
@@ -183,6 +197,22 @@ export class DashboardHome {
         this.scansLoading.set(false);
       },
       error: () => this.scansLoading.set(false),
+    });
+  }
+
+  private loadUnpaidInvoices(): void {
+    this.invoicesLoading.set(true);
+    // No status filter on the backend endpoint (invoice-list.ts doesn't offer one either) - fetch
+    // a page and filter client-side, same approach as the Nurse widget's pending-tasks query.
+    this.invoicesApi.list({ limit: DASHBOARD_LIST_LIMIT }).subscribe({
+      next: (res) => {
+        const unpaid = res.data
+          .filter((invoice) => invoice.status === 'Unpaid' || invoice.status === 'PartiallyPaid')
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        this.unpaidInvoices.set(unpaid);
+        this.invoicesLoading.set(false);
+      },
+      error: () => this.invoicesLoading.set(false),
     });
   }
 }
