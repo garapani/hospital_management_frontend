@@ -26,11 +26,16 @@
 
 Separate git repo from the backend (`../` — `new_hospital`, an independent repository, not a
 parent/submodule relationship). Angular ~21.2.19 (approved as "v18+" per
-`../new/docs/superpowers/specs/2026-07-30-frontend-framework-architecture-design.md`), CSR only,
+`../backend/docs/superpowers/specs/2026-07-30-frontend-framework-architecture-design.md`), CSR only,
 signals for state (no NgRx), PrimeNG + Tailwind CSS v4 for components/styling. `staff-console` is
 the first of two planned apps (`patient-portal` deferred — no mocks or backend auth path exist for
 it yet); this workspace uses the `angular-monorepo`-shaped layout (`apps/`) so a second app can be
 added later without restructuring.
+
+**Quick-understanding docs (start here):** `docs/Architecture.md` (boot/shell, routing, auth
+session flow, data-access pattern, theming, backend relationship) and `docs/Module-Reference.md`
+(the per-feature map: routes, guards, components, API services/endpoints). Read Architecture.md
+first, then Module-Reference.md when you need to touch a specific feature.
 
 **Angular/PrimeNG pinned to v21, not v22 (2026-08-09):** PrimeNG v22 bundles
 `@primeui/license-manager` as a direct dependency — PrimeTek relicensed the mainline package
@@ -42,15 +47,13 @@ its own major 1:1 (`primeng@21.1.9` → `@angular/core ^21.0.7`), so staying fre
 Angular to the matching 21.x line too, not just swapping the PrimeNG version — do not bump either
 past v21 without re-checking `primeng`'s own `dependencies` for `@primeui/license-manager` first.
 
-**UI mocks/reference:** `../new/ui-mocks/` (in the backend repo, not copied here) — 10
-role-based static HTML clickable prototypes. Treat as a screen-inventory/IA reference and a
-reusable interaction-pattern vocabulary (step-bar for multi-step forms, tabs for detail views,
-toolbar+search+table for lists, a permission-aware "hide unavailable actions" footer) — the
-field-level content is generic placeholder (confirmed by inspection: e.g. Lab's Result Entry form
-has no component-name/value/reference-range fields, just generic "Patient/Entity, Status,
-Reference/Number, Notes"), not real design. Permission strings shown in the mocks are invented,
+**UI mocks/reference:** the original 10 role-based static-HTML prototypes (`../new/ui-mocks/`,
+referenced in the early design specs) are no longer present in either repo — treat the interaction
+patterns they described (step-bar for multi-step forms, tabs for detail views,
+toolbar+search+table for lists, a permission-aware "hide unavailable actions" footer) as the
+vocabulary the screens were built from. Permission strings shown in those mocks were invented,
 not real — the actual gating source is the JWT-embedded permissions from the backend's
-`seed-rbac-catalog.ts` (`new/code/apps/api/src/rbac/seed-rbac-catalog.ts` in the backend repo).
+`seed-rbac-catalog.ts` (`../backend/code/apps/api/src/rbac/seed-rbac-catalog.ts`).
 
 ## Process
 
@@ -87,7 +90,7 @@ rewritten immediately after to make that judgment call explicit rather than left
 ## Shared libraries
 
 `libs/api-client` and `libs/auth` (built 2026-08-09, spec at the backend repo's
-`new/docs/superpowers/specs/2026-08-09-frontend-shared-libs-api-client-auth-design.md`) are how
+`../backend/docs/superpowers/specs/2026-08-09-frontend-shared-libs-api-client-auth-design.md`) are how
 every screen talks to the API Gateway — don't hand-roll `HttpClient` calls or token handling in a
 component/service.
 
@@ -197,7 +200,7 @@ body }`.
   component-local stylesheet — and if it introduces a new `glass-*`/`gradient-*` class name, that
   class must actually be defined in `styles.css`'s `@layer tailwind-utilities` (an undefined class
   referenced in a template silently renders unstyled; nothing in typecheck/lint/tests catches it).
-  See `new/docs/technical-design/Development-Standards.md` §21 for the exact class vocabulary.
+  See `../backend/docs/technical-design/Development-Standards.md` §21 for the exact class vocabulary.
 - **`apps/staff-console/tsconfig.spec.json` must not set `moduleResolution` to `"node10"`** — it
   extends `tsconfig.base.json` directly (not `./tsconfig.json`), so it inherits
   `customConditions`, and TypeScript hard-errors (TS5098) on that combination regardless of
