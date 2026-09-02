@@ -13,6 +13,7 @@ import { AuthService } from '@org/auth';
 
 import { PharmacyDispensingApiService } from './pharmacy-dispensing-api.service.js';
 import { dispensingStatusSeverity, PharmacyDispensing } from './pharmacy-dispensing.model.js';
+import { openPdfBlobInNewTab } from '../shared/pdf-blob.util.js';
 
 @Component({
   selector: 'hms-pharmacy-dispensing-detail',
@@ -32,6 +33,7 @@ export class PharmacyDispensingDetail implements OnInit {
   readonly dispensing = signal<PharmacyDispensing | null>(null);
   readonly loading = signal(true);
   readonly dispensingInProgress = signal(false);
+  readonly printingLabel = signal(false);
 
   readonly showCancelModal = signal(false);
   readonly cancelReason = signal('');
@@ -70,6 +72,23 @@ export class PharmacyDispensingDetail implements OnInit {
 
   goBack() {
     this.router.navigate(['/clinical/pharmacy']);
+  }
+
+  printDispensingLabel() {
+    const id = this.dispensing()?.id;
+    if (!id) return;
+
+    this.printingLabel.set(true);
+    this.pharmacyApi.getDispensingLabelPdf(id).subscribe({
+      next: (blob) => {
+        this.printingLabel.set(false);
+        openPdfBlobInNewTab(blob);
+      },
+      error: () => {
+        this.printingLabel.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the dispensing label.' });
+      },
+    });
   }
 
   dispenseDrug() {

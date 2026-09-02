@@ -55,6 +55,10 @@ export class PharmacyDispensingApiService {
     return this.apiClient.get<PharmacyDispensing>(`/pharmacy/dispensings/${id}`);
   }
 
+  getDispensingLabelPdf(id: string) {
+    return this.apiClient.getBlob(`/pharmacy/dispensings/${id}/dispensing-label.pdf`);
+  }
+
   create(data: CreatePharmacyDispensingDto) {
     return this.apiClient.post<PharmacyDispensing>('/pharmacy/dispensings', data);
   }

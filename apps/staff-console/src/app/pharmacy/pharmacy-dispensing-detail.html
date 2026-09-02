@@ -75,6 +75,9 @@
     </div>
 
     <div class="flex justify-end gap-2 border-t border-slate-200 pt-4">
+      @if (d.status !== 'Cancelled') {
+      <p-button label="Print Dispensing Label" icon="pi pi-print" severity="secondary" [text]="true" [loading]="printingLabel()" (onClick)="printDispensingLabel()"></p-button>
+      }
       @if (auth.hasPermission('pharmacy.dispensing.create') && d.status === 'Pending') {
       <p-button label="Cancel Dispensing" severity="danger" [text]="true" [loading]="cancelSaving()" (onClick)="openCancelModal()"></p-button>
       }
