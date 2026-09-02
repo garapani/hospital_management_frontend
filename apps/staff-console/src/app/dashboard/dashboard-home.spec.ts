@@ -15,6 +15,8 @@ import { InvoicesApiService } from '../billing/invoices-api.service.js';
 import { Invoice } from '../billing/invoice.model.js';
 import { InventoryApiService, LowStockItem } from '../inventory/inventory-api.service.js';
 import { PayrollApiService, Payslip } from '../payroll/payroll-api.service.js';
+import { HelpdeskApiService } from '../helpdesk/helpdesk-api.service.js';
+import { HelpdeskTicket } from '../helpdesk/helpdesk.model.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 function fakeAppointment(overrides: Partial<Appointment> = {}): Appointment {
@@ -166,6 +168,26 @@ function fakePayslip(overrides: Partial<Payslip> = {}): Payslip {
   };
 }
 
+function fakeHelpdeskTicket(overrides: Partial<HelpdeskTicket> = {}): HelpdeskTicket {
+  return {
+    id: 'ticket-1',
+    ticketNumber: 'TCK-0001',
+    title: 'Printer not working',
+    description: 'The reception printer is jammed.',
+    category: null,
+    priority: 'Medium',
+    status: 'Open',
+    requesterAccountId: 'account-1',
+    requesterName: 'Jane Doe',
+    assigneeAccountId: null,
+    assigneeName: null,
+    resolvedBy: null,
+    resolvedAt: null,
+    closedAt: null,
+    ...overrides,
+  };
+}
+
 describe('DashboardHome', () => {
   function setup(options: {
     roles?: string[];
@@ -179,6 +201,7 @@ describe('DashboardHome', () => {
     unpaidInvoices?: Invoice[];
     lowStockItems?: LowStockItem[];
     draftPayslips?: Payslip[];
+    openTickets?: HelpdeskTicket[];
     appointmentsError?: boolean;
     tasksError?: boolean;
     dispenseItemsError?: boolean;
@@ -187,6 +210,7 @@ describe('DashboardHome', () => {
     invoicesError?: boolean;
     lowStockError?: boolean;
     payslipsError?: boolean;
+    ticketsError?: boolean;
   } = {}) {
     const { roles = [], permissions = [], sub = 'user-1' } = options;
     const appointmentsApi = {
@@ -258,6 +282,13 @@ describe('DashboardHome', () => {
             }),
       ),
     } as unknown as PayrollApiService;
+    const helpdeskApi = {
+      list: jest.fn().mockReturnValue(
+        options.ticketsError
+          ? throwError(() => new Error('boom'))
+          : of({ data: options.openTickets ?? [], total: (options.openTickets ?? []).length }),
+      ),
+    } as unknown as HelpdeskApiService;
     const auth = {
       currentUser: () => ({ sub, roles }),
       hasPermission: (permission: string) => permissions.includes(permission),
@@ -276,17 +307,29 @@ describe('DashboardHome', () => {
         { provide: InvoicesApiService, useValue: invoicesApi },
         { provide: InventoryApiService, useValue: inventoryApi },
         { provide: PayrollApiService, useValue: payrollApi },
+        { provide: HelpdeskApiService, useValue: helpdeskApi },
         { provide: AuthService, useValue: auth },
         { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
     const fixture = TestBed.createComponent(DashboardHome);
-    return { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi, inventoryApi, payrollApi };
+    return { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi, inventoryApi, payrollApi, helpdeskApi };
   }
 
   it('shows nothing scoped and makes no calls for a role with no dashboard widget', async () => {
-    const { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi, invoicesApi, inventoryApi, payrollApi } = setup({
+    const {
+      fixture,
+      appointmentsApi,
+      nursingApi,
+      pharmacyApi,
+      labApi,
+      radiologyApi,
+      invoicesApi,
+      inventoryApi,
+      payrollApi,
+      helpdeskApi,
+    } = setup({
       roles: ['Auditor/Compliance'],
       permissions: [],
     });
@@ -302,6 +345,7 @@ describe('DashboardHome', () => {
     expect(invoicesApi.list).not.toHaveBeenCalled();
     expect(inventoryApi.listLowStockItems).not.toHaveBeenCalled();
     expect(payrollApi.listPayslips).not.toHaveBeenCalled();
+    expect(helpdeskApi.list).not.toHaveBeenCalled();
   });
 
   it("loads today's appointments and tallies status counts for a Receptionist", async () => {
@@ -453,6 +497,26 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.draftPayslips()).toHaveLength(2);
   });
 
+  it('loads open/in-progress tickets for a Helpdesk Agent, excluding resolved/closed ones', async () => {
+    const tickets = [
+      fakeHelpdeskTicket({ id: 't1', status: 'Open' }),
+      fakeHelpdeskTicket({ id: 't2', status: 'InProgress' }),
+      fakeHelpdeskTicket({ id: 't3', status: 'Resolved' }),
+      fakeHelpdeskTicket({ id: 't4', status: 'Closed' }),
+    ];
+    const { fixture, helpdeskApi } = setup({
+      roles: ['Helpdesk Agent'],
+      permissions: ['helpdesk.read'],
+      openTickets: tickets,
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.isHelpdeskAgent()).toBe(true);
+    expect(helpdeskApi.list).toHaveBeenCalledWith({ limit: 100 });
+    expect(fixture.componentInstance.openTickets().map((t) => t.id)).toEqual(['t1', 't2']);
+  });
+
   it('skips a widget load when the role matches but the permission does not', async () => {
     const { fixture, appointmentsApi } = setup({ roles: ['Doctor'], permissions: [] });
     fixture.detectChanges();
@@ -486,6 +550,7 @@ describe('DashboardHome', () => {
         'Billing/Accounts Staff',
         'Inventory/Store Manager',
         'HR/Payroll Admin',
+        'Helpdesk Agent',
       ],
       permissions: [
         'appointment.read',
@@ -496,6 +561,7 @@ describe('DashboardHome', () => {
         'billing.read',
         'inventory.read',
         'payroll.read',
+        'helpdesk.read',
       ],
       appointmentsError: true,
       tasksError: true,
@@ -505,6 +571,7 @@ describe('DashboardHome', () => {
       invoicesError: true,
       lowStockError: true,
       payslipsError: true,
+      ticketsError: true,
     });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -517,5 +584,6 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.invoicesLoading()).toBe(false);
     expect(fixture.componentInstance.lowStockLoading()).toBe(false);
     expect(fixture.componentInstance.payslipsLoading()).toBe(false);
+    expect(fixture.componentInstance.ticketsLoading()).toBe(false);
   });
 });

@@ -17,6 +17,8 @@ import { InvoicesApiService } from '../billing/invoices-api.service.js';
 import { Invoice, invoiceReference, outstandingBalance, statusSeverity as invoiceStatusSeverity } from '../billing/invoice.model.js';
 import { InventoryApiService, LowStockItem } from '../inventory/inventory-api.service.js';
 import { PayrollApiService, Payslip } from '../payroll/payroll-api.service.js';
+import { HelpdeskApiService } from '../helpdesk/helpdesk-api.service.js';
+import { HelpdeskTicket } from '../helpdesk/helpdesk.model.js';
 import { EntityName } from '../directory/entity-name.js';
 import { todayLocal as today } from '../shared/date.util.js';
 
@@ -37,6 +39,7 @@ export class DashboardHome {
   private readonly invoicesApi = inject(InvoicesApiService);
   private readonly inventoryApi = inject(InventoryApiService);
   private readonly payrollApi = inject(PayrollApiService);
+  private readonly helpdeskApi = inject(HelpdeskApiService);
   readonly auth = inject(AuthService);
 
   readonly displayName = appointmentDisplayName;
@@ -56,6 +59,7 @@ export class DashboardHome {
   readonly isBillingStaff = computed(() => this.roles().includes('Billing/Accounts Staff'));
   readonly isInventoryManager = computed(() => this.roles().includes('Inventory/Store Manager'));
   readonly isHrPayrollAdmin = computed(() => this.roles().includes('HR/Payroll Admin'));
+  readonly isHelpdeskAgent = computed(() => this.roles().includes('Helpdesk Agent'));
   readonly hasNoWidgets = computed(
     () =>
       !this.isReceptionist() &&
@@ -66,7 +70,8 @@ export class DashboardHome {
       !this.isRadiologyTechnician() &&
       !this.isBillingStaff() &&
       !this.isInventoryManager() &&
-      !this.isHrPayrollAdmin(),
+      !this.isHrPayrollAdmin() &&
+      !this.isHelpdeskAgent(),
   );
 
   readonly todaysAppointments = signal<Appointment[]>([]);
@@ -109,6 +114,9 @@ export class DashboardHome {
   readonly draftPayslips = signal<Payslip[]>([]);
   readonly payslipsLoading = signal(false);
 
+  readonly openTickets = signal<HelpdeskTicket[]>([]);
+  readonly ticketsLoading = signal(false);
+
   constructor() {
     if (this.isReceptionist() && this.auth.hasPermission('appointment.read')) {
       this.loadTodaysAppointments();
@@ -136,6 +144,9 @@ export class DashboardHome {
     }
     if (this.isHrPayrollAdmin() && this.auth.hasPermission('payroll.read')) {
       this.loadDraftPayslips();
+    }
+    if (this.isHelpdeskAgent() && this.auth.hasPermission('helpdesk.read')) {
+      this.loadOpenTickets();
     }
   }
 
@@ -255,6 +266,20 @@ export class DashboardHome {
         this.payslipsLoading.set(false);
       },
       error: () => this.payslipsLoading.set(false),
+    });
+  }
+
+  private loadOpenTickets(): void {
+    this.ticketsLoading.set(true);
+    // No way to ask the endpoint for two statuses at once (Open + InProgress) - fetch a page and
+    // filter client-side, same approach as the Nurse widget's pending-tasks query.
+    this.helpdeskApi.list({ limit: DASHBOARD_LIST_LIMIT }).subscribe({
+      next: (res) => {
+        const open = res.data.filter((ticket) => ticket.status === 'Open' || ticket.status === 'InProgress');
+        this.openTickets.set(open);
+        this.ticketsLoading.set(false);
+      },
+      error: () => this.ticketsLoading.set(false),
     });
   }
 }

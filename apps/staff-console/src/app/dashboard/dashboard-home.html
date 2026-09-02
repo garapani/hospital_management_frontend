@@ -415,4 +415,50 @@
     </p-table>
   </div>
   }
+
+  @if (isHelpdeskAgent()) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-6 flex flex-col gap-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <h2 class="font-bold text-slate-800 text-lg">Open Tickets</h2>
+      <a routerLink="/helpdesk" class="text-sky-600 hover:text-sky-800 text-sm font-medium">Open Helpdesk</a>
+    </div>
+
+    <p-table
+      [value]="openTickets()"
+      [loading]="ticketsLoading()"
+      [paginator]="true"
+      [rows]="10"
+      [rowHover]="true"
+      styleClass="p-datatable-sm p-datatable-gridlines"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="table-header-cell">Ticket #</th>
+          <th class="table-header-cell">Title</th>
+          <th class="table-header-cell">Priority</th>
+          <th class="table-header-cell">Assignee</th>
+          <th class="table-header-cell">Status</th>
+          <th class="table-header-cell w-16">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-ticket>
+        <tr>
+          <td class="font-mono">{{ ticket.ticketNumber }}</td>
+          <td class="font-medium">{{ ticket.title }}</td>
+          <td>{{ ticket.priority }}</td>
+          <td>{{ ticket.assigneeName || 'Unassigned' }}</td>
+          <td><p-tag [value]="ticket.status" [severity]="ticket.status === 'Open' ? 'warn' : 'info'" [rounded]="true"></p-tag></td>
+          <td>
+            <a [routerLink]="['/helpdesk', ticket.id]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View</a>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="text-center p-6 text-slate-500">No open tickets.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
 </div>
