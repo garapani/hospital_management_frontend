@@ -81,7 +81,7 @@
           <td class="font-mono text-xs">{{ item.code }}</td>
           <td>{{ item.unitOfMeasure }}</td>
           <td>
-            @if (item.salePrice != null) {
+            @if (item.salePrice !== null) {
             <span class="font-mono">{{ item.salePrice | number: '1.2-2' }}</span>
             } @else {
             <span class="text-slate-400">Not priced</span>

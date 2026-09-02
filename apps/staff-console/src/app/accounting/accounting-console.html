@@ -328,7 +328,7 @@
 
     <div class="flex flex-col gap-2">
       <div class="flex justify-between items-center">
-        <label class="text-sm font-medium text-slate-700">Lines</label>
+        <span class="text-sm font-medium text-slate-700">Lines</span>
         <p-button label="Add Line" [text]="true" size="small" icon="pi pi-plus" (onClick)="addJournalLine()"></p-button>
       </div>
       @for (line of journalLines(); track $index) {

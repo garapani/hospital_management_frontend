@@ -1,5 +1,6 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, WritableSignal, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { ChartOptions } from 'chart.js';
 import { RouterModule } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -118,7 +119,7 @@ export class AdminDashboard {
     };
   });
 
-  readonly chartOptions = signal<any>({
+  readonly chartOptions: WritableSignal<ChartOptions<'bar'>> = signal({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {

@@ -140,10 +140,10 @@ export class NursingConsole {
         this.selectedPatientId.set(admission.patientId);
         this.patientsApi.getById(admission.patientId).subscribe({
           next: (patient) => this.patientOptions.set([{ label: patientLabel(patient), value: patient.id }]),
-          error: () => {},
+          error: () => undefined,
         });
       },
-      error: () => {},
+      error: () => undefined,
     });
   }
 

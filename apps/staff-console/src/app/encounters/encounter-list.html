@@ -353,8 +353,9 @@
         autocomplete="off"
       />
     </div>
-    <label class="flex items-center gap-2 text-sm">
+    <label for="diagnosisIsPrimary" class="flex items-center gap-2 text-sm">
       <p-checkbox
+        inputId="diagnosisIsPrimary"
         [binary]="true"
         [ngModel]="diagnosisForm().isPrimary"
         (ngModelChange)="diagnosisForm.update(v => ({...v, isPrimary: $event}))"

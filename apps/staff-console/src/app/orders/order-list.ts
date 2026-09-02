@@ -109,7 +109,7 @@ export class OrderList {
         if (target === 'filter') this.patientOptions.set([option]);
         else this.createPatientOptions.set([option]);
       },
-      error: () => {},
+      error: () => undefined,
     });
   }
 

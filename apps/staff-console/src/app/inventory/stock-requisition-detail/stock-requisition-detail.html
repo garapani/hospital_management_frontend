@@ -119,16 +119,16 @@
   @if (fulfillLine(); as line) {
   <div class="flex flex-col gap-4 py-4">
     <div class="flex flex-col gap-2">
-      <label class="text-sm font-medium text-slate-700">Item</label>
+      <span class="text-sm font-medium text-slate-700">Item</span>
       <div class="font-medium text-slate-900"><hms-entity-name type="item" [id]="line.itemId"></hms-entity-name></div>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium text-slate-700">Requested</label>
+        <span class="text-sm font-medium text-slate-700">Requested</span>
         <div class="font-medium text-slate-900">{{ line.requestedQuantity }}</div>
       </div>
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium text-slate-700">Remaining</label>
+        <span class="text-sm font-medium text-slate-700">Remaining</span>
         <div class="font-medium text-slate-900">{{ remaining(line) }}</div>
       </div>
     </div>

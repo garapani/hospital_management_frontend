@@ -549,9 +549,11 @@
       @for (role of assignableRoles(); track role.id) {
       @let annotation = roleAnnotation(role.name);
       <label
+        [attr.for]="'role-toggle-' + role.id"
         class="flex items-start gap-3 rounded-lg border border-slate-200 p-3 hover:bg-slate-50 transition-colors cursor-pointer"
       >
         <p-toggleswitch
+          [inputId]="'role-toggle-' + role.id"
           [ngModel]="draft()[role.id]"
           (ngModelChange)="toggleRole(role.id, $event)"
           [disabled]="rolesSaving()"

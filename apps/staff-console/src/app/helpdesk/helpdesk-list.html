@@ -20,9 +20,9 @@
           class="w-64"
         />
       </label>
-      <label class="flex flex-col gap-2">
+      <label for="helpdeskStatusFilter" class="flex flex-col gap-2">
         <span class="text-sm font-medium text-slate-700">Status</span>
-        <p-select [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); applyFilters()" styleClass="w-48"></p-select>
+        <p-select inputId="helpdeskStatusFilter" [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); applyFilters()" styleClass="w-48"></p-select>
       </label>
       <p-button label="Filter" (onClick)="applyFilters()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
     </div>

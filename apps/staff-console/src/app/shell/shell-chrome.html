@@ -34,6 +34,11 @@
       }
       <span class="brand-mark text-slate-900">{{ branding.displayName() ?? 'Vaidya' }}</span>
     </div>
+    <!-- Event delegation, not an interactive element: catches a bubbled click from a projected nav
+         link (already independently focusable/keyboard-operable) to auto-close the mobile
+         drawer after navigating. Adding tabindex/keydown to the <nav> landmark itself would be
+         wrong a11y — it isn't meant to be perceived as its own interactive control. -->
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
     <nav class="flex flex-col gap-1" (click)="closeSidebar()">
       <ng-content select="[shellNav]"></ng-content>
     </nav>
