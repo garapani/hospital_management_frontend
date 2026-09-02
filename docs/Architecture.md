@@ -275,6 +275,14 @@ helpers (invoice.model, triage.model, branding.model…) get unit specs. Example
 `auth.guard.spec.ts` (each guard's allow/redirect), `libs/auth/src/lib/auth.interceptor.spec.ts`.
 Unit spec `tsconfig.spec.json` sets `moduleResolution: "bundler"` (must not be `node10`).
 
+**Live/E2E verification has no project skill either** — `apps/staff-console-e2e` is an untouched
+Playwright scaffold (single generated example spec), and no `.claude/skills/` entry launches
+`nx serve staff-console` + the backend stack together. A session that needs to visually confirm a
+UI change end-to-end currently hand-rolls a throwaway Playwright script in its scratchpad each
+time (login-field ids, wait-for-route timing, screenshot flow) rather than reusing one — see the
+matching "no boot-the-stack skill" note in the backend's `Technical-Design.md` §8. Both are the
+same underlying gap (no `run` skill for this two-repo app) and worth capturing together.
+
 ## Relationship to the backend
 
 Sibling, independently versioned repo at `../backend/code` (NestJS modular monolith). Dev Gateway
