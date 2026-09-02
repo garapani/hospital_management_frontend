@@ -7,8 +7,24 @@ import { AppointmentsApiService, Appointment } from './appointments-api.service.
 import { UsersApiService, DirectoryEntry } from '../users/users-api.service.js';
 import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 import { Department } from '../master-data/master-data.model.js';
+import { PatientsApiService, Patient } from '../patients/patients-api.service.js';
 
 describe('AppointmentList', () => {
+  function fakePatient(overrides: Partial<Patient> = {}): Patient {
+    return {
+      id: 'patient-1',
+      patientNo: 'PAT-1',
+      firstName: 'Jane',
+      lastName: 'Doe',
+      gender: 'Female',
+      phoneNumber: '5551234567',
+      isActive: true,
+      createdAt: '2026-08-01T00:00:00Z',
+      updatedAt: '2026-08-01T00:00:00Z',
+      ...overrides,
+    };
+  }
+
   function setup(
     queryParams: Record<string, string> = {},
     overrides: { doctors?: DirectoryEntry[]; departments?: Department[] } = {},
@@ -26,6 +42,12 @@ describe('AppointmentList', () => {
     const masterDataApi = {
       listDepartments: jest.fn().mockReturnValue(of(overrides.departments ?? [])),
     } as unknown as MasterDataApiService;
+    const patientsApi = {
+      search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+      getById: jest.fn().mockReturnValue(of(fakePatient())),
+      create: jest.fn().mockReturnValue(of(fakePatient())),
+      checkDuplicates: jest.fn().mockReturnValue(of([])),
+    } as unknown as PatientsApiService;
     const auth = { hasPermission: () => true } as unknown as AuthService;
     const activatedRoute = {
       queryParamMap: of(convertToParamMap(queryParams)),
@@ -38,13 +60,14 @@ describe('AppointmentList', () => {
         { provide: AppointmentsApiService, useValue: appointmentsApi },
         { provide: UsersApiService, useValue: usersApi },
         { provide: MasterDataApiService, useValue: masterDataApi },
+        { provide: PatientsApiService, useValue: patientsApi },
         { provide: AuthService, useValue: auth },
         { provide: ActivatedRoute, useValue: activatedRoute },
       ],
     });
 
     const fixture = TestBed.createComponent(AppointmentList);
-    return { fixture, appointmentsApi, usersApi, masterDataApi };
+    return { fixture, appointmentsApi, usersApi, masterDataApi, patientsApi };
   }
 
   function fakeDepartment(overrides: Partial<Department> = {}): Department {
@@ -102,13 +125,15 @@ describe('AppointmentList', () => {
     expect(call.page).toBe(1);
   });
 
-  it('pre-fills and opens the create modal when navigated with a patientId query param', () => {
+  it('pre-fills and opens the create modal in Existing Patient mode when navigated with a patientId query param', () => {
     const { fixture } = setup({ patientId: 'patient-1', firstName: 'Jane', lastName: 'Doe', contactNumber: '555-1234' });
 
     expect(fixture.componentInstance.showCreateModal()).toBe(true);
+    expect(fixture.componentInstance.patientMode()).toBe('existing');
     expect(fixture.componentInstance.createForm()).toEqual(
       expect.objectContaining({ patientId: 'patient-1', firstName: 'Jane', lastName: 'Doe', contactNumber: '555-1234' }),
     );
+    expect(fixture.componentInstance.patientOptions()).toEqual([{ label: 'Jane Doe', value: 'patient-1' }]);
   });
 
   it('does not open the create modal when no patientId query param is present', () => {
@@ -126,17 +151,186 @@ describe('AppointmentList', () => {
     expect(fixture.componentInstance.loading()).toBe(false);
   });
 
-  it('clears the saving flag and keeps the modal open when create errors', async () => {
+  it('clears the saving flag and keeps the modal open when create errors (Existing Patient mode)', async () => {
     const { fixture, appointmentsApi } = setup();
     fixture.detectChanges();
     await fixture.whenStable();
-    (appointmentsApi.create as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));
+    (appointmentsApi.create as jest.Mock).mockReturnValue(throwError(() => ({ message: 'boom' })));
 
     fixture.componentInstance.showCreateModal.set(true);
+    fixture.componentInstance.createForm.set({ ...fixture.componentInstance.createForm(), patientId: 'patient-1' });
     fixture.componentInstance.submitCreate();
 
     expect(fixture.componentInstance.saving()).toBe(false);
     expect(fixture.componentInstance.showCreateModal()).toBe(true);
+  });
+
+  it('does nothing in Existing Patient mode when no patient has been selected', () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.componentInstance.showCreateModal.set(true);
+
+    fixture.componentInstance.submitCreate();
+
+    expect(appointmentsApi.create).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.saving()).toBe(false);
+  });
+
+  it('books an appointment for the selected existing patient', () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.componentInstance.showCreateModal.set(true);
+    fixture.componentInstance.onPatientSelected('patient-1');
+    fixture.componentInstance.createForm.set({
+      ...fixture.componentInstance.createForm(),
+      appointmentDate: '2026-09-05',
+      appointmentTime: '10:00',
+      appointmentType: 'OPD',
+    });
+
+    fixture.componentInstance.submitCreate();
+
+    expect(appointmentsApi.create).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId: 'patient-1', firstName: 'Jane', lastName: 'Doe', contactNumber: '5551234567' }),
+    );
+    expect(fixture.componentInstance.showCreateModal()).toBe(false);
+  });
+
+  it('resets the patient identity fields when switching Existing/New Patient mode', () => {
+    const { fixture } = setup();
+    fixture.componentInstance.createForm.set({
+      ...fixture.componentInstance.createForm(),
+      patientId: 'patient-1',
+      firstName: 'Jane',
+      lastName: 'Doe',
+      contactNumber: '5551234567',
+    });
+
+    fixture.componentInstance.setPatientMode('new');
+
+    expect(fixture.componentInstance.patientMode()).toBe('new');
+    expect(fixture.componentInstance.createForm().patientId).toBeUndefined();
+    expect(fixture.componentInstance.createForm()).toEqual(
+      expect.objectContaining({ firstName: '', lastName: '', contactNumber: '' }),
+    );
+  });
+
+  it('debounces and searches patients as the picker filter is typed', () => {
+    jest.useFakeTimers();
+    const { fixture, patientsApi } = setup();
+    (patientsApi.search as jest.Mock).mockReturnValue(
+      of({ data: [{ id: 'p1', firstName: 'John', lastName: 'Smith', patientNo: 'PAT-2' }], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } }),
+    );
+
+    fixture.componentInstance.onPatientSearch('jo');
+    expect(patientsApi.search).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(300);
+
+    expect(patientsApi.search).toHaveBeenCalledWith({ page: 1, limit: 10, q: 'jo' });
+    expect(fixture.componentInstance.patientOptions()).toEqual([{ label: 'John Smith (PAT-2)', value: 'p1' }]);
+    jest.useRealTimers();
+  });
+
+  it('registers a new patient before booking the appointment when no duplicate is found (New Patient mode)', () => {
+    const { fixture, appointmentsApi, patientsApi } = setup();
+    fixture.componentInstance.showCreateModal.set(true);
+    fixture.componentInstance.setPatientMode('new');
+    fixture.componentInstance.createForm.set({
+      ...fixture.componentInstance.createForm(),
+      firstName: 'New',
+      lastName: 'Patient',
+      contactNumber: '9998887777',
+      appointmentDate: '2026-09-05',
+      appointmentTime: '10:00',
+      appointmentType: 'OPD',
+    });
+
+    fixture.componentInstance.submitCreate();
+
+    expect(patientsApi.checkDuplicates).toHaveBeenCalledWith({ firstName: 'New', lastName: 'Patient', phoneNumber: '9998887777' });
+    expect(patientsApi.create).toHaveBeenCalledWith(
+      expect.objectContaining({ firstName: 'New', lastName: 'Patient', phoneNumber: '9998887777', gender: 'Unknown' }),
+    );
+    expect(appointmentsApi.create).toHaveBeenCalledWith(expect.objectContaining({ patientId: 'patient-1' }));
+    expect(fixture.componentInstance.showCreateModal()).toBe(false);
+  });
+
+  it('shows a duplicate warning instead of registering when matches are found (New Patient mode)', () => {
+    const { fixture, appointmentsApi, patientsApi } = setup();
+    const match = fakePatient({ id: 'dup-1' });
+    (patientsApi.checkDuplicates as jest.Mock).mockReturnValue(of([match]));
+    fixture.componentInstance.showCreateModal.set(true);
+    fixture.componentInstance.setPatientMode('new');
+    fixture.componentInstance.createForm.set({
+      ...fixture.componentInstance.createForm(),
+      firstName: 'Jane',
+      lastName: 'Doe',
+      contactNumber: '5551234567',
+    });
+
+    fixture.componentInstance.submitCreate();
+
+    expect(fixture.componentInstance.showDuplicateWarning()).toBe(true);
+    expect(fixture.componentInstance.duplicateMatches()).toEqual([match]);
+    expect(patientsApi.create).not.toHaveBeenCalled();
+    expect(appointmentsApi.create).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.saving()).toBe(false);
+  });
+
+  it('links the appointment to the matched patient instead of creating a duplicate', () => {
+    const { fixture, patientsApi } = setup();
+    const match = fakePatient({ id: 'dup-1', firstName: 'Jane', lastName: 'Doe', phoneNumber: '5551234567' });
+    fixture.componentInstance.showDuplicateWarning.set(true);
+    fixture.componentInstance.duplicateMatches.set([match]);
+
+    fixture.componentInstance.useExistingMatch(match);
+
+    expect(fixture.componentInstance.patientMode()).toBe('existing');
+    expect(fixture.componentInstance.showDuplicateWarning()).toBe(false);
+    expect(fixture.componentInstance.createForm()).toEqual(
+      expect.objectContaining({ patientId: 'dup-1', firstName: 'Jane', lastName: 'Doe', contactNumber: '5551234567' }),
+    );
+    expect(patientsApi.create).not.toHaveBeenCalled();
+  });
+
+  it('registers the new patient anyway when the receptionist confirms past the duplicate warning', () => {
+    const { fixture, appointmentsApi, patientsApi } = setup();
+    fixture.componentInstance.showDuplicateWarning.set(true);
+    fixture.componentInstance.duplicateMatches.set([fakePatient()]);
+    fixture.componentInstance.createForm.set({
+      ...fixture.componentInstance.createForm(),
+      firstName: 'Jane',
+      lastName: 'Doe',
+      contactNumber: '5551234567',
+    });
+
+    fixture.componentInstance.proceedWithDuplicate();
+
+    expect(patientsApi.create).toHaveBeenCalledWith(expect.objectContaining({ allowDuplicate: true }));
+    expect(appointmentsApi.create).toHaveBeenCalled();
+    expect(fixture.componentInstance.showDuplicateWarning()).toBe(false);
+  });
+
+  it('shows an error and stops saving when patient registration fails (New Patient mode)', () => {
+    const { fixture, appointmentsApi, patientsApi } = setup();
+    (patientsApi.create as jest.Mock).mockReturnValue(throwError(() => ({ status: 500, message: 'boom' })));
+    fixture.componentInstance.showCreateModal.set(true);
+    fixture.componentInstance.setPatientMode('new');
+    fixture.componentInstance.createForm.set({
+      ...fixture.componentInstance.createForm(),
+      firstName: 'New',
+      lastName: 'Patient',
+      contactNumber: '9998887777',
+    });
+
+    fixture.componentInstance.submitCreate();
+
+    expect(fixture.componentInstance.saving()).toBe(false);
+    expect(appointmentsApi.create).not.toHaveBeenCalled();
+  });
+
+  it('exposes a fixed appointment type option list', () => {
+    const { fixture } = setup();
+    expect(fixture.componentInstance.appointmentTypes.map((t) => t.value)).toContain('OPD');
+    expect(fixture.componentInstance.appointmentTypes.map((t) => t.value)).toContain('Follow-up');
   });
 
   it('checks in an appointment and reloads the current page', async () => {
@@ -180,6 +374,7 @@ describe('AppointmentList', () => {
         { provide: AppointmentsApiService, useValue: { list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })) } },
         { provide: UsersApiService, useValue: usersApi },
         { provide: MasterDataApiService, useValue: masterDataApi },
+        { provide: PatientsApiService, useValue: { search: jest.fn(), getById: jest.fn(), create: jest.fn(), checkDuplicates: jest.fn() } },
         { provide: AuthService, useValue: { hasPermission: () => true } },
         { provide: ActivatedRoute, useValue: { queryParamMap: of(convertToParamMap({})) } },
       ],

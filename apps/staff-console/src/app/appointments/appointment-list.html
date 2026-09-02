@@ -131,75 +131,158 @@
 
 <!-- New Appointment Modal -->
 <p-dialog header="New Appointment" [(visible)]="showCreateModal" [modal]="true" [style]="{ width: '550px' }" styleClass="surface-modal">
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
-    <div class="flex flex-col gap-2">
-      <label for="apptFirstName" class="text-sm font-medium text-slate-700">First Name</label>
-      <input id="apptFirstName" pInputText [ngModel]="createForm().firstName" (ngModelChange)="createForm.set({ ...createForm(), firstName: $event })" class="w-full" />
+  <div class="flex flex-col gap-4 py-2">
+    <p-selectButton [options]="patientModeOptions" [ngModel]="patientMode()" (ngModelChange)="setPatientMode($event)" optionLabel="label" optionValue="value"></p-selectButton>
+
+    @if (showDuplicateWarning()) {
+    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200">
+      <div class="flex items-start gap-3">
+        <i class="pi pi-exclamation-triangle text-amber-500 text-xl mt-1"></i>
+        <div class="flex-1">
+          <h4 class="font-semibold text-amber-900">Possible Duplicate Found</h4>
+          <p class="text-sm text-amber-700 mt-1">One or more patients in the system have very similar details.</p>
+          <div class="mt-3 flex flex-col gap-2">
+            @for (match of duplicateMatches(); track match.id) {
+            <div class="bg-white p-2 rounded flex justify-between items-center text-sm gap-2">
+              <div>
+                <span class="font-medium text-slate-800">{{ match.firstName }} {{ match.lastName }}</span>
+                <span class="text-slate-500 ml-2">({{ match.patientNo }})</span>
+                <div class="text-slate-500 text-xs">{{ match.phoneNumber || 'No phone' }}</div>
+              </div>
+              <p-button label="Use This Patient" size="small" [text]="true" (onClick)="useExistingMatch(match)"></p-button>
+            </div>
+            }
+          </div>
+          <div class="mt-4 flex justify-end">
+            <p-button
+              label="Register as New Patient Anyway"
+              severity="warn"
+              icon="pi pi-check"
+              size="small"
+              [loading]="saving()"
+              (onClick)="proceedWithDuplicate()"
+            ></p-button>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="flex flex-col gap-2">
-      <label for="apptLastName" class="text-sm font-medium text-slate-700">Last Name</label>
-      <input id="apptLastName" pInputText [ngModel]="createForm().lastName" (ngModelChange)="createForm.set({ ...createForm(), lastName: $event })" class="w-full" />
+    } @else {
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      @if (patientMode() === 'existing') {
+      <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
+        <label for="apptPatient" class="text-sm font-medium text-slate-700">Patient</label>
+        <p-select
+          inputId="apptPatient"
+          [options]="patientOptions()"
+          [ngModel]="createForm().patientId"
+          (ngModelChange)="onPatientSelected($event)"
+          placeholder="Search by name, patient number or phone"
+          [filter]="true"
+          [showClear]="true"
+          (onFilter)="onPatientSearch($event.filter)"
+          [loading]="patientSearching()"
+          styleClass="w-full"
+          [appendTo]="'body'"
+        ></p-select>
+      </div>
+      @if (createForm().patientId) {
+      <div class="col-span-1 sm:col-span-2 text-sm text-slate-600">
+        {{ createForm().firstName }} {{ createForm().lastName }} &middot; {{ createForm().contactNumber }}
+      </div>
+      }
+      } @else {
+      <div class="flex flex-col gap-2">
+        <label for="apptFirstName" class="text-sm font-medium text-slate-700">First Name</label>
+        <input id="apptFirstName" pInputText [ngModel]="createForm().firstName" (ngModelChange)="createForm.set({ ...createForm(), firstName: $event })" class="w-full" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="apptLastName" class="text-sm font-medium text-slate-700">Last Name</label>
+        <input id="apptLastName" pInputText [ngModel]="createForm().lastName" (ngModelChange)="createForm.set({ ...createForm(), lastName: $event })" class="w-full" />
+      </div>
+      <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
+        <label for="apptContact" class="text-sm font-medium text-slate-700">Contact Number</label>
+        <input id="apptContact" pInputText [ngModel]="createForm().contactNumber" (ngModelChange)="createForm.set({ ...createForm(), contactNumber: $event })" class="w-full" />
+      </div>
+      <div class="flex flex-col gap-2 col-span-1 sm:col-span-2 text-xs text-slate-500">
+        A new patient record will be created for this person before the appointment is booked.
+      </div>
+      }
+      <div class="flex flex-col gap-2">
+        <label for="apptDate" class="text-sm font-medium text-slate-700">Date</label>
+        <input id="apptDate" pInputText type="date" [ngModel]="createForm().appointmentDate" (ngModelChange)="createForm.set({ ...createForm(), appointmentDate: $event })" class="w-full" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="apptTime" class="text-sm font-medium text-slate-700">Time</label>
+        <input id="apptTime" pInputText type="time" [ngModel]="createForm().appointmentTime" (ngModelChange)="createForm.set({ ...createForm(), appointmentTime: $event })" class="w-full" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="apptDoctor" class="text-sm font-medium text-slate-700">Doctor</label>
+        <p-select
+          inputId="apptDoctor"
+          [options]="doctorOptions()"
+          [ngModel]="createForm().doctorId"
+          (ngModelChange)="createForm.set({ ...createForm(), doctorId: $event })"
+          placeholder="Optional"
+          [showClear]="true"
+          [filter]="true"
+          filterPlaceholder="Search doctors"
+          styleClass="w-full"
+          [appendTo]="'body'"
+        ></p-select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="apptDept" class="text-sm font-medium text-slate-700">Department</label>
+        <p-select
+          inputId="apptDept"
+          [options]="departmentOptions()"
+          [ngModel]="createForm().departmentId"
+          (ngModelChange)="createForm.set({ ...createForm(), departmentId: $event })"
+          placeholder="Optional"
+          [showClear]="true"
+          [filter]="true"
+          filterPlaceholder="Search departments"
+          styleClass="w-full"
+          [appendTo]="'body'"
+        ></p-select>
+      </div>
+      <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
+        <label for="apptType" class="text-sm font-medium text-slate-700">Appointment Type</label>
+        <p-select
+          inputId="apptType"
+          [options]="appointmentTypes"
+          [ngModel]="createForm().appointmentType"
+          (ngModelChange)="createForm.set({ ...createForm(), appointmentType: $event })"
+          placeholder="Select a type"
+          styleClass="w-full"
+          [appendTo]="'body'"
+        ></p-select>
+      </div>
+      <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
+        <label for="apptReason" class="text-sm font-medium text-slate-700">Reason</label>
+        <input id="apptReason" pInputText [ngModel]="createForm().reason" (ngModelChange)="createForm.set({ ...createForm(), reason: $event })" class="w-full" />
+      </div>
     </div>
-    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
-      <label for="apptContact" class="text-sm font-medium text-slate-700">Contact Number</label>
-      <input id="apptContact" pInputText [ngModel]="createForm().contactNumber" (ngModelChange)="createForm.set({ ...createForm(), contactNumber: $event })" class="w-full" />
-    </div>
-    <div class="flex flex-col gap-2">
-      <label for="apptDate" class="text-sm font-medium text-slate-700">Date</label>
-      <input id="apptDate" pInputText type="date" [ngModel]="createForm().appointmentDate" (ngModelChange)="createForm.set({ ...createForm(), appointmentDate: $event })" class="w-full" />
-    </div>
-    <div class="flex flex-col gap-2">
-      <label for="apptTime" class="text-sm font-medium text-slate-700">Time</label>
-      <input id="apptTime" pInputText type="time" [ngModel]="createForm().appointmentTime" (ngModelChange)="createForm.set({ ...createForm(), appointmentTime: $event })" class="w-full" />
-    </div>
-    <div class="flex flex-col gap-2">
-      <label for="apptDoctor" class="text-sm font-medium text-slate-700">Doctor</label>
-      <p-select
-        inputId="apptDoctor"
-        [options]="doctorOptions()"
-        [ngModel]="createForm().doctorId"
-        (ngModelChange)="createForm.set({ ...createForm(), doctorId: $event })"
-        placeholder="Optional"
-        [showClear]="true"
-        [filter]="true"
-        filterPlaceholder="Search doctors"
-        styleClass="w-full"
-        [appendTo]="'body'"
-      ></p-select>
-    </div>
-    <div class="flex flex-col gap-2">
-      <label for="apptDept" class="text-sm font-medium text-slate-700">Department</label>
-      <p-select
-        inputId="apptDept"
-        [options]="departmentOptions()"
-        [ngModel]="createForm().departmentId"
-        (ngModelChange)="createForm.set({ ...createForm(), departmentId: $event })"
-        placeholder="Optional"
-        [showClear]="true"
-        [filter]="true"
-        filterPlaceholder="Search departments"
-        styleClass="w-full"
-        [appendTo]="'body'"
-      ></p-select>
-    </div>
-    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
-      <label for="apptType" class="text-sm font-medium text-slate-700">Appointment Type</label>
-      <input id="apptType" pInputText [ngModel]="createForm().appointmentType" (ngModelChange)="createForm.set({ ...createForm(), appointmentType: $event })" placeholder="e.g. New Visit, Follow-up" class="w-full" />
-    </div>
-    <div class="flex flex-col gap-2 col-span-1 sm:col-span-2">
-      <label for="apptReason" class="text-sm font-medium text-slate-700">Reason</label>
-      <input id="apptReason" pInputText [ngModel]="createForm().reason" (ngModelChange)="createForm.set({ ...createForm(), reason: $event })" class="w-full" />
-    </div>
+    }
   </div>
   <ng-template pTemplate="footer">
     <div class="flex justify-end gap-2 mt-4">
       <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCreateModal.set(false)"></p-button>
+      @if (!showDuplicateWarning()) {
       <p-button
         label="Save"
         [loading]="saving()"
         (onClick)="submitCreate()"
-        [disabled]="!createForm().firstName || !createForm().lastName || !createForm().contactNumber || !createForm().appointmentDate || !createForm().appointmentTime || !createForm().appointmentType"
+        [disabled]="
+          (patientMode() === 'existing' && !createForm().patientId) ||
+          (patientMode() === 'new' && (!createForm().firstName || !createForm().lastName || !createForm().contactNumber)) ||
+          !createForm().appointmentDate ||
+          !createForm().appointmentTime ||
+          !createForm().appointmentType
+        "
       ></p-button>
+      }
     </div>
   </ng-template>
 </p-dialog>
+
+<p-toast></p-toast>
