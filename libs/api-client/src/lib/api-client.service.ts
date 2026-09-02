@@ -21,6 +21,13 @@ export class ApiClientService {
       .pipe(catchError(this.normalizeError));
   }
 
+  /** For a binary download (PDF/CSV export) — a plain get<T>() would try to JSON-parse the body. */
+  getBlob(path: string, options?: RequestOptions): Observable<Blob> {
+    return this.http
+      .get(this.url(path), { ...options, headers: this.headers(), responseType: 'blob' })
+      .pipe(catchError(this.normalizeError));
+  }
+
   post<T>(
     path: string,
     body: unknown,

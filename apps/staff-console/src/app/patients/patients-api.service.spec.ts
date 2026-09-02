@@ -51,4 +51,15 @@ describe('PatientsApiService', () => {
     expect(req.request.params.get('q')).toBe('jane');
     req.flush({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } });
   });
+
+  it('requests the ID label as a blob, not a JSON-parsed body', () => {
+    let result: Blob | undefined;
+    service.getIdLabelPdf('patient-1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('https://gateway.example/api/patients/patient-1/id-label.pdf');
+    expect(req.request.responseType).toBe('blob');
+    const blob = new Blob(['%PDF-fake'], { type: 'application/pdf' });
+    req.flush(blob);
+    expect(result).toBe(blob);
+  });
 });

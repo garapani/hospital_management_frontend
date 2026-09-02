@@ -102,6 +102,8 @@ export class PatientDetail implements OnInit {
   readonly isValidPhoneNumber = isValidPhoneNumber;
   readonly isValidEmail = isValidEmail;
 
+  readonly printingLabel = signal(false);
+
   readonly showEditModal = signal(false);
   readonly editForm = signal<EditFormState>({});
   readonly editSaving = signal(false);
@@ -228,6 +230,29 @@ export class PatientDetail implements OnInit {
         firstName: patient.firstName,
         lastName: patient.lastName,
         contactNumber: patient.phoneNumber,
+      },
+    });
+  }
+
+  /** Opens the ID label PDF in a new tab — the browser's own viewer handles print (Ctrl+P);
+   *  this is a printable label, not a document to save, so no forced download. */
+  printIdLabel() {
+    const patientId = this.patient()?.id;
+    if (!patientId) return;
+
+    this.printingLabel.set(true);
+    this.api.getIdLabelPdf(patientId).subscribe({
+      next: (blob) => {
+        this.printingLabel.set(false);
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        // Revoking immediately would race the new tab's fetch of the blob URL on some browsers;
+        // a short delay is enough since the tab reads it synchronously on open.
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+      },
+      error: () => {
+        this.printingLabel.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the ID label' });
       },
     });
   }

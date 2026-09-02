@@ -105,4 +105,8 @@ export class PatientsApiService {
   checkDuplicates(data: { phoneNumber?: string; firstName?: string; lastName?: string; dateOfBirth?: string }) {
     return this.apiClient.post<Patient[]>('/patients/check-duplicates', data);
   }
+
+  getIdLabelPdf(id: string) {
+    return this.apiClient.getBlob(`/patients/${id}/id-label.pdf`);
+  }
 }

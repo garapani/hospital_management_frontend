@@ -49,6 +49,19 @@ describe('ApiClientService', () => {
     }
   });
 
+  it('requests a Blob response (binary download) and attaches the tenant header the same as get()', () => {
+    let result: Blob | undefined;
+    service.getBlob('/patients/123/id-label.pdf').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('https://gateway.example/api/patients/123/id-label.pdf');
+    expect(req.request.method).toBe('GET');
+    expect(req.request.responseType).toBe('blob');
+    expect(req.request.headers.get('x-tenant-id')).toBe('demo');
+    const blob = new Blob(['%PDF-fake'], { type: 'application/pdf' });
+    req.flush(blob);
+    expect(result).toBe(blob);
+  });
+
   it('sends PUT requests with the request body', () => {
     let result: unknown;
     service.put('/appointments/123', { status: 'Completed' }).subscribe((res) => (result = res));
