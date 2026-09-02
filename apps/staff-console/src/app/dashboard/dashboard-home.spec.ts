@@ -19,6 +19,7 @@ import { HelpdeskApiService } from '../helpdesk/helpdesk-api.service.js';
 import { HelpdeskTicket } from '../helpdesk/helpdesk.model.js';
 import { AuditApiService } from '../audit/audit-api.service.js';
 import { AuditRecord } from '../audit/audit.model.js';
+import { UsersApiService } from '../users/users-api.service.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 function fakeAppointment(overrides: Partial<Appointment> = {}): Appointment {
@@ -219,6 +220,9 @@ describe('DashboardHome', () => {
     draftPayslips?: Payslip[];
     openTickets?: HelpdeskTicket[];
     recentAuditRecords?: AuditRecord[];
+    staffTotal?: number;
+    todaysAppointmentTotal?: number;
+    openTicketTotal?: number;
     appointmentsError?: boolean;
     tasksError?: boolean;
     dispenseItemsError?: boolean;
@@ -229,13 +233,22 @@ describe('DashboardHome', () => {
     payslipsError?: boolean;
     ticketsError?: boolean;
     auditRecordsError?: boolean;
+    staffCountError?: boolean;
   } = {}) {
     const { roles = [], permissions = [], sub = 'user-1' } = options;
     const appointmentsApi = {
       list: jest.fn().mockReturnValue(
         options.appointmentsError
           ? throwError(() => new Error('boom'))
-          : of({ data: options.appointments ?? [], meta: { total: (options.appointments ?? []).length, page: 1, limit: 100, totalPages: 1 } }),
+          : of({
+              data: options.appointments ?? [],
+              meta: {
+                total: options.todaysAppointmentTotal ?? (options.appointments ?? []).length,
+                page: 1,
+                limit: 100,
+                totalPages: 1,
+              },
+            }),
       ),
     } as unknown as AppointmentsApiService;
     const nursingApi = {
@@ -304,7 +317,7 @@ describe('DashboardHome', () => {
       list: jest.fn().mockReturnValue(
         options.ticketsError
           ? throwError(() => new Error('boom'))
-          : of({ data: options.openTickets ?? [], total: (options.openTickets ?? []).length }),
+          : of({ data: options.openTickets ?? [], total: options.openTicketTotal ?? (options.openTickets ?? []).length }),
       ),
     } as unknown as HelpdeskApiService;
     const auditApi = {
@@ -312,6 +325,13 @@ describe('DashboardHome', () => {
         options.auditRecordsError ? throwError(() => new Error('boom')) : of(options.recentAuditRecords ?? []),
       ),
     } as unknown as AuditApiService;
+    const usersApi = {
+      list: jest.fn().mockReturnValue(
+        options.staffCountError
+          ? throwError(() => new Error('boom'))
+          : of({ items: [], total: options.staffTotal ?? 0 }),
+      ),
+    } as unknown as UsersApiService;
     const auth = {
       currentUser: () => ({ sub, roles }),
       hasPermission: (permission: string) => permissions.includes(permission),
@@ -332,6 +352,7 @@ describe('DashboardHome', () => {
         { provide: PayrollApiService, useValue: payrollApi },
         { provide: HelpdeskApiService, useValue: helpdeskApi },
         { provide: AuditApiService, useValue: auditApi },
+        { provide: UsersApiService, useValue: usersApi },
         { provide: AuthService, useValue: auth },
         { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
@@ -350,6 +371,7 @@ describe('DashboardHome', () => {
       payrollApi,
       helpdeskApi,
       auditApi,
+      usersApi,
     };
   }
 
@@ -366,8 +388,11 @@ describe('DashboardHome', () => {
       payrollApi,
       helpdeskApi,
       auditApi,
+      usersApi,
     } = setup({
-      roles: ['Hospital Admin'],
+      // Super Admin operates in the platform tenant and lands on /platform/dashboard
+      // (AdminDashboard), never on this tenant-scoped /dashboard - genuinely no widget here.
+      roles: ['Super Admin'],
       permissions: [],
     });
     fixture.detectChanges();
@@ -384,6 +409,7 @@ describe('DashboardHome', () => {
     expect(payrollApi.listPayslips).not.toHaveBeenCalled();
     expect(helpdeskApi.list).not.toHaveBeenCalled();
     expect(auditApi.list).not.toHaveBeenCalled();
+    expect(usersApi.list).not.toHaveBeenCalled();
   });
 
   it("loads today's appointments and tallies status counts for a Receptionist", async () => {
@@ -570,6 +596,46 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.recentAuditRecords()).toHaveLength(2);
   });
 
+  it("loads a today's snapshot (staff/appointments/tickets counts) for a Hospital Admin", async () => {
+    const { fixture, usersApi, appointmentsApi, helpdeskApi } = setup({
+      roles: ['Hospital Admin'],
+      permissions: ['identity.accounts.manage'],
+      staffTotal: 42,
+      todaysAppointmentTotal: 7,
+      openTicketTotal: 3,
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.isHospitalAdmin()).toBe(true);
+    expect(usersApi.list).toHaveBeenCalledWith(1, 0);
+    expect(appointmentsApi.list).toHaveBeenCalledWith(
+      expect.objectContaining({ date: fixture.componentInstance.today, page: 1, limit: 1 }),
+    );
+    expect(helpdeskApi.list).toHaveBeenCalledWith({ status: 'Open', page: 1, limit: 1 });
+    expect(fixture.componentInstance.staffCount()).toBe(42);
+    expect(fixture.componentInstance.todaysAppointmentCount()).toBe(7);
+    expect(fixture.componentInstance.openTicketCount()).toBe(3);
+    expect(fixture.componentInstance.snapshotLoading()).toBe(false);
+  });
+
+  it('blanks only the failing tile when one of the snapshot counts errors, for a Hospital Admin', async () => {
+    const { fixture } = setup({
+      roles: ['Hospital Admin'],
+      permissions: ['identity.accounts.manage'],
+      staffCountError: true,
+      todaysAppointmentTotal: 7,
+      openTicketTotal: 3,
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.staffCount()).toBeNull();
+    expect(fixture.componentInstance.todaysAppointmentCount()).toBe(7);
+    expect(fixture.componentInstance.openTicketCount()).toBe(3);
+    expect(fixture.componentInstance.snapshotLoading()).toBe(false);
+  });
+
   it('skips a widget load when the role matches but the permission does not', async () => {
     const { fixture, appointmentsApi } = setup({ roles: ['Doctor'], permissions: [] });
     fixture.detectChanges();
@@ -605,6 +671,7 @@ describe('DashboardHome', () => {
         'HR/Payroll Admin',
         'Helpdesk Agent',
         'Auditor/Compliance',
+        'Hospital Admin',
       ],
       permissions: [
         'appointment.read',
@@ -617,6 +684,7 @@ describe('DashboardHome', () => {
         'payroll.read',
         'helpdesk.read',
         'audit.read',
+        'identity.accounts.manage',
       ],
       appointmentsError: true,
       tasksError: true,
@@ -628,6 +696,7 @@ describe('DashboardHome', () => {
       payslipsError: true,
       ticketsError: true,
       auditRecordsError: true,
+      staffCountError: true,
     });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -642,5 +711,6 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.payslipsLoading()).toBe(false);
     expect(fixture.componentInstance.ticketsLoading()).toBe(false);
     expect(fixture.componentInstance.auditRecordsLoading()).toBe(false);
+    expect(fixture.componentInstance.snapshotLoading()).toBe(false);
   });
 });

@@ -21,6 +21,7 @@ import { HelpdeskApiService } from '../helpdesk/helpdesk-api.service.js';
 import { HelpdeskTicket } from '../helpdesk/helpdesk.model.js';
 import { AuditApiService } from '../audit/audit-api.service.js';
 import { AuditRecord, auditRecordDirectoryType } from '../audit/audit.model.js';
+import { UsersApiService } from '../users/users-api.service.js';
 import { EntityName } from '../directory/entity-name.js';
 import { todayLocal as today } from '../shared/date.util.js';
 
@@ -43,6 +44,7 @@ export class DashboardHome {
   private readonly payrollApi = inject(PayrollApiService);
   private readonly helpdeskApi = inject(HelpdeskApiService);
   private readonly auditApi = inject(AuditApiService);
+  private readonly usersApi = inject(UsersApiService);
   readonly auth = inject(AuthService);
 
   readonly displayName = appointmentDisplayName;
@@ -64,6 +66,7 @@ export class DashboardHome {
   readonly isHrPayrollAdmin = computed(() => this.roles().includes('HR/Payroll Admin'));
   readonly isHelpdeskAgent = computed(() => this.roles().includes('Helpdesk Agent'));
   readonly isAuditor = computed(() => this.roles().includes('Auditor/Compliance'));
+  readonly isHospitalAdmin = computed(() => this.roles().includes('Hospital Admin'));
   readonly hasNoWidgets = computed(
     () =>
       !this.isReceptionist() &&
@@ -76,7 +79,8 @@ export class DashboardHome {
       !this.isInventoryManager() &&
       !this.isHrPayrollAdmin() &&
       !this.isHelpdeskAgent() &&
-      !this.isAuditor(),
+      !this.isAuditor() &&
+      !this.isHospitalAdmin(),
   );
 
   readonly todaysAppointments = signal<Appointment[]>([]);
@@ -126,6 +130,18 @@ export class DashboardHome {
   readonly auditRecordsLoading = signal(false);
   readonly auditDirectoryType = auditRecordDirectoryType;
 
+  // Hospital Admin has no single work queue of its own (it holds nearly every tenant permission
+  // already) - a cross-domain snapshot fits better than another pending-items table.
+  readonly staffCount = signal<number | null>(null);
+  readonly todaysAppointmentCount = signal<number | null>(null);
+  readonly openTicketCount = signal<number | null>(null);
+  private readonly staffCountLoading = signal(false);
+  private readonly todaysAppointmentLoading = signal(false);
+  private readonly openTicketLoading = signal(false);
+  readonly snapshotLoading = computed(
+    () => this.staffCountLoading() || this.todaysAppointmentLoading() || this.openTicketLoading(),
+  );
+
   constructor() {
     if (this.isReceptionist() && this.auth.hasPermission('appointment.read')) {
       this.loadTodaysAppointments();
@@ -159,6 +175,9 @@ export class DashboardHome {
     }
     if (this.isAuditor() && this.auth.hasPermission('audit.read')) {
       this.loadRecentAuditRecords();
+    }
+    if (this.isHospitalAdmin() && this.auth.hasPermission('identity.accounts.manage')) {
+      this.loadSnapshot();
     }
   }
 
@@ -305,6 +324,46 @@ export class DashboardHome {
         this.auditRecordsLoading.set(false);
       },
       error: () => this.auditRecordsLoading.set(false),
+    });
+  }
+
+  private loadSnapshot(): void {
+    // Each count loads and errors independently, matching AdminDashboard's own pattern - a
+    // failing endpoint blanks only its own tile instead of the whole widget.
+    this.staffCountLoading.set(true);
+    this.usersApi.list(1, 0).subscribe({
+      next: (res) => {
+        this.staffCount.set(res.total);
+        this.staffCountLoading.set(false);
+      },
+      error: () => {
+        this.staffCount.set(null);
+        this.staffCountLoading.set(false);
+      },
+    });
+
+    this.todaysAppointmentLoading.set(true);
+    this.appointmentsApi.list({ date: this.today, page: 1, limit: 1 }).subscribe({
+      next: (res) => {
+        this.todaysAppointmentCount.set(res.meta.total);
+        this.todaysAppointmentLoading.set(false);
+      },
+      error: () => {
+        this.todaysAppointmentCount.set(null);
+        this.todaysAppointmentLoading.set(false);
+      },
+    });
+
+    this.openTicketLoading.set(true);
+    this.helpdeskApi.list({ status: 'Open', page: 1, limit: 1 }).subscribe({
+      next: (res) => {
+        this.openTicketCount.set(res.total);
+        this.openTicketLoading.set(false);
+      },
+      error: () => {
+        this.openTicketCount.set(null);
+        this.openTicketLoading.set(false);
+      },
     });
   }
 }
