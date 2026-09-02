@@ -11,7 +11,7 @@
       Dashboard
     </a>
     }
-    @if (auth.hasPermission('billing.manage')) {
+    @if (auth.hasPermission('billing.read')) {
     <a
       routerLink="/billing/invoices"
       routerLinkActive="nav-item-active"
@@ -316,7 +316,8 @@
     }
     }
     @if (auth.hasPermission('identity.accounts.manage') ||
-    auth.hasPermission('master-data.manage') || auth.hasPermission('reporting.read')) {
+    auth.hasPermission('master-data.manage') || auth.hasPermission('reporting.read') ||
+    auth.hasPermission('audit.read')) {
     <div class="nav-section-label">
       Administration
     </div>
@@ -359,7 +360,7 @@
       <i class="pi pi-cog text-base"></i>
       Billing Settings
     </a>
-    } @if (auth.hasPermission('reporting.read')) {
+    } @if (auth.hasPermission('audit.read')) {
     <a
       routerLink="/admin/audit"
       routerLinkActive="nav-item-active"

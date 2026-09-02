@@ -69,14 +69,20 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./dashboard/dashboard-home.js').then((m) => m.DashboardHome),
       },
       {
+        // billing.read, not billing.manage — every role holding billing.manage already holds
+        // billing.read too (seed-rbac-catalog.ts), and Auditor/Compliance's billing.read (added
+        // specifically for read-only compliance visibility into invoices) was otherwise
+        // unreachable since this route never accepted it. The write actions on these two screens
+        // (Record Payment/Cancel/Return) independently check billing.manage themselves, so a
+        // read-only visitor still sees no mutating controls.
         path: 'billing/invoices',
         loadComponent: () => import('./billing/invoice-list/invoice-list.js').then((m) => m.InvoiceList),
-        canActivate: [permissionGuard(Permissions.BILLING_MANAGE)],
+        canActivate: [permissionGuard(Permissions.BILLING_READ)],
       },
       {
         path: 'billing/invoices/:id',
         loadComponent: () => import('./billing/invoice-detail/invoice-detail.js').then((m) => m.InvoiceDetail),
-        canActivate: [permissionGuard(Permissions.BILLING_MANAGE)],
+        canActivate: [permissionGuard(Permissions.BILLING_READ)],
       },
       {
         path: 'admin/billing-settings',
@@ -154,9 +160,14 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.MASTER_DATA_MANAGE)],
       },
       {
+        // audit.read, not reporting.read — the backend added a dedicated audit.read permission
+        // specifically so a role could hold audit access without a reporting mandate (or lose
+        // reporting without losing audit); this route never adopted it, silently defeating that
+        // decoupling. No live behavior change today (Super Admin/Hospital Admin/Auditor hold both),
+        // but a future role granted only one of the two would otherwise be wrongly gated.
         path: 'admin/audit',
         loadComponent: () => import('./audit/audit-list.js').then((m) => m.AuditList),
-        canActivate: [permissionGuard(Permissions.REPORTING_READ)],
+        canActivate: [permissionGuard(Permissions.AUDIT_READ)],
       },
       {
         path: 'clinical/patients',

@@ -9,6 +9,7 @@ export const Permissions = {
 
   // Billing
   BILLING_MANAGE: 'billing.manage' as const,
+  BILLING_READ: 'billing.read' as const,
 
   // Master Data
   MASTER_DATA_MANAGE: 'master-data.manage' as const,
@@ -18,6 +19,9 @@ export const Permissions = {
 
   // Reporting
   REPORTING_READ: 'reporting.read' as const,
+
+  // Audit
+  AUDIT_READ: 'audit.read' as const,
 
   // Patients
   PATIENTS_READ: 'patients.read' as const,
