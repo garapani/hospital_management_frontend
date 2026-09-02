@@ -73,6 +73,9 @@
         }
       </div>
 
+      @if (r.status !== 'Cancelled') {
+      <p-button label="Print Requisition Label" icon="pi pi-print" severity="secondary" [text]="true" [loading]="printingLabel()" (onClick)="printRequisitionLabel()"></p-button>
+      }
       @if (r.status === 'Pending' && auth.hasPermission('radiology.report.enter')) {
       <p-button label="Mark Scanned" icon="pi pi-camera" [loading]="actionLoading()" (onClick)="markScanned()"></p-button>
       }

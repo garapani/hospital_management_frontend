@@ -15,6 +15,7 @@ import { AuthService } from '@org/auth';
 import { RadiologyApiService } from './radiology-api.service.js';
 import { NON_TERMINAL_RADIOLOGY_STATUSES, RadiologyRequisition, radiologyStatusSeverity } from './radiology.model.js';
 import { EntityName } from '../directory/entity-name.js';
+import { openPdfBlobInNewTab } from '../shared/pdf-blob.util.js';
 
 @Component({
   selector: 'hms-radiology-requisition-detail',
@@ -34,6 +35,7 @@ export class RadiologyRequisitionDetail implements OnInit {
   readonly requisition = signal<RadiologyRequisition | null>(null);
   readonly loading = signal(true);
   readonly actionLoading = signal(false);
+  readonly printingLabel = signal(false);
 
   readonly showReportModal = signal(false);
   readonly reportText = signal('');
@@ -73,6 +75,23 @@ export class RadiologyRequisitionDetail implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/clinical/radiology']);
+  }
+
+  printRequisitionLabel(): void {
+    const id = this.requisition()?.id;
+    if (!id) return;
+
+    this.printingLabel.set(true);
+    this.radiologyApi.getRequisitionLabelPdf(id).subscribe({
+      next: (blob) => {
+        this.printingLabel.set(false);
+        openPdfBlobInNewTab(blob);
+      },
+      error: () => {
+        this.printingLabel.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the requisition label.' });
+      },
+    });
   }
 
   markScanned(): void {

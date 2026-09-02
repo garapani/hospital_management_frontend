@@ -19,6 +19,7 @@ import { SelectModule } from 'primeng/select';
 import { AuthService } from '@org/auth';
 
 import { PatientsApiService, Patient, CreatePatientDto } from './patients-api.service.js';
+import { openPdfBlobInNewTab } from '../shared/pdf-blob.util.js';
 import { calculateAge, isValidEmail, isValidPhoneNumber } from './patient.model.js';
 import { VitalsApiService, Vital, CreateVitalDto } from '../vitals/vitals-api.service.js';
 import {
@@ -244,11 +245,7 @@ export class PatientDetail implements OnInit {
     this.api.getIdLabelPdf(patientId).subscribe({
       next: (blob) => {
         this.printingLabel.set(false);
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        // Revoking immediately would race the new tab's fetch of the blob URL on some browsers;
-        // a short delay is enough since the tab reads it synchronously on open.
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        openPdfBlobInNewTab(blob);
       },
       error: () => {
         this.printingLabel.set(false);

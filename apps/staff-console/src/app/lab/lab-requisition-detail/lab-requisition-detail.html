@@ -120,6 +120,9 @@
       <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Workflow</h3>
 
       <div class="flex flex-wrap gap-3">
+        @if (r.status !== 'Cancelled') {
+        <p-button label="Print Specimen Label" icon="pi pi-print" severity="secondary" [text]="true" [loading]="printingLabel()" (onClick)="printSpecimenLabel()"></p-button>
+        }
         @if (auth.hasPermission('lab.result.enter') && r.status === 'Pending') {
         <p-button label="Collect Sample" icon="pi pi-box" [loading]="collecting()" (onClick)="collectSample()"></p-button>
         }

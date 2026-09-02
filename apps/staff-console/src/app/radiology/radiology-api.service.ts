@@ -44,6 +44,10 @@ export class RadiologyApiService {
     return this.apiClient.get<RadiologyRequisition>(`/radiology/requisitions/${id}`);
   }
 
+  getRequisitionLabelPdf(id: string): Observable<Blob> {
+    return this.apiClient.getBlob(`/radiology/requisitions/${id}/requisition-label.pdf`);
+  }
+
   create(dto: CreateRadiologyRequisitionDto): Observable<RadiologyRequisition> {
     return this.apiClient.post<RadiologyRequisition>('/radiology/requisitions', dto);
   }

@@ -79,4 +79,12 @@ describe('LabApiService', () => {
     expect(req.request.method).toBe('GET');
     req.flush([]);
   });
+
+  it('requests the specimen label as a blob, not a JSON-parsed body', () => {
+    service.getSpecimenLabelPdf('req-1').subscribe();
+
+    const req = httpMock.expectOne('https://gateway.example/api/lab/requisitions/req-1/specimen-label.pdf');
+    expect(req.request.responseType).toBe('blob');
+    req.flush(new Blob(['%PDF-fake'], { type: 'application/pdf' }));
+  });
 });

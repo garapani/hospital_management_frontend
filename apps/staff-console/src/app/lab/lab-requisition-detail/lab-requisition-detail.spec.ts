@@ -65,6 +65,7 @@ describe('LabRequisitionDetail', () => {
       enterResult: jest.fn().mockReturnValue(of({ id: 'res-1', requisitionId: 'req-1', componentId: 'comp-1', value: '13.5', isAbnormal: false, enteredBy: 'user-1', enteredAt: '2026-08-02T00:00:00Z' })),
       getResults: jest.fn().mockReturnValue(of([])),
       verify: jest.fn().mockReturnValue(of({ ...requisition, status: 'Verified' })),
+      getSpecimenLabelPdf: jest.fn().mockReturnValue(of(new Blob(['%PDF-fake'], { type: 'application/pdf' }))),
       ...labApiOverrides,
     } as unknown as LabApiService;
     const auth = { hasPermission: () => true } as unknown as AuthService;
@@ -264,5 +265,44 @@ describe('LabRequisitionDetail', () => {
     fixture.componentInstance.verify();
 
     expect(fixture.componentInstance.verifying()).toBe(false);
+  });
+
+  describe('printSpecimenLabel', () => {
+    let openSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      URL.createObjectURL = jest.fn().mockReturnValue('blob:fake-url');
+      URL.revokeObjectURL = jest.fn();
+      openSpy = jest.spyOn(window, 'open').mockReturnValue(null);
+    });
+
+    afterEach(() => openSpy.mockRestore());
+
+    it('fetches the specimen label and opens it in a new tab', async () => {
+      const { fixture, labApi } = setup();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.printSpecimenLabel();
+      await fixture.whenStable();
+
+      expect(labApi.getSpecimenLabelPdf).toHaveBeenCalledWith('req-1');
+      expect(openSpy).toHaveBeenCalledWith('blob:fake-url', '_blank');
+      expect(fixture.componentInstance.printingLabel()).toBe(false);
+    });
+
+    it('toasts an error and clears loading when generating the label fails', async () => {
+      const { fixture } = setup({
+        getSpecimenLabelPdf: jest.fn().mockReturnValue(throwError(() => new Error('boom'))),
+      });
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.printSpecimenLabel();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.printingLabel()).toBe(false);
+      expect(openSpy).not.toHaveBeenCalled();
+    });
   });
 });

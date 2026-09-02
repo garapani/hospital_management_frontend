@@ -52,6 +52,7 @@ describe('RadiologyRequisitionDetail', () => {
         .mockReturnValue(of({ ...requisition, status: 'ReportEntered', reportText: 'Normal study' })),
       verify: jest.fn().mockReturnValue(of({ ...requisition, status: 'Verified' })),
       cancel: jest.fn().mockReturnValue(of({ ...requisition, status: 'Cancelled', cancelReason: 'Duplicate' })),
+      getRequisitionLabelPdf: jest.fn().mockReturnValue(of(new Blob(['%PDF-fake'], { type: 'application/pdf' }))),
     } as unknown as RadiologyApiService;
     const auth = {
       hasPermission: () => true,
@@ -196,5 +197,43 @@ describe('RadiologyRequisitionDetail', () => {
     fixture.componentInstance.markScanned();
 
     expect(fixture.componentInstance.actionLoading()).toBe(false);
+  });
+
+  describe('printRequisitionLabel', () => {
+    let openSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      URL.createObjectURL = jest.fn().mockReturnValue('blob:fake-url');
+      URL.revokeObjectURL = jest.fn();
+      openSpy = jest.spyOn(window, 'open').mockReturnValue(null);
+    });
+
+    afterEach(() => openSpy.mockRestore());
+
+    it('fetches the requisition label and opens it in a new tab', async () => {
+      const { fixture, radiologyApi } = setup();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.printRequisitionLabel();
+      await fixture.whenStable();
+
+      expect(radiologyApi.getRequisitionLabelPdf).toHaveBeenCalledWith('rad-1');
+      expect(openSpy).toHaveBeenCalledWith('blob:fake-url', '_blank');
+      expect(fixture.componentInstance.printingLabel()).toBe(false);
+    });
+
+    it('toasts an error and clears loading when generating the label fails', async () => {
+      const { fixture, radiologyApi } = setup();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      (radiologyApi.getRequisitionLabelPdf as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));
+
+      fixture.componentInstance.printRequisitionLabel();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.printingLabel()).toBe(false);
+      expect(openSpy).not.toHaveBeenCalled();
+    });
   });
 });

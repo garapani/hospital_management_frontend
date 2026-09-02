@@ -16,6 +16,7 @@ import { AuthService } from '@org/auth';
 import { LabApiService, LabRequisition, LabResult, LabTestComponent } from '../lab-api.service.js';
 import { labRequisitionStatusSeverity, componentReferenceRange, computeIsAbnormal, hasNumericRange } from '../lab.model.js';
 import { EntityName } from '../../directory/entity-name.js';
+import { openPdfBlobInNewTab } from '../../shared/pdf-blob.util.js';
 
 export interface DisplayedResult {
   component: LabTestComponent;
@@ -41,6 +42,7 @@ export class LabRequisitionDetail implements OnInit {
   readonly loading = signal(true);
   readonly collecting = signal(false);
   readonly verifying = signal(false);
+  readonly printingLabel = signal(false);
 
   readonly enteredResults = signal<DisplayedResult[]>([]);
   readonly resultsViewLoading = signal(false);
@@ -131,6 +133,23 @@ export class LabRequisitionDetail implements OnInit {
       error: () => {
         this.collecting.set(false);
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to record sample collection.' });
+      },
+    });
+  }
+
+  printSpecimenLabel() {
+    const id = this.requisition()?.id;
+    if (!id) return;
+
+    this.printingLabel.set(true);
+    this.labApi.getSpecimenLabelPdf(id).subscribe({
+      next: (blob) => {
+        this.printingLabel.set(false);
+        openPdfBlobInNewTab(blob);
+      },
+      error: () => {
+        this.printingLabel.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the specimen label.' });
       },
     });
   }
