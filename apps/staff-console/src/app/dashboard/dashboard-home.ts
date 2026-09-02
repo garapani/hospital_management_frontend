@@ -11,6 +11,8 @@ import { NursingTask } from '../nursing/nursing.model.js';
 import { PharmacyDispensingApiService } from '../pharmacy/pharmacy-dispensing-api.service.js';
 import { PendingPharmacyItem } from '../pharmacy/pharmacy-dispensing.model.js';
 import { LabApiService, LabRequisition } from '../lab/lab-api.service.js';
+import { RadiologyApiService } from '../radiology/radiology-api.service.js';
+import { RadiologyRequisition } from '../radiology/radiology.model.js';
 import { EntityName } from '../directory/entity-name.js';
 import { todayLocal as today } from '../shared/date.util.js';
 
@@ -27,6 +29,7 @@ export class DashboardHome {
   private readonly nursingApi = inject(NursingApiService);
   private readonly pharmacyApi = inject(PharmacyDispensingApiService);
   private readonly labApi = inject(LabApiService);
+  private readonly radiologyApi = inject(RadiologyApiService);
   readonly auth = inject(AuthService);
 
   readonly displayName = appointmentDisplayName;
@@ -42,9 +45,15 @@ export class DashboardHome {
   readonly isNurse = computed(() => this.roles().includes('Nurse'));
   readonly isPharmacist = computed(() => this.roles().includes('Pharmacist'));
   readonly isLabTechnician = computed(() => this.roles().includes('Lab Technician'));
+  readonly isRadiologyTechnician = computed(() => this.roles().includes('Radiology Technician'));
   readonly hasNoWidgets = computed(
     () =>
-      !this.isReceptionist() && !this.isDoctor() && !this.isNurse() && !this.isPharmacist() && !this.isLabTechnician(),
+      !this.isReceptionist() &&
+      !this.isDoctor() &&
+      !this.isNurse() &&
+      !this.isPharmacist() &&
+      !this.isLabTechnician() &&
+      !this.isRadiologyTechnician(),
   );
 
   readonly todaysAppointments = signal<Appointment[]>([]);
@@ -72,6 +81,9 @@ export class DashboardHome {
   readonly pendingRequisitions = signal<LabRequisition[]>([]);
   readonly requisitionsLoading = signal(false);
 
+  readonly pendingScans = signal<RadiologyRequisition[]>([]);
+  readonly scansLoading = signal(false);
+
   constructor() {
     if (this.isReceptionist() && this.auth.hasPermission('appointment.read')) {
       this.loadTodaysAppointments();
@@ -87,6 +99,9 @@ export class DashboardHome {
     }
     if (this.isLabTechnician() && this.auth.hasPermission('lab.read')) {
       this.loadPendingRequisitions();
+    }
+    if (this.isRadiologyTechnician() && this.auth.hasPermission('radiology.read')) {
+      this.loadPendingScans();
     }
   }
 
@@ -157,6 +172,17 @@ export class DashboardHome {
         this.requisitionsLoading.set(false);
       },
       error: () => this.requisitionsLoading.set(false),
+    });
+  }
+
+  private loadPendingScans(): void {
+    this.scansLoading.set(true);
+    this.radiologyApi.list({ status: 'Pending', limit: DASHBOARD_LIST_LIMIT }).subscribe({
+      next: (res) => {
+        this.pendingScans.set(res.data);
+        this.scansLoading.set(false);
+      },
+      error: () => this.scansLoading.set(false),
     });
   }
 }

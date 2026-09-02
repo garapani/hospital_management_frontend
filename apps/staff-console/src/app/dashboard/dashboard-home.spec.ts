@@ -9,6 +9,8 @@ import { NursingTask } from '../nursing/nursing.model.js';
 import { PharmacyDispensingApiService } from '../pharmacy/pharmacy-dispensing-api.service.js';
 import { PendingPharmacyItem } from '../pharmacy/pharmacy-dispensing.model.js';
 import { LabApiService, LabRequisition } from '../lab/lab-api.service.js';
+import { RadiologyApiService } from '../radiology/radiology-api.service.js';
+import { RadiologyRequisition } from '../radiology/radiology.model.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
 
 function fakeAppointment(overrides: Partial<Appointment> = {}): Appointment {
@@ -85,6 +87,30 @@ function fakeLabRequisition(overrides: Partial<LabRequisition> = {}): LabRequisi
   };
 }
 
+function fakeRadiologyRequisition(overrides: Partial<RadiologyRequisition> = {}): RadiologyRequisition {
+  return {
+    id: 'radreq-1',
+    orderItemId: 'orderitem-1',
+    patientId: 'patient-1',
+    imagingItemId: 'imaging-1',
+    requisitionNumber: 'RAD-0001',
+    status: 'Pending',
+    scannedBy: null,
+    scannedAt: null,
+    reportText: null,
+    indication: null,
+    performerId: null,
+    reportEnteredBy: null,
+    reportEnteredAt: null,
+    verifiedBy: null,
+    verifiedAt: null,
+    cancelReason: null,
+    createdAt: '2026-09-01T08:00:00Z',
+    updatedAt: '2026-09-01T08:00:00Z',
+    ...overrides,
+  };
+}
+
 describe('DashboardHome', () => {
   function setup(options: {
     roles?: string[];
@@ -94,10 +120,12 @@ describe('DashboardHome', () => {
     tasks?: NursingTask[];
     pendingDispenseItems?: PendingPharmacyItem[];
     pendingRequisitions?: LabRequisition[];
+    pendingScans?: RadiologyRequisition[];
     appointmentsError?: boolean;
     tasksError?: boolean;
     dispenseItemsError?: boolean;
     requisitionsError?: boolean;
+    scansError?: boolean;
   } = {}) {
     const { roles = [], permissions = [], sub = 'user-1' } = options;
     const appointmentsApi = {
@@ -134,6 +162,16 @@ describe('DashboardHome', () => {
             }),
       ),
     } as unknown as LabApiService;
+    const radiologyApi = {
+      list: jest.fn().mockReturnValue(
+        options.scansError
+          ? throwError(() => new Error('boom'))
+          : of({
+              data: options.pendingScans ?? [],
+              meta: { total: (options.pendingScans ?? []).length, page: 1, limit: 100, totalPages: 1 },
+            }),
+      ),
+    } as unknown as RadiologyApiService;
     const auth = {
       currentUser: () => ({ sub, roles }),
       hasPermission: (permission: string) => permissions.includes(permission),
@@ -148,17 +186,18 @@ describe('DashboardHome', () => {
         { provide: NursingApiService, useValue: nursingApi },
         { provide: PharmacyDispensingApiService, useValue: pharmacyApi },
         { provide: LabApiService, useValue: labApi },
+        { provide: RadiologyApiService, useValue: radiologyApi },
         { provide: AuthService, useValue: auth },
         { provide: DirectoryResolverService, useValue: directoryResolver },
       ],
     });
 
     const fixture = TestBed.createComponent(DashboardHome);
-    return { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi };
+    return { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi };
   }
 
   it('shows nothing scoped and makes no calls for a role with no dashboard widget', async () => {
-    const { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi } = setup({
+    const { fixture, appointmentsApi, nursingApi, pharmacyApi, labApi, radiologyApi } = setup({
       roles: ['Auditor/Compliance'],
       permissions: [],
     });
@@ -170,6 +209,7 @@ describe('DashboardHome', () => {
     expect(nursingApi.listTasks).not.toHaveBeenCalled();
     expect(pharmacyApi.listPendingItems).not.toHaveBeenCalled();
     expect(labApi.listRequisitions).not.toHaveBeenCalled();
+    expect(radiologyApi.list).not.toHaveBeenCalled();
   });
 
   it("loads today's appointments and tallies status counts for a Receptionist", async () => {
@@ -256,6 +296,21 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.pendingRequisitions()).toHaveLength(2);
   });
 
+  it('loads requisitions pending a scan for a Radiology Technician', async () => {
+    const pendingScans = [fakeRadiologyRequisition({ id: 'radreq-1' }), fakeRadiologyRequisition({ id: 'radreq-2' })];
+    const { fixture, radiologyApi } = setup({
+      roles: ['Radiology Technician'],
+      permissions: ['radiology.read'],
+      pendingScans,
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.isRadiologyTechnician()).toBe(true);
+    expect(radiologyApi.list).toHaveBeenCalledWith({ status: 'Pending', limit: 100 });
+    expect(fixture.componentInstance.pendingScans()).toHaveLength(2);
+  });
+
   it('skips a widget load when the role matches but the permission does not', async () => {
     const { fixture, appointmentsApi } = setup({ roles: ['Doctor'], permissions: [] });
     fixture.detectChanges();
@@ -278,14 +333,15 @@ describe('DashboardHome', () => {
     expect(nursingApi.listTasks).toHaveBeenCalled();
   });
 
-  it('clears loading flags without throwing when the appointments/tasks/dispensing/requisitions lookups error', async () => {
+  it('clears loading flags without throwing when the appointments/tasks/dispensing/requisitions/scans lookups error', async () => {
     const { fixture } = setup({
-      roles: ['Receptionist / Front Desk', 'Nurse', 'Pharmacist', 'Lab Technician'],
-      permissions: ['appointment.read', 'nursing.read', 'pharmacy.read', 'lab.read'],
+      roles: ['Receptionist / Front Desk', 'Nurse', 'Pharmacist', 'Lab Technician', 'Radiology Technician'],
+      permissions: ['appointment.read', 'nursing.read', 'pharmacy.read', 'lab.read', 'radiology.read'],
       appointmentsError: true,
       tasksError: true,
       dispenseItemsError: true,
       requisitionsError: true,
+      scansError: true,
     });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -294,5 +350,6 @@ describe('DashboardHome', () => {
     expect(fixture.componentInstance.tasksLoading()).toBe(false);
     expect(fixture.componentInstance.dispenseItemsLoading()).toBe(false);
     expect(fixture.componentInstance.requisitionsLoading()).toBe(false);
+    expect(fixture.componentInstance.scansLoading()).toBe(false);
   });
 });
