@@ -8,6 +8,9 @@ import { AppointmentsApiService, Appointment } from '../appointments/appointment
 import { appointmentDisplayName, appointmentStatusSeverity, APPOINTMENT_STATUSES } from '../appointments/appointment.model.js';
 import { NursingApiService } from '../nursing/nursing-api.service.js';
 import { NursingTask } from '../nursing/nursing.model.js';
+import { PharmacyDispensingApiService } from '../pharmacy/pharmacy-dispensing-api.service.js';
+import { PendingPharmacyItem } from '../pharmacy/pharmacy-dispensing.model.js';
+import { EntityName } from '../directory/entity-name.js';
 import { todayLocal as today } from '../shared/date.util.js';
 
 const DASHBOARD_LIST_LIMIT = 100;
@@ -15,12 +18,13 @@ const DASHBOARD_LIST_LIMIT = 100;
 @Component({
   selector: 'hms-dashboard-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, TableModule, TagModule],
+  imports: [CommonModule, RouterModule, TableModule, TagModule, EntityName],
   templateUrl: './dashboard-home.html',
 })
 export class DashboardHome {
   private readonly appointmentsApi = inject(AppointmentsApiService);
   private readonly nursingApi = inject(NursingApiService);
+  private readonly pharmacyApi = inject(PharmacyDispensingApiService);
   readonly auth = inject(AuthService);
 
   readonly displayName = appointmentDisplayName;
@@ -34,7 +38,10 @@ export class DashboardHome {
   readonly isReceptionist = computed(() => this.roles().includes('Receptionist / Front Desk'));
   readonly isDoctor = computed(() => this.roles().includes('Doctor'));
   readonly isNurse = computed(() => this.roles().includes('Nurse'));
-  readonly hasNoWidgets = computed(() => !this.isReceptionist() && !this.isDoctor() && !this.isNurse());
+  readonly isPharmacist = computed(() => this.roles().includes('Pharmacist'));
+  readonly hasNoWidgets = computed(
+    () => !this.isReceptionist() && !this.isDoctor() && !this.isNurse() && !this.isPharmacist(),
+  );
 
   readonly todaysAppointments = signal<Appointment[]>([]);
   readonly appointmentsLoading = signal(false);
@@ -55,6 +62,9 @@ export class DashboardHome {
   readonly pendingTasks = signal<NursingTask[]>([]);
   readonly tasksLoading = signal(false);
 
+  readonly pendingDispenseItems = signal<PendingPharmacyItem[]>([]);
+  readonly dispenseItemsLoading = signal(false);
+
   constructor() {
     if (this.isReceptionist() && this.auth.hasPermission('appointment.read')) {
       this.loadTodaysAppointments();
@@ -64,6 +74,9 @@ export class DashboardHome {
     }
     if (this.isNurse() && this.auth.hasPermission('nursing.read')) {
       this.loadPendingTasks();
+    }
+    if (this.isPharmacist() && this.auth.hasPermission('pharmacy.read')) {
+      this.loadPendingDispenseItems();
     }
   }
 
@@ -110,6 +123,17 @@ export class DashboardHome {
         this.tasksLoading.set(false);
       },
       error: () => this.tasksLoading.set(false),
+    });
+  }
+
+  private loadPendingDispenseItems(): void {
+    this.dispenseItemsLoading.set(true);
+    this.pharmacyApi.listPendingItems({ status: 'Pending', limit: DASHBOARD_LIST_LIMIT }).subscribe({
+      next: (res) => {
+        this.pendingDispenseItems.set(res.data);
+        this.dispenseItemsLoading.set(false);
+      },
+      error: () => this.dispenseItemsLoading.set(false),
     });
   }
 }
