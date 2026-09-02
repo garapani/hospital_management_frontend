@@ -77,7 +77,7 @@
           severity="danger"
           styleClass="w-full rounded-full"
           [loading]="actionLoading()"
-          (onClick)="suspend()"
+          (onClick)="requestSuspend()"
         />
         } @else if (tenant()?.status === 'suspended') {
         <p-button
@@ -667,6 +667,31 @@
     <div class="flex justify-end gap-2 mt-4">
       <p-button label="Keep subscription" severity="secondary" [text]="true" (onClick)="showCancelConfirm.set(false)"></p-button>
       <p-button label="Cancel subscription" severity="danger" [loading]="subscriptionActionLoading()" (onClick)="cancelSubscription()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Suspend confirmation -->
+<p-dialog
+  header="Suspend tenant?"
+  [(visible)]="showSuspendConfirm"
+  [modal]="true"
+  [closable]="!actionLoading()"
+  [closeOnEscape]="!actionLoading()"
+  [style]="{ width: '440px' }"
+  styleClass="surface-modal"
+>
+  <div class="flex flex-col gap-3 py-2">
+    <p class="text-sm text-slate-600">
+      <strong>{{ tenant()?.hospitalName }}</strong> will be unable to log in immediately. This
+      does not touch its schema or data, and can be undone anytime via Reactivate — but every
+      user of this hospital is locked out the moment you confirm.
+    </p>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showSuspendConfirm.set(false)"></p-button>
+      <p-button label="Suspend tenant" severity="danger" [loading]="actionLoading()" (onClick)="suspend()"></p-button>
     </div>
   </ng-template>
 </p-dialog>

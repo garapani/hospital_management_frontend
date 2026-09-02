@@ -110,6 +110,13 @@ export class TenantDetail implements OnInit {
   readonly tenantStatusSeverity = tenantStatusSeverity;
   readonly tenantStatusLabel = tenantStatusLabel;
 
+  // Suspend: the highest-frequency high-stakes action a Super Admin performs — locks out every
+  // user of a live hospital tenant immediately (review-comments.md "Suspend Tenant fires on a
+  // single click with zero confirmation"). Reactivate (its undo, restoring access) intentionally
+  // stays a single click, matching how Archive/Restore already treat "locks people out" vs
+  // "restores access" asymmetrically below.
+  readonly showSuspendConfirm = signal(false);
+
   // Archive / restore / purge (deletion & retention).
   readonly archiveLoading = signal(false);
   readonly showArchiveConfirm = signal(false);
@@ -481,6 +488,10 @@ export class TenantDetail implements OnInit {
     });
   }
 
+  requestSuspend(): void {
+    this.showSuspendConfirm.set(true);
+  }
+
   suspend(): void {
     const current = this.tenant();
     if (!current) return;
@@ -488,6 +499,7 @@ export class TenantDetail implements OnInit {
     this.tenantsApi.suspend(current.hospitalId).subscribe({
       next: () => {
         this.actionLoading.set(false);
+        this.showSuspendConfirm.set(false);
         this.loadTenant(current.hospitalId);
         this.loadHistory(current.hospitalId);
         this.messageService.add({

@@ -267,6 +267,32 @@ describe('TenantDetail package change', () => {
     ]);
   });
 
+  it('does not suspend until the confirmation dialog is confirmed', async () => {
+    const { fixture, tenantsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.requestSuspend();
+
+    expect(fixture.componentInstance.showSuspendConfirm()).toBe(true);
+    expect(tenantsApi.suspend).not.toHaveBeenCalled();
+  });
+
+  it('suspends a tenant after confirmation, closes the dialog, and toasts', async () => {
+    const { fixture, tenantsApi, messageService } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.requestSuspend();
+    fixture.componentInstance.suspend();
+
+    expect(tenantsApi.suspend).toHaveBeenCalledWith('h1');
+    expect(fixture.componentInstance.showSuspendConfirm()).toBe(false);
+    expect(messageService.add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'success', summary: 'Tenant suspended' }),
+    );
+  });
+
   it('archives a tenant after confirmation and toasts', async () => {
     const { fixture, tenantsApi, messageService } = setup();
     fixture.detectChanges();
