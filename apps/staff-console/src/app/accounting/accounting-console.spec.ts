@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { MessageService, ConfirmationService, Confirmation } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
@@ -22,6 +22,15 @@ describe('AccountingConsole', () => {
       balanceSheet: jest.fn().mockReturnValue(
         of({ assets: [], liabilitiesAndEquity: [], totalAssets: 0, totalLiabilitiesAndEquity: 0 }),
       ),
+      exportTrialBalanceCsv: jest.fn().mockReturnValue(of(new Blob(['a,b'], { type: 'text/csv' }))),
+      exportTrialBalancePdf: jest.fn().mockReturnValue(of(new Blob(['%PDF-fake'], { type: 'application/pdf' }))),
+      exportTrialBalanceExcel: jest.fn().mockReturnValue(of(new Blob(['PK'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))),
+      exportIncomeStatementCsv: jest.fn().mockReturnValue(of(new Blob(['a,b'], { type: 'text/csv' }))),
+      exportIncomeStatementPdf: jest.fn().mockReturnValue(of(new Blob(['%PDF-fake'], { type: 'application/pdf' }))),
+      exportIncomeStatementExcel: jest.fn().mockReturnValue(of(new Blob(['PK'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))),
+      exportBalanceSheetCsv: jest.fn().mockReturnValue(of(new Blob(['a,b'], { type: 'text/csv' }))),
+      exportBalanceSheetPdf: jest.fn().mockReturnValue(of(new Blob(['%PDF-fake'], { type: 'application/pdf' }))),
+      exportBalanceSheetExcel: jest.fn().mockReturnValue(of(new Blob(['PK'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))),
     } as unknown as AccountingApiService;
     const messageService = { add: jest.fn() } as unknown as MessageService;
     const confirmationService = {
@@ -217,5 +226,124 @@ describe('AccountingConsole', () => {
     await fixture.whenStable();
 
     expect(fixture.componentInstance.canManage).toBe(false);
+  });
+
+  describe('report exports', () => {
+    let openSpy: jest.SpyInstance;
+    let clickSpy: jest.Mock;
+    let downloadedHref: string;
+    let downloadedFilename: string;
+
+    beforeEach(() => {
+      URL.createObjectURL = jest.fn().mockReturnValue('blob:fake-url');
+      URL.revokeObjectURL = jest.fn();
+      openSpy = jest.spyOn(window, 'open').mockReturnValue(null);
+      clickSpy = jest.fn();
+      downloadedHref = '';
+      downloadedFilename = '';
+      const realCreateElement = document.createElement.bind(document);
+      jest.spyOn(document, 'createElement').mockImplementation((tagName: string, options?: ElementCreationOptions) => {
+        if (tagName === 'a') {
+          return {
+            set href(value: string) {
+              downloadedHref = value;
+            },
+            set download(value: string) {
+              downloadedFilename = value;
+            },
+            click: clickSpy,
+          } as unknown as HTMLAnchorElement;
+        }
+        return realCreateElement(tagName, options);
+      });
+    });
+
+    afterEach(() => {
+      openSpy.mockRestore();
+      jest.restoreAllMocks();
+    });
+
+    it('exports the currently selected report (trial balance) as CSV, downloading it', async () => {
+      const { fixture, api } = setup();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.exportReportCsv();
+      await fixture.whenStable();
+
+      expect(api.exportTrialBalanceCsv).toHaveBeenCalled();
+      expect(clickSpy).toHaveBeenCalled();
+      expect(downloadedHref).toBe('blob:fake-url');
+      expect(downloadedFilename).toBe('trial-balance.csv');
+      expect(fixture.componentInstance.exportingReportCsv()).toBe(false);
+    });
+
+    it('exports the currently selected report as PDF, opening it in a new tab', async () => {
+      const { fixture, api } = setup();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.exportReportPdf();
+      await fixture.whenStable();
+
+      expect(api.exportTrialBalancePdf).toHaveBeenCalled();
+      expect(openSpy).toHaveBeenCalledWith('blob:fake-url', '_blank');
+      expect(fixture.componentInstance.exportingReportPdf()).toBe(false);
+    });
+
+    it('exports the currently selected report as Excel, downloading it', async () => {
+      const { fixture, api } = setup();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.exportReportExcel();
+      await fixture.whenStable();
+
+      expect(api.exportTrialBalanceExcel).toHaveBeenCalled();
+      expect(clickSpy).toHaveBeenCalled();
+      expect(fixture.componentInstance.exportingReportExcel()).toBe(false);
+    });
+
+    it('exports the income statement export endpoint when that report kind is selected', async () => {
+      const { fixture, api } = setup();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.componentInstance.setReportKind('income-statement');
+
+      fixture.componentInstance.exportReportCsv();
+      await fixture.whenStable();
+
+      expect(api.exportIncomeStatementCsv).toHaveBeenCalled();
+      expect(api.exportTrialBalanceCsv).not.toHaveBeenCalled();
+    });
+
+    it('exports the balance sheet using only the "to" date as asOf when that report kind is selected', async () => {
+      const { fixture, api } = setup();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.componentInstance.setReportKind('balance-sheet');
+      fixture.componentInstance.reportTo.set(new Date('2026-08-23'));
+
+      fixture.componentInstance.exportReportCsv();
+      await fixture.whenStable();
+
+      expect(api.exportBalanceSheetCsv).toHaveBeenCalledWith('2026-08-23');
+    });
+
+    it('toasts an error and clears loading when a report export fails', async () => {
+      const { fixture, api, messageService } = setup();
+      (api.exportTrialBalanceCsv as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.exportReportCsv();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.exportingReportCsv()).toBe(false);
+      expect(clickSpy).not.toHaveBeenCalled();
+      expect(messageService.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error', detail: 'Failed to generate the export.' }),
+      );
+    });
   });
 });

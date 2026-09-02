@@ -104,4 +104,73 @@ describe('AccountingApiService', () => {
     expect(req.request.params.get('asOf')).toBe('2026-08-23');
     req.flush({ assets: [], liabilitiesAndEquity: [], totalAssets: 0, totalLiabilitiesAndEquity: 0 });
   });
+
+  const csvBlob = new Blob(['a,b'], { type: 'text/csv' });
+  const pdfBlob = new Blob(['%PDF-fake'], { type: 'application/pdf' });
+  const xlsxBlob = new Blob(['PK'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+  it('exports the trial balance as CSV/PDF/Excel with the date range', () => {
+    service.exportTrialBalanceCsv('2026-01-01', '2026-01-31').subscribe();
+    let req = httpMock.expectOne(
+      (r: HttpRequest<unknown>) => r.url === 'https://gateway.example/api/accounting/reports/trial-balance/export.csv',
+    );
+    expect(req.request.params.get('from')).toBe('2026-01-01');
+    expect(req.request.params.get('to')).toBe('2026-01-31');
+    req.flush(csvBlob);
+
+    service.exportTrialBalancePdf('2026-01-01', '2026-01-31').subscribe();
+    req = httpMock.expectOne(
+      (r: HttpRequest<unknown>) => r.url === 'https://gateway.example/api/accounting/reports/trial-balance/export.pdf',
+    );
+    req.flush(pdfBlob);
+
+    service.exportTrialBalanceExcel('2026-01-01', '2026-01-31').subscribe();
+    req = httpMock.expectOne(
+      (r: HttpRequest<unknown>) => r.url === 'https://gateway.example/api/accounting/reports/trial-balance/export.xlsx',
+    );
+    req.flush(xlsxBlob);
+  });
+
+  it('exports the income statement as CSV/PDF/Excel with the date range', () => {
+    service.exportIncomeStatementCsv('2026-01-01', '2026-01-31').subscribe();
+    let req = httpMock.expectOne(
+      (r: HttpRequest<unknown>) => r.url === 'https://gateway.example/api/accounting/reports/income-statement/export.csv',
+    );
+    expect(req.request.params.get('from')).toBe('2026-01-01');
+    expect(req.request.params.get('to')).toBe('2026-01-31');
+    req.flush(csvBlob);
+
+    service.exportIncomeStatementPdf('2026-01-01', '2026-01-31').subscribe();
+    req = httpMock.expectOne(
+      (r: HttpRequest<unknown>) => r.url === 'https://gateway.example/api/accounting/reports/income-statement/export.pdf',
+    );
+    req.flush(pdfBlob);
+
+    service.exportIncomeStatementExcel('2026-01-01', '2026-01-31').subscribe();
+    req = httpMock.expectOne(
+      (r: HttpRequest<unknown>) => r.url === 'https://gateway.example/api/accounting/reports/income-statement/export.xlsx',
+    );
+    req.flush(xlsxBlob);
+  });
+
+  it('exports the balance sheet as CSV/PDF/Excel as-of a date', () => {
+    service.exportBalanceSheetCsv('2026-08-23').subscribe();
+    let req = httpMock.expectOne(
+      (r: HttpRequest<unknown>) => r.url === 'https://gateway.example/api/accounting/reports/balance-sheet/export.csv',
+    );
+    expect(req.request.params.get('asOf')).toBe('2026-08-23');
+    req.flush(csvBlob);
+
+    service.exportBalanceSheetPdf('2026-08-23').subscribe();
+    req = httpMock.expectOne(
+      (r: HttpRequest<unknown>) => r.url === 'https://gateway.example/api/accounting/reports/balance-sheet/export.pdf',
+    );
+    req.flush(pdfBlob);
+
+    service.exportBalanceSheetExcel('2026-08-23').subscribe();
+    req = httpMock.expectOne(
+      (r: HttpRequest<unknown>) => r.url === 'https://gateway.example/api/accounting/reports/balance-sheet/export.xlsx',
+    );
+    req.flush(xlsxBlob);
+  });
 });

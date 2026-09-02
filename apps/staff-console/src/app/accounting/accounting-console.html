@@ -159,6 +159,11 @@
                 <p-datepicker inputId="reportTo" [ngModel]="reportTo()" (ngModelChange)="reportTo.set($event)" dateFormat="yy-mm-dd" styleClass="w-40" />
               </div>
               <p-button label="Run" size="small" [loading]="reportLoading()" (onClick)="runReport()"></p-button>
+              <div class="flex gap-2 ml-auto">
+                <p-button label="CSV" size="small" [text]="true" icon="pi pi-download" [loading]="exportingReportCsv()" (onClick)="exportReportCsv()"></p-button>
+                <p-button label="PDF" size="small" [text]="true" icon="pi pi-file-pdf" [loading]="exportingReportPdf()" (onClick)="exportReportPdf()"></p-button>
+                <p-button label="Excel" size="small" [text]="true" icon="pi pi-download" [loading]="exportingReportExcel()" (onClick)="exportReportExcel()"></p-button>
+              </div>
             </div>
 
             @if (reportKind() === 'trial-balance') {

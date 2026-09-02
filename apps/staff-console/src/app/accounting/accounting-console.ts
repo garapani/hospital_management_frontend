@@ -1,6 +1,7 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, WritableSignal, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
@@ -26,6 +27,8 @@ import {
   LedgerAccount,
   TrialBalanceRow,
 } from './accounting.model.js';
+import { openPdfBlobInNewTab } from '../shared/pdf-blob.util.js';
+import { downloadBlob } from '../shared/download-blob.util.js';
 
 type ReportKind = 'trial-balance' | 'income-statement' | 'balance-sheet';
 
@@ -135,6 +138,9 @@ export class AccountingConsole {
   readonly trialBalanceRows = signal<TrialBalanceRow[]>([]);
   readonly incomeStatement = signal<IncomeStatement | null>(null);
   readonly balanceSheet = signal<BalanceSheet | null>(null);
+  readonly exportingReportCsv = signal(false);
+  readonly exportingReportPdf = signal(false);
+  readonly exportingReportExcel = signal(false);
 
   accountNameFor(accountId: string): string {
     const account = this.accounts().find((a) => a.id === accountId);
@@ -411,5 +417,67 @@ export class AccountingConsole {
         error: onError,
       });
     }
+  }
+
+  private exportCurrentReport(
+    loading: WritableSignal<boolean>,
+    extension: string,
+    exportByKind: Record<ReportKind, (from: string | undefined, to: string | undefined) => Observable<Blob>>,
+    onSuccess: (blob: Blob, filename: string) => void,
+  ): void {
+    const from = toIsoDate(this.reportFrom());
+    const to = toIsoDate(this.reportTo());
+    const kind = this.reportKind();
+    const filename = `${kind}.${extension}`;
+    loading.set(true);
+    exportByKind[kind](from, to).subscribe({
+      next: (blob) => {
+        loading.set(false);
+        onSuccess(blob, filename);
+      },
+      error: () => {
+        loading.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the export.' });
+      },
+    });
+  }
+
+  exportReportCsv(): void {
+    this.exportCurrentReport(
+      this.exportingReportCsv,
+      'csv',
+      {
+        'trial-balance': (from, to) => this.api.exportTrialBalanceCsv(from, to),
+        'income-statement': (from, to) => this.api.exportIncomeStatementCsv(from, to),
+        'balance-sheet': (_from, to) => this.api.exportBalanceSheetCsv(to),
+      },
+      (blob, filename) => downloadBlob(blob, filename),
+    );
+  }
+
+  exportReportPdf(): void {
+    this.exportCurrentReport(
+      this.exportingReportPdf,
+      'pdf',
+      {
+        'trial-balance': (from, to) => this.api.exportTrialBalancePdf(from, to),
+        'income-statement': (from, to) => this.api.exportIncomeStatementPdf(from, to),
+        'balance-sheet': (_from, to) => this.api.exportBalanceSheetPdf(to),
+      },
+      (blob) => openPdfBlobInNewTab(blob),
+    );
+  }
+
+  exportReportExcel(): void {
+    this.exportCurrentReport(
+      this.exportingReportExcel,
+      'xlsx',
+      {
+        'trial-balance': (from, to) => this.api.exportTrialBalanceExcel(from, to),
+        'income-statement': (from, to) => this.api.exportIncomeStatementExcel(from, to),
+        'balance-sheet': (_from, to) => this.api.exportBalanceSheetExcel(to),
+      },
+      (blob, filename) => downloadBlob(blob, filename),
+    );
   }
 }
