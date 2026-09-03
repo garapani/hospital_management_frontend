@@ -281,7 +281,7 @@
                   </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-v>
-                  <tr>
+                  <tr [class]="'status-rail-' + vitalSeverity(v)">
                     <td>{{ v.recordedAt | date: 'medium' }}</td>
                     <td>{{ v.temperature ?? '-' }}</td>
                     <td>{{ v.pulse ?? '-' }}</td>
@@ -319,7 +319,7 @@
               } @else {
               <div class="flex flex-col gap-3">
                 @for (n of pagedNotes(); track n.id) {
-                <div class="surface-card p-4">
+                <div class="surface-card p-4" [class]="'status-rail-' + (n.status === 'Signed' ? 'success' : 'warn')">
                   <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center gap-2">
                       <p-tag [value]="n.status" [severity]="noteStatusSeverity(n.status)" [rounded]="true"></p-tag>
@@ -383,7 +383,7 @@
                   </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-d>
-                  <tr>
+                  <tr [class]="'status-rail-' + (d.isPrimary ? 'success' : 'info')">
                     <td class="font-mono">{{ d.icd10Code || '-' }}</td>
                     <td>{{ d.description }}</td>
                     <td>
@@ -439,7 +439,7 @@
                   </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-p>
-                  <tr>
+                  <tr class="status-rail-info">
                     <td class="font-medium">{{ p.medicationName }}</td>
                     <td>{{ p.dosage }}</td>
                     <td>{{ p.frequency }}</td>

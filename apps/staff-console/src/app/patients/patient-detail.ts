@@ -50,6 +50,18 @@ function noteStatusSeverity(status: string): 'success' | 'warn' | 'secondary' {
   return status === 'Signed' ? 'success' : 'warn';
 }
 
+function vitalSeverity(v: Vital): 'warn' | 'success' {
+  if (
+    (v.spO2 != null && v.spO2 < 95) ||
+    (v.temperature != null && (v.temperature > 38 || v.temperature < 35.5)) ||
+    (v.bpSystolic != null && (v.bpSystolic > 140 || v.bpSystolic < 90)) ||
+    (v.pulse != null && (v.pulse > 100 || v.pulse < 60))
+  ) {
+    return 'warn';
+  }
+  return 'success';
+}
+
 type EditFormState = Partial<CreatePatientDto>;
 type VitalFormState = Omit<CreateVitalDto, 'patientId'>;
 type NoteFormState = Omit<CreateNoteDto, 'patientId' | 'doctorId'>;
@@ -101,6 +113,7 @@ export class PatientDetail implements OnInit {
   readonly appointmentStatusSeverity = appointmentStatusSeverity;
   readonly admissionStatusSeverity = admissionStatusSeverity;
   readonly admissionSourceSeverity = admissionSourceSeverity;
+  readonly vitalSeverity = vitalSeverity;
   readonly invoiceReference = invoiceReference;
   readonly invoiceStatusSeverity = invoiceStatusSeverity;
 
