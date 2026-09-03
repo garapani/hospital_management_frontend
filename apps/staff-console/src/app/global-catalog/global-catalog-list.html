@@ -47,7 +47,7 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-dept>
-                <tr>
+                <tr [class]="'status-rail-' + (dept.isActive ? 'success' : 'warn')">
                   <td class="font-medium">{{ dept.departmentCode }}</td>
                   <td>{{ dept.departmentName }}</td>
                   <td>
@@ -60,7 +60,7 @@
                     ></i>
                   </td>
                   <td>
-                    <p-tag [value]="dept.isActive ? 'Active' : 'Inactive'" [severity]="dept.isActive ? 'success' : 'warn'"></p-tag>
+                    <p-tag [value]="dept.isActive ? 'Active' : 'Inactive'" [severity]="dept.isActive ? 'success' : 'warn'" [rounded]="true" styleClass="px-3"></p-tag>
                   </td>
                   @if (canManage) {
                   <td>
@@ -125,7 +125,7 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-role>
-                <tr>
+                <tr [class]="'status-rail-' + (role.isActive ? 'success' : 'warn')">
                   <td class="font-medium">{{ role.name }}</td>
                   <td class="text-slate-500">{{ role.description }}</td>
                   <td>{{ role.priority }}</td>
@@ -139,7 +139,7 @@
                     ></i>
                   </td>
                   <td>
-                    <p-tag [value]="role.isActive ? 'Active' : 'Inactive'" [severity]="role.isActive ? 'success' : 'warn'"></p-tag>
+                    <p-tag [value]="role.isActive ? 'Active' : 'Inactive'" [severity]="role.isActive ? 'success' : 'warn'" [rounded]="true" styleClass="px-3"></p-tag>
                   </td>
                   @if (canManage) {
                   <td>
