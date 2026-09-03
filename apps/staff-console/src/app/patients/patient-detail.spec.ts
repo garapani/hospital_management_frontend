@@ -499,4 +499,40 @@ describe('PatientDetail', () => {
       expect(openSpy).not.toHaveBeenCalled();
     });
   });
+
+  describe('demographics toggle', () => {
+    it('starts collapsed and toggles expanded state', async () => {
+      const { fixture } = setup([]);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.demographicsExpanded()).toBe(false);
+      fixture.componentInstance.toggleDemographics();
+      expect(fixture.componentInstance.demographicsExpanded()).toBe(true);
+      fixture.componentInstance.toggleDemographics();
+      expect(fixture.componentInstance.demographicsExpanded()).toBe(false);
+    });
+  });
+
+  describe('orders tab label', () => {
+    it('renders Diagnostic Orders when user lacks billing.manage', async () => {
+      const { fixture } = setup(['order.read']);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(text).toContain('Diagnostic Orders');
+      expect(text).not.toContain('Billing & Orders');
+    });
+
+    it('renders Billing & Orders when user holds billing.manage', async () => {
+      const { fixture } = setup(['order.read', 'billing.manage']);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(text).toContain('Billing & Orders');
+    });
+  });
 });
+

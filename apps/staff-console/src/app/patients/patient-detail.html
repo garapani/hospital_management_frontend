@@ -64,11 +64,50 @@
   </div>
   } @else if (patient(); as p) {
   <div class="flex flex-col gap-6">
-    <!-- Demographics Card -->
-    <div class="surface-panel p-6 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-4">
-      <h3 class="font-bold text-slate-800 text-lg border-b border-slate-200 pb-2">Demographics</h3>
+    <!-- Demographics Card (Compact & Collapsible) -->
+    <div class="surface-panel px-5 py-3 rounded-xl shadow-sm border border-slate-200 bg-white flex flex-col gap-3">
+      <div
+        class="flex flex-wrap items-center justify-between gap-3 cursor-pointer select-none"
+        (click)="toggleDemographics()"
+        (keydown.enter)="toggleDemographics()"
+        tabindex="0"
+        role="button"
+        [attr.aria-expanded]="demographicsExpanded()"
+        aria-label="Toggle demographic details"
+      >
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-700">
+          <span class="font-bold text-slate-900">Demographics</span>
+          <span class="text-slate-300">•</span>
+          <span>Gender: <strong class="text-slate-900">{{ p.gender }}</strong></span>
+          <span class="text-slate-300">•</span>
+          <span>
+            DOB: <strong class="text-slate-900">{{ p.dateOfBirth ? (p.dateOfBirth | date) : 'N/A' }}</strong>
+            @if (age(p.dateOfBirth); as a) {
+            <span class="text-xs text-slate-500 font-semibold">({{ a }}y)</span>
+            }
+          </span>
+          <span class="text-slate-300">•</span>
+          <span>Blood: <strong class="text-slate-900">{{ p.bloodGroup || 'Unknown' }}</strong></span>
+          <span class="text-slate-300">•</span>
+          <span>Phone: <strong class="text-slate-900">{{ p.phoneNumber || 'N/A' }}</strong></span>
+          @if (p.insuranceProvider) {
+          <span class="text-slate-300">•</span>
+          <span class="text-xs bg-sky-50 text-sky-700 px-2 py-0.5 rounded border border-sky-200 font-medium">
+            {{ p.insuranceProvider }}
+          </span>
+          }
+        </div>
+        <button
+          type="button"
+          class="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1 font-medium transition-colors"
+        >
+          <span>{{ demographicsExpanded() ? 'Hide Details' : 'Show Details' }}</span>
+          <i [class]="demographicsExpanded() ? 'pi pi-chevron-up text-xs' : 'pi pi-chevron-down text-xs'"></i>
+        </button>
+      </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      @if (demographicsExpanded()) {
+      <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-3 border-t border-slate-100">
         <div class="surface-card p-3">
           <div class="text-xs text-slate-500 mb-1">Gender</div>
           <div class="font-medium text-slate-900">{{ p.gender }}</div>
@@ -116,6 +155,7 @@
           }
         </div>
       </div>
+      }
     </div>
 
     <!-- Clinical Workspace (Tabs) -->
@@ -137,9 +177,13 @@
           <p-tab value="prescriptions"><i class="pi pi-list mr-2"></i> Prescriptions</p-tab>
           }
           @if (auth.hasPermission('order.read') || auth.hasPermission('billing.manage')) {
-          <p-tab value="billing"><i class="pi pi-wallet mr-2"></i> Billing &amp; Orders</p-tab>
+          <p-tab value="billing">
+            <i [class]="auth.hasPermission('billing.manage') ? 'pi pi-wallet mr-2' : 'pi pi-box mr-2'"></i>
+            {{ auth.hasPermission('billing.manage') ? 'Billing & Orders' : 'Diagnostic Orders' }}
+          </p-tab>
           }
         </p-tablist>
+
 
         <p-tabpanels class="flex-1 bg-white p-6 overflow-y-auto">
           @if (auth.hasPermission('appointment.read')) {

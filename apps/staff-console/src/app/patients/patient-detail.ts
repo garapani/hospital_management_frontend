@@ -110,6 +110,11 @@ export class PatientDetail implements OnInit {
   readonly isValidEmail = isValidEmail;
 
   readonly printingLabel = signal(false);
+  readonly demographicsExpanded = signal(false);
+
+  toggleDemographics(): void {
+    this.demographicsExpanded.update((expanded) => !expanded);
+  }
 
   readonly showEditModal = signal(false);
   readonly editForm = signal<EditFormState>({});
