@@ -63,6 +63,7 @@ describe('WardBoard', () => {
     expect(beds.find((b) => b.id === 'bed-1')?.admission).toBeNull();
     expect(fixture.componentInstance.availableCount()).toBe(1);
     expect(fixture.componentInstance.occupiedCount()).toBe(1);
+    expect(fixture.componentInstance.maintenanceCount()).toBe(0);
   });
 
   it("defaults to the viewer's own assigned ward when she has one", async () => {

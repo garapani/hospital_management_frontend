@@ -29,6 +29,9 @@
     </div>
     <p-tag [value]="availableCount() + ' Available'" severity="success" [rounded]="true"></p-tag>
     <p-tag [value]="occupiedCount() + ' Occupied'" severity="info" [rounded]="true"></p-tag>
+    @if (maintenanceCount() > 0) {
+    <p-tag [value]="maintenanceCount() + ' Maintenance'" severity="warn" [rounded]="true"></p-tag>
+    }
   </div>
   }
 
@@ -47,7 +50,7 @@
   } @else {
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
     @for (bed of beds(); track bed.id) {
-    <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-col gap-3">
+    <div [class]="'surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-col gap-3 status-rail-' + bedStatusSeverity(bed.status)">
       <div class="flex items-center justify-between">
         <div class="font-semibold text-slate-800">Bed {{ bed.bedNumber }}</div>
         <p-tag [value]="bed.status" [severity]="bedStatusSeverity(bed.status)" [rounded]="true"></p-tag>
@@ -58,16 +61,25 @@
       @if (bed.admission; as admission) {
       <div class="border-t border-slate-100 pt-3 flex flex-col gap-1">
         <div class="font-medium text-slate-900">{{ admission.patientDisplayName }}</div>
-        <div class="text-xs text-slate-500">{{ admission.patientNo }}</div>
+        <div class="text-xs text-slate-500 font-mono">{{ admission.patientNo }}</div>
         <a
           [routerLink]="['/admissions', admission.id]"
-          class="text-sky-600 hover:text-sky-800 text-sm font-medium mt-1"
+          class="text-sky-600 hover:text-sky-800 text-sm font-medium mt-1 inline-flex items-center gap-1"
         >
-          View admission
+          <span>View admission</span>
+          <i class="pi pi-arrow-right text-xs"></i>
         </a>
       </div>
       } @else if (bed.status === 'Available') {
-      <div class="text-sm text-slate-400 italic">Free</div>
+      <div class="flex items-center gap-1.5 text-xs text-emerald-600 font-medium pt-3 border-t border-slate-100">
+        <i class="pi pi-check-circle text-xs"></i>
+        <span>Ready for admission</span>
+      </div>
+      } @else if (bed.status === 'Maintenance') {
+      <div class="flex items-center gap-1.5 text-xs text-amber-600 font-medium pt-3 border-t border-slate-100">
+        <i class="pi pi-wrench text-xs"></i>
+        <span>Under maintenance</span>
+      </div>
       }
     </div>
     }

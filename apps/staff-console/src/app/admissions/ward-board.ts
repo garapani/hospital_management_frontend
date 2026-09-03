@@ -36,6 +36,7 @@ export class WardBoard {
 
   readonly availableCount = computed(() => this.beds().filter((b) => b.status === 'Available').length);
   readonly occupiedCount = computed(() => this.beds().filter((b) => b.status === 'Occupied').length);
+  readonly maintenanceCount = computed(() => this.beds().filter((b) => b.status === 'Maintenance').length);
 
   constructor() {
     this.masterDataApi.listWards().subscribe({
