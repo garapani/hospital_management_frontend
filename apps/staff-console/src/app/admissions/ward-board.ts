@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
+import { ButtonModule } from 'primeng/button';
 import { AuthService } from '@org/auth';
 
 import { AdmissionsApiService, ActiveAdmission } from './admissions-api.service.js';
@@ -18,7 +19,7 @@ export interface BedWithOccupant extends Bed {
 @Component({
   selector: 'hms-ward-board',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, SelectModule, TagModule],
+  imports: [CommonModule, RouterModule, FormsModule, SelectModule, TagModule, ButtonModule],
   templateUrl: './ward-board.html',
 })
 export class WardBoard {
@@ -30,6 +31,7 @@ export class WardBoard {
   readonly wards = signal<Ward[]>([]);
   readonly selectedWardId = signal<string | null>(null);
   readonly beds = signal<BedWithOccupant[]>([]);
+  readonly statusFilter = signal<string | null>(null);
 
   readonly selectedWard = computed(() => this.wards().find((w) => w.id === this.selectedWardId()) ?? null);
   readonly bedStatusSeverity = bedStatusSeverity;
@@ -37,6 +39,20 @@ export class WardBoard {
   readonly availableCount = computed(() => this.beds().filter((b) => b.status === 'Available').length);
   readonly occupiedCount = computed(() => this.beds().filter((b) => b.status === 'Occupied').length);
   readonly maintenanceCount = computed(() => this.beds().filter((b) => b.status === 'Maintenance').length);
+
+  readonly filteredBeds = computed(() => {
+    const filter = this.statusFilter();
+    if (!filter) return this.beds();
+    return this.beds().filter((b) => b.status === filter);
+  });
+
+  setStatusFilter(status: string | null): void {
+    this.statusFilter.set(status);
+  }
+
+  resetStatusFilter(): void {
+    this.statusFilter.set(null);
+  }
 
   constructor() {
     this.masterDataApi.listWards().subscribe({

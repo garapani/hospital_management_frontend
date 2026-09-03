@@ -22,15 +22,53 @@
   </div>
 
   @if (selectedWard(); as ward) {
-  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-wrap items-center gap-4">
-    <div>
-      <span class="text-sm text-slate-500">Ward</span>
-      <div class="font-semibold text-slate-800">{{ ward.wardName }} ({{ ward.wardCode }})</div>
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center gap-4">
+      <div>
+        <span class="text-sm text-slate-500">Ward</span>
+        <div class="font-semibold text-slate-800">{{ ward.wardName }} ({{ ward.wardCode }})</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          (click)="setStatusFilter(null)"
+          [class]="statusFilter() === null ? 'ring-2 ring-sky-500 ring-offset-1 rounded-full' : 'opacity-70 hover:opacity-100'"
+        >
+          <p-tag [value]="beds().length + ' Total'" severity="secondary" [rounded]="true"></p-tag>
+        </button>
+        <button
+          type="button"
+          (click)="setStatusFilter('Available')"
+          [class]="statusFilter() === 'Available' ? 'ring-2 ring-emerald-500 ring-offset-1 rounded-full' : 'opacity-70 hover:opacity-100'"
+        >
+          <p-tag [value]="availableCount() + ' Available'" severity="success" [rounded]="true"></p-tag>
+        </button>
+        <button
+          type="button"
+          (click)="setStatusFilter('Occupied')"
+          [class]="statusFilter() === 'Occupied' ? 'ring-2 ring-sky-500 ring-offset-1 rounded-full' : 'opacity-70 hover:opacity-100'"
+        >
+          <p-tag [value]="occupiedCount() + ' Occupied'" severity="info" [rounded]="true"></p-tag>
+        </button>
+        @if (maintenanceCount() > 0) {
+        <button
+          type="button"
+          (click)="setStatusFilter('Maintenance')"
+          [class]="statusFilter() === 'Maintenance' ? 'ring-2 ring-amber-500 ring-offset-1 rounded-full' : 'opacity-70 hover:opacity-100'"
+        >
+          <p-tag [value]="maintenanceCount() + ' Maintenance'" severity="warn" [rounded]="true"></p-tag>
+        </button>
+        }
+      </div>
     </div>
-    <p-tag [value]="availableCount() + ' Available'" severity="success" [rounded]="true"></p-tag>
-    <p-tag [value]="occupiedCount() + ' Occupied'" severity="info" [rounded]="true"></p-tag>
-    @if (maintenanceCount() > 0) {
-    <p-tag [value]="maintenanceCount() + ' Maintenance'" severity="warn" [rounded]="true"></p-tag>
+    @if (statusFilter() !== null) {
+    <p-button
+      label="Reset"
+      size="small"
+      [text]="true"
+      severity="secondary"
+      (onClick)="resetStatusFilter()"
+    ></p-button>
     }
   </div>
   }
@@ -47,9 +85,13 @@
   <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-8 text-center text-slate-500">
     This ward has no beds set up yet.
   </div>
+  } @else if (filteredBeds().length === 0) {
+  <div class="surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-8 text-center text-slate-500">
+    No beds match the selected status filter.
+  </div>
   } @else {
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-    @for (bed of beds(); track bed.id) {
+    @for (bed of filteredBeds(); track bed.id) {
     <div [class]="'surface-panel rounded-xl shadow-sm border border-slate-200 bg-white p-4 flex flex-col gap-3 status-rail-' + bedStatusSeverity(bed.status)">
       <div class="flex items-center justify-between">
         <div class="font-semibold text-slate-800">Bed {{ bed.bedNumber }}</div>

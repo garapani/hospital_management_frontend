@@ -86,4 +86,25 @@ describe('WardBoard', () => {
     expect(masterDataApi.listBedsByWard).toHaveBeenCalledWith('ward-2');
     expect(admissionsApi.listActive).toHaveBeenCalledWith('ward-2');
   });
+
+  it('filters beds by status and resets the filter', async () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.filteredBeds()).toHaveLength(2);
+
+    fixture.componentInstance.setStatusFilter('Available');
+    expect(fixture.componentInstance.filteredBeds()).toHaveLength(1);
+    expect(fixture.componentInstance.filteredBeds()[0].status).toBe('Available');
+
+    fixture.componentInstance.setStatusFilter('Occupied');
+    expect(fixture.componentInstance.filteredBeds()).toHaveLength(1);
+    expect(fixture.componentInstance.filteredBeds()[0].status).toBe('Occupied');
+
+    fixture.componentInstance.resetStatusFilter();
+    expect(fixture.componentInstance.statusFilter()).toBeNull();
+    expect(fixture.componentInstance.filteredBeds()).toHaveLength(2);
+  });
 });
+
