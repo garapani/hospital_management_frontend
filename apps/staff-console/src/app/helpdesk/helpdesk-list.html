@@ -25,9 +25,19 @@
       </label>
       <label for="helpdeskStatusFilter" class="flex flex-col gap-2">
         <span class="text-sm font-medium text-slate-700">Status</span>
-        <p-select inputId="helpdeskStatusFilter" [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); applyFilters()" styleClass="w-48"></p-select>
+        <p-select
+          inputId="helpdeskStatusFilter"
+          [options]="statusOptions"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event); applyFilters()"
+          [showClear]="true"
+          styleClass="w-48"
+        ></p-select>
       </label>
       <p-button label="Filter" (onClick)="applyFilters()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+      @if (searchFilter() || statusFilter()) {
+      <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetFilters()"></p-button>
+      }
     </div>
     }
   </div>
@@ -58,7 +68,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-ticket>
-        <tr class="hover:bg-slate-100 transition-colors">
+        <tr class="hover:bg-slate-100 transition-colors" [class]="'status-rail-' + statusSeverity(ticket.status)">
           <td class="font-mono font-semibold text-slate-700 border-b border-slate-200">{{ ticket.ticketNumber }}</td>
           <td class="border-b border-slate-200">{{ ticket.title }}</td>
           <td class="border-b border-slate-200">{{ ticket.requesterName ?? ticket.requesterAccountId }}</td>
@@ -68,7 +78,7 @@
           <td class="border-b border-slate-200">
             <p-tag
               [value]="ticket.status"
-              [severity]="ticket.status === 'Resolved' || ticket.status === 'Closed' ? 'success' : ticket.status === 'InProgress' ? 'info' : 'secondary'"
+              [severity]="statusSeverity(ticket.status)"
               styleClass="rounded-full px-3"
             ></p-tag>
           </td>

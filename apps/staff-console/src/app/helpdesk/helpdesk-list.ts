@@ -12,7 +12,7 @@ import { Observable } from 'rxjs';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { HelpdeskApiService } from './helpdesk-api.service.js';
-import { CreateTicketDto, HELPDESK_TICKET_PRIORITIES, HelpdeskTicket, HelpdeskTicketPriority, HelpdeskTicketStatus } from './helpdesk.model.js';
+import { CreateTicketDto, HELPDESK_TICKET_PRIORITIES, HelpdeskTicket, HelpdeskTicketPriority, HelpdeskTicketStatus, helpdeskStatusSeverity } from './helpdesk.model.js';
 
 const DEFAULT_PAGE_SIZE = 20;
 const EMPTY_FORM: CreateTicketDto = { title: '', description: '' };
@@ -65,8 +65,16 @@ export class HelpdeskList {
     this.load(page, rows);
   }
 
+  readonly statusSeverity = helpdeskStatusSeverity;
+
   applyFilters(): void {
     this.load(1, this.pageSize());
+  }
+
+  resetFilters(): void {
+    this.searchFilter.set('');
+    this.statusFilter.set(null);
+    this.applyFilters();
   }
 
   private load(page: number, limit: number): void {

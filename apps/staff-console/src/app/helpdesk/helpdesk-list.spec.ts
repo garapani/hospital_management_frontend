@@ -122,4 +122,32 @@ describe('HelpdeskList', () => {
 
     expect(fixture.componentInstance.createError()).toBe('Title required');
   });
+
+  it('resets filters and reloads page 1', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.searchFilter.set('network');
+    fixture.componentInstance.statusFilter.set('Open');
+    fixture.componentInstance.applyFilters();
+    expect(api.list).toHaveBeenCalledWith({ q: 'network', status: 'Open', page: 1, limit: 20 });
+
+    fixture.componentInstance.resetFilters();
+    expect(fixture.componentInstance.searchFilter()).toBe('');
+    expect(fixture.componentInstance.statusFilter()).toBeNull();
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    expect(api.list).toHaveBeenCalledWith({ q: undefined, status: undefined, page: 1, limit: 20 });
+  });
+
+  it('maps ticket status to status severity correctly', () => {
+    const { fixture } = setup();
+
+    expect(fixture.componentInstance.statusSeverity('Open')).toBe('warn');
+    expect(fixture.componentInstance.statusSeverity('InProgress')).toBe('info');
+    expect(fixture.componentInstance.statusSeverity('Resolved')).toBe('success');
+    expect(fixture.componentInstance.statusSeverity('Closed')).toBe('success');
+    expect(fixture.componentInstance.statusSeverity('Unknown')).toBe('secondary');
+  });
 });
+
