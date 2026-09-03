@@ -131,6 +131,11 @@ export class PatientList implements OnInit {
     this.loadPatients(0);
   }
 
+  clearSearch() {
+    this.searchQuery.set('');
+    this.search();
+  }
+
   viewPatient(patient: Patient) {
     this.router.navigate(['/clinical/patients', patient.id]);
   }

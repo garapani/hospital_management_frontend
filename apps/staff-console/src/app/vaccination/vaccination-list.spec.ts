@@ -141,4 +141,22 @@ describe('VaccinationList', () => {
 
     expect(fixture.componentInstance.canManage).toBe(false);
   });
+
+  it('resets the patient filter back to empty and reloads page 1', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.patientIdFilter.set('patient-1');
+    fixture.componentInstance.applyFilter();
+    await fixture.whenStable();
+
+    fixture.componentInstance.resetFilter();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.patientIdFilter()).toBe('');
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    expect(api.list).toHaveBeenCalledWith({ patientId: undefined, page: 1, limit: 20 });
+  });
 });
+

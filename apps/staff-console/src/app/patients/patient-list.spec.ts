@@ -138,4 +138,20 @@ describe('PatientList', () => {
       expect.objectContaining({ firstName: 'Kiran', lastName: 'Sharma', phoneNumber: '9812345670', allowDuplicate: true }),
     );
   });
+
+  it('clears the search query and reloads page 1', async () => {
+    const { fixture, patientsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.searchQuery.set('Sharma');
+    fixture.componentInstance.search();
+    expect(patientsApi.search).toHaveBeenCalledWith(expect.objectContaining({ q: 'Sharma', page: 1 }));
+
+    fixture.componentInstance.clearSearch();
+    expect(fixture.componentInstance.searchQuery()).toBe('');
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    expect(patientsApi.search).toHaveBeenCalledWith(expect.objectContaining({ q: undefined, page: 1 }));
+  });
 });
+

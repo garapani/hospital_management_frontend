@@ -24,6 +24,10 @@
           (keyup.enter)="search()"
         />
       </div>
+      <p-button label="Search" size="small" severity="secondary" (onClick)="search()"></p-button>
+      @if (searchQuery()) {
+      <p-button label="Clear" size="small" [text]="true" severity="secondary" (onClick)="clearSearch()"></p-button>
+      }
       @if (auth.hasPermission('patients.create')) {
       <p-button
         label="Register Patient"
