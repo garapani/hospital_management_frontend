@@ -10,6 +10,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { EMPTY, Observable, Subject, catchError, map, switchMap } from 'rxjs';
+import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { OtApiService } from './ot-api.service.js';
 import { CreateSurgeryDto, OtSurgery, OtSurgeryStatus, otSurgeryStatusSeverity } from './ot.model.js';

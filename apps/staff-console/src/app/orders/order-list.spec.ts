@@ -227,4 +227,20 @@ describe('OrderList', () => {
     expect(fixture.componentInstance.saving()).toBe(false);
     expect(fixture.componentInstance.showCreateModal()).toBe(true);
   });
+
+  it('resets the patient filter back to empty and clears the order list', async () => {
+    const { fixture, ordersApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.patientIdFilter.set('patient-1');
+    fixture.componentInstance.applyFilter();
+    expect(ordersApi.list).toHaveBeenCalledWith({ patientId: 'patient-1', page: 1, limit: 10 });
+
+    fixture.componentInstance.resetFilter();
+    expect(fixture.componentInstance.patientIdFilter()).toBe('');
+    expect(fixture.componentInstance.orders()).toEqual([]);
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+  });
 });
+

@@ -189,6 +189,11 @@ export class OrderList {
     this.load(0);
   }
 
+  resetFilter(): void {
+    this.patientIdFilter.set('');
+    this.applyFilter();
+  }
+
   openCreateModal(): void {
     this.createForm.set({
       patientId: this.patientIdFilter() || '',
