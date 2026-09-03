@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { SelectModule } from 'primeng/select';
+import { ButtonModule } from 'primeng/button';
 import { AuthService } from '@org/auth';
 
 import { RadiologyApiService } from './radiology-api.service.js';
@@ -11,7 +12,7 @@ import { RadiologyImagingItem, RadiologyImagingType } from './radiology.model.js
 @Component({
   selector: 'hms-radiology-catalog',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, SelectModule],
+  imports: [CommonModule, FormsModule, TableModule, SelectModule, ButtonModule],
   templateUrl: './radiology-catalog.html',
 })
 export class RadiologyCatalog {
@@ -43,14 +44,15 @@ export class RadiologyCatalog {
     });
   }
 
-  onTypeChange(typeId: string): void {
-    this.selectedTypeId.set(typeId);
+  onTypeChange(typeId: string | null): void {
+    const id = typeId ?? '';
+    this.selectedTypeId.set(id);
     this.items.set([]);
     const requestToken = ++this.itemsRequestToken;
-    if (!typeId) return;
+    if (!id) return;
 
     this.loadingItems.set(true);
-    this.radiologyApi.listItemsByType(typeId).subscribe({
+    this.radiologyApi.listItemsByType(id).subscribe({
       next: (items) => {
         if (requestToken !== this.itemsRequestToken) return;
         this.items.set(items);
@@ -62,4 +64,9 @@ export class RadiologyCatalog {
       },
     });
   }
+
+  resetType(): void {
+    this.onTypeChange(null);
+  }
 }
+

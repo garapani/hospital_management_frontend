@@ -102,4 +102,18 @@ describe('RadiologyCatalog', () => {
 
     expect(fixture.componentInstance.loadingItems()).toBe(false);
   });
+
+  it('resets type selection via resetType()', async () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.onTypeChange('type-1');
+    expect(fixture.componentInstance.selectedTypeId()).toBe('type-1');
+
+    fixture.componentInstance.resetType();
+    expect(fixture.componentInstance.selectedTypeId()).toBe('');
+    expect(fixture.componentInstance.items()).toEqual([]);
+  });
 });
+
