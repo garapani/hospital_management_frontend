@@ -76,7 +76,7 @@
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-line>
-          <tr>
+          <tr [class]="remaining(line) === 0 ? 'status-rail-success' : 'status-rail-warn'">
             <td><hms-entity-name type="item" [id]="line.itemId"></hms-entity-name></td>
             <td>{{ line.requestedQuantity }}</td>
             <td>{{ line.fulfilledQuantity }}</td>
