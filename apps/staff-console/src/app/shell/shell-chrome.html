@@ -65,12 +65,12 @@
         >
           <i class="pi pi-bars text-slate-600 text-lg"></i>
         </button>
-        <span class="text-sm font-semibold text-slate-700 truncate">Dashboard</span>
+        <span class="text-sm font-semibold text-slate-700 truncate">{{ pageTitle() }}</span>
       </div>
 
       <!-- Right: Actions & User Menu -->
       <div class="flex items-center gap-3">
-        @if (auth.hasPermission('patients.read')) {
+        @if (auth.hasPermission('patients.read') && !auth.isPlatformAdmin()) {
         <button
           type="button"
           class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors text-sm"

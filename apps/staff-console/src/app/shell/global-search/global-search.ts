@@ -31,7 +31,9 @@ export class GlobalSearchComponent {
   readonly loading = signal(false);
   readonly activeIndex = signal(0);
 
-  readonly canSearch = computed(() => this.auth.hasPermission('patients.read'));
+  readonly canSearch = computed(
+    () => this.auth.hasPermission('patients.read') && !this.auth.isPlatformAdmin(),
+  );
 
   @ViewChild('searchInput') private readonly searchInput?: ElementRef<HTMLInputElement>;
 

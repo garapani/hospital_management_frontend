@@ -9,16 +9,16 @@ import { AuthService } from '@org/auth';
 import { NotificationsApiService } from '../notifications/notifications-api.service.js';
 import { BrandingService } from '../branding/branding.service.js';
 import { PatientsApiService } from '../patients/patients-api.service.js';
-import { ShellChrome } from './shell-chrome.js';
+import { ShellChrome, resolvePageTitle } from './shell-chrome.js';
 
 describe('ShellChrome user menu', () => {
-  function setup(options: { changePassword?: unknown; displayName?: string; roles?: string[] } = {}) {
+  function setup(options: { changePassword?: unknown; displayName?: string; roles?: string[]; isPlatformAdmin?: boolean; hasPermission?: (p: string) => boolean } = {}) {
     const authService = {
-      isPlatformAdmin: () => false,
-      hasPermission: () => false,
+      isPlatformAdmin: () => options.isPlatformAdmin ?? false,
+      hasPermission: options.hasPermission ?? (() => false),
       currentUser: () => ({
         roles: options.roles ?? ['Hospital Admin'],
-        hospitalId: 'demo',
+        hospitalId: options.isPlatformAdmin ? 'platform' : 'demo',
         displayName: options.displayName,
       }),
       logout: jest.fn().mockReturnValue(of(undefined)),
@@ -237,4 +237,49 @@ describe('ShellChrome user menu', () => {
     expect(fixture.componentInstance.notificationIconClass('error')).toContain('pi-times-circle');
     expect(fixture.componentInstance.notificationIconClass('success')).toContain('pi-check-circle');
   });
+
+  describe('resolvePageTitle', () => {
+    it('resolves feature list routes to clean page titles', () => {
+      expect(resolvePageTitle('/dashboard')).toBe('Dashboard');
+      expect(resolvePageTitle('/clinical/patients')).toBe('Patients (PMI)');
+      expect(resolvePageTitle('/clinical/appointments')).toBe('Appointments');
+      expect(resolvePageTitle('/billing/invoices')).toBe('Invoices');
+      expect(resolvePageTitle('/accounting')).toBe('Accounting');
+      expect(resolvePageTitle('/admissions/ward-board')).toBe('Ward Board');
+      expect(resolvePageTitle('/platform/tenants')).toBe('Tenants');
+    });
+
+    it('resolves parameterized detail routes correctly', () => {
+      expect(resolvePageTitle('/clinical/patients/pat-123')).toBe('Patient Details');
+      expect(resolvePageTitle('/clinical/appointments/appt-456')).toBe('Appointment Details');
+      expect(resolvePageTitle('/billing/invoices/inv-789')).toBe('Invoice Details');
+      expect(resolvePageTitle('/platform/tenants/demo')).toBe('Tenant Details');
+    });
+
+    it('ignores query parameters and trailing slashes', () => {
+      expect(resolvePageTitle('/clinical/patients?q=John')).toBe('Patients (PMI)');
+      expect(resolvePageTitle('/clinical/appointments/?date=2026-09-03#section')).toBe('Appointments');
+    });
+  });
+
+  describe('patient search (Ctrl+K) visibility', () => {
+    it('shows search button when user has patients.read and is NOT platform admin', () => {
+      const { fixture } = setup({
+        isPlatformAdmin: false,
+        hasPermission: (perm) => perm === 'patients.read',
+      });
+      const searchBtn = (fixture.nativeElement as HTMLElement).querySelector('button[aria-label="Search patients"]');
+      expect(searchBtn).toBeTruthy();
+    });
+
+    it('hides search button for platform admin even if patients.read is present', () => {
+      const { fixture } = setup({
+        isPlatformAdmin: true,
+        hasPermission: (perm) => perm === 'patients.read',
+      });
+      const searchBtn = (fixture.nativeElement as HTMLElement).querySelector('button[aria-label="Search patients"]');
+      expect(searchBtn).toBeNull();
+    });
+  });
 });
+

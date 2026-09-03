@@ -20,11 +20,14 @@ function fakePatient(overrides: Partial<Patient> = {}): Patient {
   };
 }
 
-function fakeAuth(canSearch = true): AuthService {
-  return { hasPermission: () => canSearch } as unknown as AuthService;
+function fakeAuth(canSearch = true, isPlatformAdmin = false): AuthService {
+  return {
+    hasPermission: () => canSearch,
+    isPlatformAdmin: () => isPlatformAdmin,
+  } as unknown as AuthService;
 }
 
-function setup(opts: { canSearch?: boolean; searchResult?: Patient[] } = {}) {
+function setup(opts: { canSearch?: boolean; isPlatformAdmin?: boolean; searchResult?: Patient[] } = {}) {
   const search = jest.fn().mockReturnValue(
     of({ data: opts.searchResult ?? [fakePatient()], meta: { total: 1, page: 1, limit: 8, totalPages: 1 } }),
   );
@@ -36,7 +39,7 @@ function setup(opts: { canSearch?: boolean; searchResult?: Patient[] } = {}) {
     imports: [GlobalSearchComponent],
     providers: [
       { provide: PatientsApiService, useValue: patientsApi },
-      { provide: AuthService, useValue: fakeAuth(opts.canSearch ?? true) },
+      { provide: AuthService, useValue: fakeAuth(opts.canSearch ?? true, opts.isPlatformAdmin ?? false) },
       { provide: Router, useValue: router },
     ],
   });
@@ -64,6 +67,13 @@ describe('GlobalSearchComponent', () => {
 
   it('does nothing on Ctrl+K without patients.read', () => {
     const { fixture } = setup({ canSearch: false });
+    document.dispatchEvent(ctrlK());
+
+    expect(fixture.componentInstance.open()).toBe(false);
+  });
+
+  it('does nothing on Ctrl+K for platform admin even with patients.read', () => {
+    const { fixture } = setup({ canSearch: true, isPlatformAdmin: true });
     document.dispatchEvent(ctrlK());
 
     expect(fixture.componentInstance.open()).toBe(false);

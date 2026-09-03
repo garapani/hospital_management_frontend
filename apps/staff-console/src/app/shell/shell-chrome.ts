@@ -1,6 +1,6 @@
 import { Component, ElementRef, HostListener, ViewChild, inject, signal, computed, OnInit, OnDestroy } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '@org/auth';
 import { ApiError } from '@org/api-client';
@@ -15,7 +15,77 @@ import { PasswordModule } from 'primeng/password';
 import { NotificationsApiService, Notification } from '../notifications/notifications-api.service.js';
 import { BrandingService } from '../branding/branding.service.js';
 import { GlobalSearchComponent } from './global-search/global-search.js';
-import { Subscription } from 'rxjs';
+import { Subscription, filter } from 'rxjs';
+
+export function resolvePageTitle(url: string): string {
+  const cleanUrl = url.split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
+
+  // Specific detail paths (order matters: subpaths before parents)
+  if (cleanUrl.startsWith('/platform/tenants/') && cleanUrl !== '/platform/tenants') return 'Tenant Details';
+  if (cleanUrl.startsWith('/platform/admins/') && cleanUrl !== '/platform/admins') return 'Platform Admin Details';
+  if (cleanUrl.startsWith('/clinical/patients/') && cleanUrl !== '/clinical/patients') return 'Patient Details';
+  if (cleanUrl.startsWith('/clinical/appointments/') && cleanUrl !== '/clinical/appointments') return 'Appointment Details';
+  if (cleanUrl.startsWith('/clinical/triage/') && cleanUrl !== '/clinical/triage') return 'Triage Details';
+  if (cleanUrl.startsWith('/clinical/orders/') && cleanUrl !== '/clinical/orders') return 'Order Details';
+  if (cleanUrl === '/clinical/lab/catalog') return 'Lab Test Catalog';
+  if (cleanUrl.startsWith('/clinical/lab/') && cleanUrl !== '/clinical/lab') return 'Lab Requisition Details';
+  if (cleanUrl === '/clinical/radiology/catalog') return 'Radiology Catalog';
+  if (cleanUrl.startsWith('/clinical/radiology/') && cleanUrl !== '/clinical/radiology') return 'Radiology Requisition Details';
+  if (cleanUrl.startsWith('/clinical/pharmacy/') && cleanUrl !== '/clinical/pharmacy') return 'Pharmacy Dispensing Details';
+  if (cleanUrl.startsWith('/billing/invoices/') && cleanUrl !== '/billing/invoices') return 'Invoice Details';
+  if (cleanUrl.startsWith('/helpdesk/') && cleanUrl !== '/helpdesk') return 'Ticket Details';
+  if (cleanUrl.startsWith('/admin/users/') && cleanUrl !== '/admin/users') return 'Staff Account Details';
+  if (cleanUrl.startsWith('/inventory/purchase-orders/') && cleanUrl !== '/inventory/purchase-orders') return 'Purchase Order Details';
+  if (cleanUrl.startsWith('/inventory/requisitions/') && cleanUrl !== '/inventory/requisitions') return 'Stock Requisition Details';
+  if (cleanUrl.startsWith('/admissions/') && cleanUrl !== '/admissions' && cleanUrl !== '/admissions/ward-board') return 'Admission Details';
+
+  // Base list / feature paths
+  if (cleanUrl === '/platform/dashboard') return 'Platform Dashboard';
+  if (cleanUrl === '/platform/tenants') return 'Tenants';
+  if (cleanUrl === '/platform/catalog') return 'Global Catalog';
+  if (cleanUrl === '/platform/admins') return 'Platform Admins';
+  if (cleanUrl === '/platform/audit') return 'Platform Audit';
+
+  if (cleanUrl === '/billing/invoices') return 'Invoices';
+  if (cleanUrl === '/billing/cashier-shifts') return 'Cashier Shift';
+  if (cleanUrl === '/admin/billing-settings') return 'Billing Settings';
+  if (cleanUrl === '/accounting') return 'Accounting';
+  if (cleanUrl === '/clinical/nursing') return 'Nursing';
+  if (cleanUrl === '/clinical/ot') return 'Operation Theatre';
+  if (cleanUrl === '/clinical/maternity') return 'Maternity';
+  if (cleanUrl === '/clinical/vaccination') return 'Vaccination';
+  if (cleanUrl === '/cssd') return 'CSSD';
+  if (cleanUrl === '/ward-supply') return 'Ward Supply';
+  if (cleanUrl === '/fixed-assets') return 'Fixed Assets';
+  if (cleanUrl === '/fraction') return 'Doctor Revenue Share';
+  if (cleanUrl === '/helpdesk') return 'Helpdesk';
+  if (cleanUrl === '/ssu') return 'Social Service (SSU)';
+  if (cleanUrl === '/admin/users') return 'Staff Accounts';
+  if (cleanUrl === '/admin/master-data') return 'Master Data';
+  if (cleanUrl === '/admin/audit') return 'Audit Trail';
+  if (cleanUrl === '/clinical/patients') return 'Patients (PMI)';
+  if (cleanUrl === '/clinical/triage') return 'Triage / ER';
+  if (cleanUrl === '/clinical/vitals') return 'Vitals';
+  if (cleanUrl === '/clinical/encounters') return 'Encounters';
+  if (cleanUrl === '/notifications') return 'Notifications';
+  if (cleanUrl === '/clinical/appointments') return 'Appointments';
+  if (cleanUrl === '/clinical/orders') return 'Orders';
+  if (cleanUrl === '/clinical/lab') return 'Lab / LIS';
+  if (cleanUrl === '/clinical/radiology') return 'Radiology';
+  if (cleanUrl === '/clinical/pharmacy') return 'Pharmacy';
+  if (cleanUrl === '/admissions/ward-board') return 'Ward Board';
+  if (cleanUrl === '/admissions') return 'Admissions / ADT';
+  if (cleanUrl === '/inventory/purchase-orders') return 'Purchase Orders';
+  if (cleanUrl === '/inventory/requisitions') return 'Stock Requisitions';
+  if (cleanUrl === '/inventory') return 'Inventory';
+  if (cleanUrl === '/employees') return 'Employees';
+  if (cleanUrl === '/payroll') return 'Payroll';
+  if (cleanUrl === '/reporting') return 'Reporting';
+  if (cleanUrl === '/insurance') return 'Insurance';
+  if (cleanUrl === '/dashboard') return 'Dashboard';
+
+  return 'Dashboard';
+}
 
 /**
  * Chrome shared by both consoles: sidebar frame, header, menus, and the router outlet.
@@ -41,8 +111,12 @@ import { Subscription } from 'rxjs';
 export class ShellChrome implements OnInit, OnDestroy {
   readonly auth = inject(AuthService);
   readonly branding = inject(BrandingService);
+  private readonly router = inject(Router);
   private readonly notificationsApi = inject(NotificationsApiService);
   private readonly messageService = inject(MessageService);
+
+  readonly pageTitle = signal('Dashboard');
+  private routerSubscription?: Subscription;
 
   readonly userMenuOpen = signal(false);
   readonly notificationsOpen = signal(false);
@@ -173,10 +247,17 @@ export class ShellChrome implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadNotifications();
+    this.pageTitle.set(resolvePageTitle(this.router.url));
+    this.routerSubscription = this.router.events
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event) => {
+        this.pageTitle.set(resolvePageTitle(event.urlAfterRedirects || event.url));
+      });
   }
 
   ngOnDestroy(): void {
     this.notificationSubscription?.unsubscribe();
+    this.routerSubscription?.unsubscribe();
   }
 
   loadNotifications(): void {
