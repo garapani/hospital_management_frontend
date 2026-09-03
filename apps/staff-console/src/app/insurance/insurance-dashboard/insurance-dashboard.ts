@@ -319,6 +319,11 @@ export class InsuranceDashboard {
     this.loadPolicies(0);
   }
 
+  resetPolicyFilter(): void {
+    this.policyPatientFilter.set('');
+    this.applyPolicyFilter();
+  }
+
   openPolicyModal(): void {
     this.policyForm.set({ ...EMPTY_POLICY_FORM });
     this.policyError.set(null);
@@ -435,6 +440,12 @@ export class InsuranceDashboard {
 
   applyClaimFilter(): void {
     this.loadClaims(0);
+  }
+
+  resetClaimFilter(): void {
+    this.claimPatientFilter.set('');
+    this.claimStatusFilter.set('');
+    this.applyClaimFilter();
   }
 
   openClaimModal(): void {

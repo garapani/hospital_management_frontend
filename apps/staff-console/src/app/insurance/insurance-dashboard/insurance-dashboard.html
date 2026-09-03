@@ -42,7 +42,7 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-payer>
-                <tr>
+                <tr [class]="'status-rail-' + (payer.isActive ? 'success' : 'secondary')">
                   <td class="font-medium">{{ payer.name }}</td>
                   <td><p-tag [value]="payer.type" [severity]="payerTypeSeverity(payer.type)" [rounded]="true"></p-tag></td>
                   <td>{{ payer.contactPerson ?? '—' }}</td>
@@ -91,7 +91,10 @@
                     class="w-64"
                   />
                 </div>
-                <p-button label="Apply" size="small" severity="secondary" (onClick)="applyPolicyFilter()"></p-button>
+                <p-button label="Search" size="small" severity="secondary" (onClick)="applyPolicyFilter()"></p-button>
+                @if (policyPatientFilter()) {
+                <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetPolicyFilter()"></p-button>
+                }
               </div>
               @if (auth.hasPermission('insurance.manage')) {
               <p-button label="Add Policy" icon="pi pi-plus" size="small" (onClick)="openPolicyModal()"></p-button>
@@ -114,7 +117,7 @@
               <ng-template pTemplate="header">
                 <tr>
                   <th class="table-header-cell">Policy #</th>
-                  <th class="table-header-cell">Patient ID</th>
+                  <th class="table-header-cell">Patient</th>
                   <th class="table-header-cell">Payer</th>
                   <th class="table-header-cell">Coverage Window</th>
                   <th class="table-header-cell text-right">Sum Insured</th>
@@ -124,7 +127,7 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-policy>
-                <tr>
+                <tr [class]="'status-rail-' + (policy.isActive ? 'success' : 'secondary')">
                   <td class="font-medium">{{ policy.policyNumber }}</td>
                   <td class="text-xs text-slate-600"><hms-entity-name type="patient" [id]="policy.patientId"></hms-entity-name></td>
                   <td>{{ payerNameById().get(policy.payerId) ?? policy.payerId }}</td>
@@ -181,13 +184,16 @@
                     inputId="claimStatusFilter"
                     [options]="claimStatusOptions"
                     [ngModel]="claimStatusFilter()"
-                    (ngModelChange)="claimStatusFilter.set($event)"
+                    (ngModelChange)="claimStatusFilter.set($event); applyClaimFilter()"
                     placeholder="All statuses"
                     [showClear]="true"
                     styleClass="w-48"
                   ></p-select>
                 </div>
-                <p-button label="Apply" size="small" severity="secondary" (onClick)="applyClaimFilter()"></p-button>
+                <p-button label="Search" size="small" severity="secondary" (onClick)="applyClaimFilter()"></p-button>
+                @if (claimPatientFilter() || claimStatusFilter()) {
+                <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetClaimFilter()"></p-button>
+                }
               </div>
               @if (auth.hasPermission('insurance.manage')) {
               <p-button label="New Claim" icon="pi pi-plus" size="small" (onClick)="openClaimModal()"></p-button>
@@ -210,7 +216,7 @@
               <ng-template pTemplate="header">
                 <tr>
                   <th class="table-header-cell">Claim #</th>
-                  <th class="table-header-cell">Patient ID</th>
+                  <th class="table-header-cell">Patient</th>
                   <th class="table-header-cell text-right">Claimed</th>
                   <th class="table-header-cell text-right">Approved</th>
                   <th class="table-header-cell">Status</th>
@@ -221,7 +227,7 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-claim>
-                <tr>
+                <tr [class]="'status-rail-' + claimStatusSeverity(claim.status)">
                   <td class="font-medium">{{ claim.claimNumber }}</td>
                   <td class="text-xs text-slate-600"><hms-entity-name type="patient" [id]="claim.patientId"></hms-entity-name></td>
                   <td class="text-right font-mono">{{ claim.amountClaimed | currency: 'INR' : 'symbol-narrow' : '1.2-2' }}</td>

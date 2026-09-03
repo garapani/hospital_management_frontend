@@ -242,6 +242,44 @@ describe('InsuranceDashboard', () => {
     expect(call).toEqual({ patientId: undefined, status: 'Submitted', page: 1, limit: 20 });
   });
 
+  it('resets the policy patient filter via resetPolicyFilter()', async () => {
+    const { fixture, insuranceApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.policyPatientFilter.set('patient-123');
+    fixture.componentInstance.applyPolicyFilter();
+    expect(insuranceApi.listPolicies).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId: 'patient-123', page: 1 }),
+    );
+
+    fixture.componentInstance.resetPolicyFilter();
+    expect(fixture.componentInstance.policyPatientFilter()).toBe('');
+    expect(insuranceApi.listPolicies).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId: undefined, page: 1 }),
+    );
+  });
+
+  it('resets the claim filters via resetClaimFilter()', async () => {
+    const { fixture, insuranceApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.claimPatientFilter.set('patient-123');
+    fixture.componentInstance.claimStatusFilter.set('Submitted');
+    fixture.componentInstance.applyClaimFilter();
+    expect(insuranceApi.listClaims).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId: 'patient-123', status: 'Submitted', page: 1 }),
+    );
+
+    fixture.componentInstance.resetClaimFilter();
+    expect(fixture.componentInstance.claimPatientFilter()).toBe('');
+    expect(fixture.componentInstance.claimStatusFilter()).toBe('');
+    expect(insuranceApi.listClaims).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId: undefined, status: undefined, page: 1 }),
+    );
+  });
+
   it('creates a claim and reloads the list', async () => {
     const { fixture, insuranceApi } = setup();
     fixture.detectChanges();
