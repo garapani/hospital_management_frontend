@@ -21,6 +21,7 @@ import { AuthService } from '@org/auth';
 import { PatientsApiService, Patient, CreatePatientDto } from './patients-api.service.js';
 import { openPdfBlobInNewTab } from '../shared/pdf-blob.util.js';
 import { calculateAge, isValidEmail, isValidPhoneNumber } from './patient.model.js';
+import { BrandingService } from '../branding/branding.service.js';
 import { VitalsApiService, Vital, CreateVitalDto } from '../vitals/vitals-api.service.js';
 import {
   EncountersApiService,
@@ -96,6 +97,7 @@ export class PatientDetail implements OnInit {
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
+  readonly branding = inject(BrandingService);
   readonly appointmentStatusSeverity = appointmentStatusSeverity;
   readonly admissionStatusSeverity = admissionStatusSeverity;
   readonly admissionSourceSeverity = admissionSourceSeverity;
@@ -171,6 +173,24 @@ export class PatientDetail implements OnInit {
     durationDays: 1,
   });
   readonly prescriptionSaving = signal(false);
+  readonly showRxPrintModal = signal(false);
+
+  readonly currentDoctorName = computed(
+    () => this.auth.currentUser?.()?.displayName || 'Attending Physician',
+  );
+  readonly todayFormatted = computed(() =>
+    new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+  );
+  readonly activePrescriptions = computed(() => {
+    const list = this.prescriptions();
+    const active = list.filter((p) => p.status !== 'Cancelled');
+    return active.length > 0 ? active : list;
+  });
+  readonly primaryDiagnoses = computed(() =>
+    this.diagnoses()
+      .filter((d) => d.isPrimary)
+      .map((d) => d.description),
+  );
 
   readonly appointments = signal<Appointment[]>([]);
   readonly appointmentsLoading = signal(false);
@@ -551,6 +571,122 @@ export class PatientDetail implements OnInit {
         });
       },
     });
+  }
+
+  openRxPrintModal(): void {
+    this.showRxPrintModal.set(true);
+  }
+
+  printRxSlip(): void {
+    const p = this.patient();
+    if (!p) return;
+
+    const printWin = window.open('', '_blank', 'width=800,height=900');
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    const clinicName = this.branding.displayName?.() || 'Vaidya Healthcare';
+    const doctorName = this.currentDoctorName();
+    const dateStr = this.todayFormatted();
+    const diagnosesList = this.primaryDiagnoses().length > 0 ? this.primaryDiagnoses().join(', ') : '';
+    const rxRows = this.activePrescriptions()
+      .map(
+        (rx, i) => `
+      <tr>
+        <td style="border: 1px solid #cbd5e1; padding: 8px; font-family: monospace; text-align: center;">${i + 1}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; color: #0f172a;">${rx.medicationName}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 8px;">${rx.dosage}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 8px;">${rx.frequency}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 8px;">${rx.route}</td>
+        <td style="border: 1px solid #cbd5e1; padding: 8px;">${rx.durationDays} days</td>
+      </tr>
+    `,
+      )
+      .join('');
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Prescription Slip - ${p.patientNo}</title>
+  <style>
+    @page { size: A4; margin: 20mm; }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 24px; color: #1e293b; line-height: 1.5; }
+    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0f766e; padding-bottom: 12px; margin-bottom: 16px; }
+    .clinic { font-size: 22px; font-weight: 700; color: #0f766e; }
+    .meta { font-size: 13px; color: #64748b; text-align: right; }
+    .patient-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; font-size: 13px; margin-bottom: 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .allergies { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 8px 12px; font-size: 12px; border-radius: 4px; margin-bottom: 16px; font-weight: 500; }
+    .diagnoses { font-size: 13px; margin-bottom: 16px; color: #334155; }
+    .rx-symbol { font-size: 28px; font-family: serif; color: #0f766e; margin-bottom: 8px; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 32px; }
+    th { background: #f1f5f9; text-align: left; border: 1px solid #cbd5e1; padding: 8px; color: #334155; font-weight: 600; }
+    .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 48px; font-size: 12px; }
+    .sig { text-align: center; width: 220px; border-top: 1px solid #64748b; padding-top: 8px; color: #334155; font-weight: 500; }
+    @media print { .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="clinic">${clinicName}</div>
+      <div style="font-size: 12px; color: #64748b;">Outpatient Clinical Prescription</div>
+    </div>
+    <div class="meta">
+      <div>Date: <strong>${dateStr}</strong></div>
+      <div>Doctor: <strong>${doctorName}</strong></div>
+    </div>
+  </div>
+
+  <div class="patient-box">
+    <div><strong>Patient:</strong> ${p.firstName} ${p.lastName}</div>
+    <div><strong>UHID:</strong> ${p.patientNo}</div>
+    <div><strong>Age / Gender:</strong> ${this.age(p.dateOfBirth) ? this.age(p.dateOfBirth) + 'y' : 'N/A'} / ${p.gender}</div>
+    <div><strong>Phone:</strong> ${p.phoneNumber || 'N/A'}</div>
+  </div>
+
+  ${p.allergies ? `<div class="allergies">⚠️ Known Allergies: ${p.allergies}</div>` : ''}
+  ${diagnosesList ? `<div class="diagnoses"><strong>Provisional / Final Diagnosis:</strong> ${diagnosesList}</div>` : ''}
+
+  <div class="rx-symbol">℞</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 40px; text-align: center;">#</th>
+        <th>Medication</th>
+        <th>Dosage</th>
+        <th>Frequency</th>
+        <th>Route</th>
+        <th>Duration</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rxRows}
+    </tbody>
+  </table>
+
+  <div class="footer">
+    <div style="color: #64748b; max-width: 340px;">
+      <strong>Advice / Instructions:</strong><br>
+      Take medications strictly as prescribed. Complete full course of antibiotics if indicated. Consult clinic immediately in case of adverse reactions.
+    </div>
+    <div class="sig">Doctor's Signature &amp; Stamp</div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      window.print();
+    };
+  </script>
+</body>
+</html>`;
+
+    printWin.document.open();
+    printWin.document.write(html);
+    printWin.document.close();
   }
 
   // --- Appointments ---

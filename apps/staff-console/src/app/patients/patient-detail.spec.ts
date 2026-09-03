@@ -10,6 +10,8 @@ import { EncountersApiService, ClinicalNote, Diagnosis } from '../encounters/enc
 import { AppointmentsApiService } from '../appointments/appointments-api.service.js';
 import { AdmissionsApiService } from '../admissions/admissions-api.service.js';
 import { OrdersApiService } from '../orders/orders-api.service.js';
+import { signal } from '@angular/core';
+import { BrandingService } from '../branding/branding.service.js';
 import { InvoicesApiService } from '../billing/invoices-api.service.js';
 
 describe('PatientDetail', () => {
@@ -66,6 +68,10 @@ describe('PatientDetail', () => {
       paramMap: of(convertToParamMap({ id: 'patient-1' })),
     } as unknown as ActivatedRoute;
 
+    const branding = {
+      displayName: signal('Vaidya Hospital'),
+    } as unknown as BrandingService;
+
     TestBed.configureTestingModule({
       imports: [PatientDetail],
       providers: [
@@ -78,6 +84,7 @@ describe('PatientDetail', () => {
         { provide: OrdersApiService, useValue: ordersApi },
         { provide: InvoicesApiService, useValue: invoicesApi },
         { provide: AuthService, useValue: auth },
+        { provide: BrandingService, useValue: branding },
         { provide: ActivatedRoute, useValue: activatedRoute },
       ],
     });
@@ -285,6 +292,7 @@ describe('PatientDetail', () => {
         },
         { provide: InvoicesApiService, useValue: { list: jest.fn().mockReturnValue(of({ data: [], total: 0, page: 1, limit: 10 })) } },
         { provide: AuthService, useValue: { hasPermission: (p: string) => p === 'encounter.read', currentUser: () => null } },
+        { provide: BrandingService, useValue: { displayName: signal('Vaidya Hospital') } },
         { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: 'patient-1' })) } },
       ],
     });
@@ -534,5 +542,107 @@ describe('PatientDetail', () => {
       expect(text).toContain('Billing & Orders');
     });
   });
+
+  describe('printRxSlip', () => {
+    it('opens the Rx print preview modal and filters active prescriptions', async () => {
+      const { fixture } = setup(['encounter.read']);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.prescriptions.set([
+        {
+          id: 'rx-1',
+          patientId: 'patient-1',
+          doctorId: 'doc-1',
+          medicationName: 'Amoxicillin',
+          dosage: '500mg',
+          frequency: 'TDS',
+          route: 'Oral',
+          durationDays: 5,
+          status: 'Active',
+          createdAt: '2026-08-01T00:00:00Z',
+          updatedAt: '2026-08-01T00:00:00Z',
+        },
+        {
+          id: 'rx-2',
+          patientId: 'patient-1',
+          doctorId: 'doc-1',
+          medicationName: 'Paracetamol',
+          dosage: '650mg',
+          frequency: 'BD',
+          route: 'Oral',
+          durationDays: 3,
+          status: 'Cancelled',
+          createdAt: '2026-08-01T00:00:00Z',
+          updatedAt: '2026-08-01T00:00:00Z',
+        },
+      ]);
+
+      fixture.componentInstance.openRxPrintModal();
+      expect(fixture.componentInstance.showRxPrintModal()).toBe(true);
+      expect(fixture.componentInstance.activePrescriptions()).toHaveLength(1);
+      expect(fixture.componentInstance.activePrescriptions()[0].medicationName).toBe('Amoxicillin');
+    });
+
+    it('opens a print window with formatted prescription HTML and triggers print', async () => {
+      const { fixture } = setup(['encounter.read']);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.patient.set(patient);
+      fixture.componentInstance.prescriptions.set([
+        {
+          id: 'rx-1',
+          patientId: 'patient-1',
+          doctorId: 'doc-1',
+          medicationName: 'Metformin',
+          dosage: '500mg',
+          frequency: 'BD',
+          route: 'Oral',
+          durationDays: 30,
+          status: 'Active',
+          createdAt: '2026-08-01T00:00:00Z',
+          updatedAt: '2026-08-01T00:00:00Z',
+        },
+      ]);
+
+      const mockDoc = {
+        open: jest.fn(),
+        write: jest.fn(),
+        close: jest.fn(),
+      };
+      const mockWin = {
+        document: mockDoc,
+      };
+      jest.spyOn(window, 'open').mockReturnValue(mockWin as unknown as Window);
+
+      fixture.componentInstance.printRxSlip();
+
+      expect(window.open).toHaveBeenCalledWith('', '_blank', 'width=800,height=900');
+      expect(mockDoc.open).toHaveBeenCalled();
+      expect(mockDoc.write).toHaveBeenCalled();
+      const writtenHtml = (mockDoc.write as jest.Mock).mock.calls[0][0];
+      expect(writtenHtml).toContain('Metformin');
+      expect(writtenHtml).toContain('Jane Doe');
+      expect(writtenHtml).toContain('PMI-1');
+      expect(writtenHtml).toContain('Prescription Slip');
+      expect(mockDoc.close).toHaveBeenCalled();
+    });
+
+    it('falls back to window.print if popup is blocked', async () => {
+      const { fixture } = setup(['encounter.read']);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.patient.set(patient);
+      jest.spyOn(window, 'open').mockReturnValue(null);
+      const printSpy = jest.spyOn(window, 'print').mockImplementation(() => {});
+
+      fixture.componentInstance.printRxSlip();
+
+      expect(printSpy).toHaveBeenCalled();
+    });
+  });
 });
+
 
