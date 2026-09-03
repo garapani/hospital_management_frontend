@@ -63,6 +63,7 @@
         [options]="actionOptions"
         [ngModel]="filters().action"
         (ngModelChange)="filters.set({ ...filters(), action: $event })"
+        [showClear]="true"
         styleClass="w-full text-sm"
       ></p-select>
     </div>
@@ -87,6 +88,9 @@
       (onClick)="applyFilters()"
       [disabled]="!filters().startDate || !filters().endDate"
     ></p-button>
+    @if (hasNonDateFilters()) {
+    <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetFilters()"></p-button>
+    }
   </div>
 
   <!-- Results Table -->
@@ -116,7 +120,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-record>
-        <tr class="hover:bg-sky-50/50 transition-colors">
+        <tr class="hover:bg-sky-50/50 transition-colors" [class]="'status-rail-' + (record.action === 'create' ? 'success' : record.action === 'delete' ? 'danger' : 'info')">
           <td class="whitespace-nowrap">
             {{ record.occurredAt | date: 'medium' }}
           </td>

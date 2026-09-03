@@ -103,4 +103,31 @@ describe('AuditList', () => {
     expect(fixture.componentInstance.firstRecord()).toBe(40);
     expect(auditApi.search).toHaveBeenCalledWith(expect.objectContaining({ page: 3, limit: 20 }));
   });
+
+  it('detects non-date filters and resets back to defaults', async () => {
+    const { fixture, auditApi } = setup('ok');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.hasNonDateFilters()).toBe(false);
+
+    fixture.componentInstance.filters.set({
+      ...fixture.componentInstance.filters(),
+      tableName: 'accounts',
+      action: 'create',
+      correlationId: 'c-1',
+    });
+    expect(fixture.componentInstance.hasNonDateFilters()).toBe(true);
+
+    fixture.componentInstance.resetFilters();
+    expect(fixture.componentInstance.hasNonDateFilters()).toBe(false);
+    expect(fixture.componentInstance.filters().tableName).toBe('');
+    expect(fixture.componentInstance.filters().action).toBe('');
+    expect(fixture.componentInstance.filters().correlationId).toBe('');
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    expect(auditApi.search).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 1, limit: 20, tableName: undefined, action: undefined, correlationId: undefined }),
+    );
+  });
 });
+

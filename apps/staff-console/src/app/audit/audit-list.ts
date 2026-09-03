@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { DatePipe, JsonPipe } from '@angular/common';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -71,9 +71,25 @@ export class AuditList {
     this.load(page, rows);
   }
 
+  readonly hasNonDateFilters = computed(() => {
+    const f = this.filters();
+    return !!f.tableName || !!f.action || !!f.correlationId;
+  });
+
   applyFilters(): void {
     this.firstRecord.set(0); // Reset to first page
     this.load(1, this.pageSize());
+  }
+
+  resetFilters(): void {
+    this.filters.set({
+      startDate: toLocalDateTimeString(new Date(Date.now() - 24 * 60 * 60 * 1000)),
+      endDate: toLocalDateTimeString(new Date()),
+      tableName: '',
+      action: '',
+      correlationId: '',
+    });
+    this.applyFilters();
   }
 
   private load(page: number, limit: number): void {
