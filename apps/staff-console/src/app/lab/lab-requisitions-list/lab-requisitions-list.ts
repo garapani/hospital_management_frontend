@@ -84,4 +84,11 @@ export class LabRequisitionsList {
     this.firstRecord.set(0);
     this.load(0);
   }
+
+  resetFilters(): void {
+    this.orderItemIdFilter.set('');
+    this.statusFilter.set('Pending');
+    this.applyFilters();
+  }
 }
+

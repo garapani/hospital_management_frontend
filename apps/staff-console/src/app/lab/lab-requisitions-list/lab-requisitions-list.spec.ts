@@ -120,4 +120,22 @@ describe('LabRequisitionsList', () => {
 
     expect(failingFixture.componentInstance.loading()).toBe(false);
   });
+
+  it('resets filters back to default Pending and reloads', async () => {
+    const { fixture, labApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.orderItemIdFilter.set('order-item-1');
+    fixture.componentInstance.statusFilter.set('Verified');
+    fixture.componentInstance.applyFilters();
+
+    fixture.componentInstance.resetFilters();
+
+    expect(fixture.componentInstance.orderItemIdFilter()).toBe('');
+    expect(fixture.componentInstance.statusFilter()).toBe('Pending');
+    const lastCall = (labApi.listRequisitions as jest.Mock).mock.calls.at(-1)[0];
+    expect(lastCall).toEqual({ orderItemId: undefined, status: 'Pending', page: 1, limit: 10 });
+  });
 });
+
