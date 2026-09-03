@@ -50,7 +50,7 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-dept>
-                <tr>
+                <tr [class]="'status-rail-' + (dept.isActive ? 'success' : 'warn')">
                   <td class="font-medium">{{ dept.departmentCode }}</td>
                   <td>{{ dept.departmentName }}</td>
                   <td class="text-slate-500">
@@ -134,7 +134,7 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-ward>
-                <tr>
+                <tr [class]="'status-rail-' + (ward.isActive ? 'success' : 'warn')">
                   <td class="font-medium">{{ ward.wardCode }}</td>
                   <td>{{ ward.wardName }}</td>
                   <td class="text-slate-500">{{ ward.wardType }}</td>
@@ -425,7 +425,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-bed>
-        <tr>
+        <tr [class]="'status-rail-' + (bed.status === 'Available' ? 'success' : (bed.status === 'Occupied' ? 'warn' : 'secondary'))">
           <td class="font-medium font-mono text-slate-700">{{ bed.bedNumber }}</td>
           <td>{{ bed.bedType || '-' }}</td>
           <td>
