@@ -24,6 +24,9 @@
         styleClass="w-72"
       ></p-select>
     </div>
+    @if (departmentFilter()) {
+    <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetFilter()"></p-button>
+    }
   </div>
 
   <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white p-4">

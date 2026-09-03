@@ -87,6 +87,21 @@ describe('StockRequisitionList', () => {
     expect(inventoryApi.listRequisitions).toHaveBeenCalledTimes(1);
   });
 
+  it('resets department filter via resetFilter()', async () => {
+    const { fixture, inventoryApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.onDepartmentFilterChange('dept-1');
+    expect(fixture.componentInstance.departmentFilter()).toBe('dept-1');
+    expect(fixture.componentInstance.hasSearched()).toBe(true);
+
+    fixture.componentInstance.resetFilter();
+    expect(fixture.componentInstance.departmentFilter()).toBe('');
+    expect(fixture.componentInstance.hasSearched()).toBe(false);
+    expect(fixture.componentInstance.requisitions()).toEqual([]);
+  });
+
   it('does not throw when the p-select clear icon emits null', async () => {
     const { fixture } = setup();
     fixture.detectChanges();

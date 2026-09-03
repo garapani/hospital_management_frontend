@@ -161,6 +161,10 @@ export class StockRequisitionList {
     this.load(0);
   }
 
+  resetFilter(): void {
+    this.onDepartmentFilterChange(null);
+  }
+
   openCreateModal(): void {
     this.createDepartmentId.set(this.departmentFilter());
     this.createNotes.set('');
