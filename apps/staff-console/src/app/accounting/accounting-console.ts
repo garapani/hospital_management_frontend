@@ -253,6 +253,10 @@ export class AccountingConsole {
     this.loadJournals(1, this.journalsPageSize());
   }
 
+  resetJournalStatusFilter(): void {
+    this.setJournalStatusFilter(null);
+  }
+
   openJournalModal(): void {
     this.journalEntryDate.set(new Date());
     this.journalNarration.set('');

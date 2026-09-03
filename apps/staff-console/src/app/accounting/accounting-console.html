@@ -32,12 +32,12 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-account>
-                <tr>
+                <tr [class]="'status-rail-' + (account.isActive ? 'success' : 'warn')">
                   <td class="font-mono font-medium">{{ account.accountCode }}</td>
                   <td>{{ account.name }}</td>
                   <td>{{ account.type }}</td>
                   <td>
-                    <p-tag [value]="account.isActive ? 'Active' : 'Inactive'" [severity]="account.isActive ? 'success' : 'warn'"></p-tag>
+                    <p-tag [value]="account.isActive ? 'Active' : 'Inactive'" [severity]="account.isActive ? 'success' : 'warn'" [rounded]="true" styleClass="px-3"></p-tag>
                   </td>
                   <td>
                     @if (canManage) {
@@ -66,15 +66,26 @@
         <p-tabpanel value="1">
           <div class="p-4 flex flex-col gap-4">
             <div class="flex flex-wrap justify-between items-end gap-3">
-              <div class="flex flex-col gap-2">
-                <label for="journalStatusFilter" class="text-sm font-medium text-slate-700">Status</label>
-                <p-select
-                  inputId="journalStatusFilter"
-                  [options]="journalStatusOptions"
-                  [ngModel]="journalStatusFilter()"
-                  (ngModelChange)="setJournalStatusFilter($event)"
-                  styleClass="w-48"
-                ></p-select>
+              <div class="flex flex-wrap items-end gap-3">
+                <div class="flex flex-col gap-2">
+                  <label for="journalStatusFilter" class="text-sm font-medium text-slate-700">Status</label>
+                  <p-select
+                    inputId="journalStatusFilter"
+                    [options]="journalStatusOptions"
+                    [ngModel]="journalStatusFilter()"
+                    (ngModelChange)="setJournalStatusFilter($event)"
+                    styleClass="w-48"
+                  ></p-select>
+                </div>
+                @if (journalStatusFilter() !== null) {
+                <p-button
+                  label="Reset"
+                  size="small"
+                  [text]="true"
+                  severity="secondary"
+                  (onClick)="resetJournalStatusFilter()"
+                ></p-button>
+                }
               </div>
               @if (canManage) {
               <p-button label="New Journal Entry" icon="pi pi-plus" size="small" (onClick)="openJournalModal()"></p-button>
@@ -104,12 +115,12 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-journal>
-                <tr>
+                <tr [class]="'status-rail-' + (journal.status === 'Posted' ? 'success' : 'warn')">
                   <td class="font-mono font-medium">{{ journal.journalNumber }}</td>
                   <td>{{ journal.entryDate | date: 'mediumDate' }}</td>
                   <td>{{ journal.narration || '—' }}</td>
                   <td>
-                    <p-tag [value]="journal.status" [severity]="journal.status === 'Posted' ? 'success' : 'secondary'"></p-tag>
+                    <p-tag [value]="journal.status" [severity]="journal.status === 'Posted' ? 'success' : 'warn'" [rounded]="true" styleClass="px-3"></p-tag>
                   </td>
                   <td class="flex gap-2">
                     <p-button label="View" [text]="true" size="small" (onClick)="viewJournal(journal)"></p-button>

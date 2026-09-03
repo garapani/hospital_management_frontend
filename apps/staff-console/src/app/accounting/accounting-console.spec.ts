@@ -82,6 +82,20 @@ describe('AccountingConsole', () => {
     expect(fixture.componentInstance.journalIsBalanced).toBe(false);
   });
 
+  it('resets journal status filter via resetJournalStatusFilter()', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.setJournalStatusFilter('Draft');
+    expect(fixture.componentInstance.journalStatusFilter()).toBe('Draft');
+    expect(api.listJournals).toHaveBeenCalledWith(expect.objectContaining({ status: 'Draft', page: 1 }));
+
+    fixture.componentInstance.resetJournalStatusFilter();
+    expect(fixture.componentInstance.journalStatusFilter()).toBeNull();
+    expect(api.listJournals).toHaveBeenCalledWith(expect.objectContaining({ status: undefined, page: 1 }));
+  });
+
   it('treats a floating-point rounding difference as balanced (0.10 + 0.20 vs 0.30)', async () => {
     const { fixture } = setup();
     fixture.detectChanges();
