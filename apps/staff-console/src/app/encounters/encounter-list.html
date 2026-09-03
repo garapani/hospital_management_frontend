@@ -30,6 +30,14 @@
           [loading]="searching()"
           (onClick)="searchPatients()"
         />
+        @if (searchQuery() || patientResults().length > 0) {
+        <p-button
+          label="Reset"
+          severity="secondary"
+          [text]="true"
+          (onClick)="resetPatientSearch()"
+        />
+        }
       </div>
     </div>
 
@@ -101,7 +109,7 @@
             <div class="text-center text-slate-500 py-6"><i class="pi pi-spin pi-spinner"></i></div>
             } @else {
             @for (note of notes(); track note.id) {
-            <div class="rounded-lg border border-slate-200 p-4">
+            <div [class]="'rounded-lg border border-slate-200 p-4 status-rail-' + noteStatusSeverity(note.status)">
               <div class="flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2">
                   <p-tag [value]="note.status" [severity]="noteStatusSeverity(note.status)" [rounded]="true" />
@@ -176,7 +184,7 @@
               </tr>
             </ng-template>
             <ng-template pTemplate="body" let-diagnosis>
-              <tr>
+              <tr [class]="'status-rail-' + (diagnosis.isPrimary ? 'success' : 'info')">
                 <td class="font-semibold text-slate-700 border-b border-slate-200">{{ diagnosis.description }}</td>
                 <td class="font-mono text-slate-600 border-b border-slate-200">{{ diagnosis.icd10Code ?? '—' }}</td>
                 <td class="border-b border-slate-200">
@@ -231,7 +239,7 @@
               </tr>
             </ng-template>
             <ng-template pTemplate="body" let-prescription>
-              <tr>
+              <tr class="status-rail-info">
                 <td class="font-semibold text-slate-700 border-b border-slate-200">{{ prescription.medicationName }}</td>
                 <td class="text-slate-600 border-b border-slate-200">{{ prescription.dosage }}</td>
                 <td class="text-slate-600 border-b border-slate-200">{{ prescription.frequency }}</td>

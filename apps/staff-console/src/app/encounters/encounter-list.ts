@@ -109,6 +109,11 @@ export class EncounterList {
     });
   }
 
+  resetPatientSearch(): void {
+    this.searchQuery.set('');
+    this.patientResults.set([]);
+  }
+
   selectPatient(patient: Patient): void {
     this.selectedPatient.set(patient);
     this.patientResults.set([]);

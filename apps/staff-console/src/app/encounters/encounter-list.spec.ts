@@ -146,4 +146,18 @@ describe('EncounterList', () => {
       expect.objectContaining({ patientId: 'p1', medicationName: 'Paracetamol' }),
     );
   });
+
+  it('resets patient search via resetPatientSearch()', async () => {
+    const { fixture, patientsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.searchQuery.set('Meera');
+    fixture.componentInstance.patientResults.set([patient]);
+
+    fixture.componentInstance.resetPatientSearch();
+    expect(fixture.componentInstance.searchQuery()).toBe('');
+    expect(fixture.componentInstance.patientResults()).toEqual([]);
+  });
 });
+
