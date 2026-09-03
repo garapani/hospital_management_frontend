@@ -101,6 +101,22 @@ describe('ReportingDashboard', () => {
     expect(call).toEqual({ eventType: 'PaymentRecorded', page: 1, limit: 20 });
   });
 
+  it('resets event filter via resetEventFilter()', async () => {
+    const { fixture, reportingApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.eventTypeFilter.set('PaymentRecorded');
+    fixture.componentInstance.applyEventFilter();
+    expect(fixture.componentInstance.eventTypeFilter()).toBe('PaymentRecorded');
+
+    fixture.componentInstance.resetEventFilter();
+    expect(fixture.componentInstance.eventTypeFilter()).toBe('');
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    const call = (reportingApi.listEvents as jest.Mock).mock.calls[2][0];
+    expect(call).toEqual({ eventType: undefined, page: 1, limit: 20 });
+  });
+
   it('populates events and totalRecords from the list response', async () => {
     const event: ReportingEvent = {
       id: 'evt-1',

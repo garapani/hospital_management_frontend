@@ -135,6 +135,11 @@ export class ReportingDashboard {
     this.loadEvents(0);
   }
 
+  resetEventFilter(): void {
+    this.eventTypeFilter.set('');
+    this.applyEventFilter();
+  }
+
   private exportFailed(): void {
     this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the export.' });
   }

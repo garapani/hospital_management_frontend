@@ -96,13 +96,16 @@
                   inputId="filterEventType"
                   [options]="eventTypes"
                   [ngModel]="eventTypeFilter()"
-                  (ngModelChange)="eventTypeFilter.set($event)"
+                  (ngModelChange)="eventTypeFilter.set($event); applyEventFilter()"
                   placeholder="All event types"
                   [showClear]="true"
                   styleClass="w-64"
                 ></p-select>
               </div>
-              <p-button label="Apply" size="small" severity="secondary" (onClick)="applyEventFilter()"></p-button>
+              <p-button label="Search" size="small" severity="secondary" (onClick)="applyEventFilter()"></p-button>
+              @if (eventTypeFilter()) {
+              <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetEventFilter()"></p-button>
+              }
               <div class="flex gap-2 ml-auto">
                 <p-button label="CSV" size="small" [text]="true" icon="pi pi-download" [loading]="exportingEventsCsv()" (onClick)="exportEventsCsv()"></p-button>
                 <p-button label="PDF" size="small" [text]="true" icon="pi pi-file-pdf" [loading]="exportingEventsPdf()" (onClick)="exportEventsPdf()"></p-button>
@@ -135,7 +138,7 @@
                   </tr>
                 </ng-template>
                 <ng-template pTemplate="body" let-event>
-                  <tr>
+                  <tr [class]="'status-rail-' + severity(event.eventType)">
                     <td>
                       <p-tag [value]="event.eventType" [severity]="severity(event.eventType)" [rounded]="true"></p-tag>
                     </td>
