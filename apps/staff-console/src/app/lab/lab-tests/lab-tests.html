@@ -36,7 +36,7 @@
               </tr>
             </ng-template>
             <ng-template pTemplate="body" let-test>
-              <tr>
+              <tr [class]="price(test) === 'Not priced' ? 'status-rail-warn' : 'status-rail-success'">
                 <td class="font-medium">{{ test.name }}</td>
                 <td class="font-mono text-xs">{{ test.code }}</td>
                 <td>{{ test.specimenType }}</td>
