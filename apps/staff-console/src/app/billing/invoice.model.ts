@@ -41,6 +41,7 @@ export interface InvoiceReturn {
 
 export interface InvoiceWithReturns extends Invoice {
   returns: InvoiceReturn[];
+  payments: Payment[];
 }
 
 // Matches InvoicesService.PAYMENT_MODES (backend/code/apps/api/src/billing/invoices.service.ts) —
@@ -52,6 +53,8 @@ export interface RecordPaymentDto {
   amount: number;
   paymentMode: PaymentMode;
   sourceDepositId?: string;
+  transactionReference?: string;
+  bankName?: string;
 }
 
 export interface CreateReturnDto {
@@ -65,6 +68,8 @@ export interface Payment {
   amount: number;
   paymentMode: string;
   sourceDepositId: string | null;
+  transactionReference: string | null;
+  bankName: string | null;
   receivedBy: string;
   receivedAt: string;
   createdAt: string;

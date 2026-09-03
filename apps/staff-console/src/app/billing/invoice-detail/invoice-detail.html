@@ -120,6 +120,38 @@
     </div>
 
     <div class="surface-panel p-8">
+      <h2 class="mb-6 text-lg font-bold text-slate-800">Payments</h2>
+      @if (inv.payments.length > 0) {
+      <ul
+        class="flex flex-col gap-3 text-sm bg-white border border-slate-200 p-6 rounded-xl"
+      >
+        @for (p of inv.payments; track p.id) {
+        <li
+          class="flex items-center justify-between border-b border-slate-200 pb-3 last:border-0 last:pb-0"
+        >
+          <div class="flex flex-col">
+            <span class="text-slate-600 font-medium">{{ p.paymentMode }} — {{ p.receivedAt | date: 'short' }}</span>
+            @if (p.transactionReference || p.bankName) {
+            <span class="text-xs text-slate-500">
+              @if (p.transactionReference) { Ref: {{ p.transactionReference }} }
+              @if (p.bankName) { @if (p.transactionReference) { · } {{ p.bankName }} }
+            </span>
+            }
+          </div>
+          <span class="font-bold text-slate-800">{{ p.amount | number: '1.2-2' }}</span>
+        </li>
+        }
+      </ul>
+      } @else {
+      <p
+        class="text-sm text-slate-500 bg-white p-4 rounded-xl border border-slate-200"
+      >
+        No payments recorded.
+      </p>
+      }
+    </div>
+
+    <div class="surface-panel p-8">
       <h2 class="mb-6 text-lg font-bold text-slate-800">Returns</h2>
       @if (inv.returns.length > 0) {
       <ul
@@ -191,6 +223,18 @@
     <div class="flex flex-col gap-2">
       <label for="sourceDepositId" class="text-sm font-medium text-slate-700">Source Deposit ID</label>
       <input pInputText id="sourceDepositId" [ngModel]="sourceDepositId()" (ngModelChange)="sourceDepositId.set($event)" class="w-full" />
+    </div>
+    }
+    @if (paymentMode() && paymentMode() !== 'Cash' && paymentMode() !== 'Deposit') {
+    <div class="flex flex-col gap-2">
+      <label for="transactionReference" class="text-sm font-medium text-slate-700">Transaction Reference (optional)</label>
+      <input pInputText id="transactionReference" placeholder="UPI ref / cheque no. / card auth code" [ngModel]="transactionReference()" (ngModelChange)="transactionReference.set($event)" class="w-full" />
+    </div>
+    }
+    @if (paymentMode() === 'Cheque') {
+    <div class="flex flex-col gap-2">
+      <label for="bankName" class="text-sm font-medium text-slate-700">Bank Name (optional)</label>
+      <input pInputText id="bankName" [ngModel]="bankName()" (ngModelChange)="bankName.set($event)" class="w-full" />
     </div>
     }
   </div>

@@ -87,6 +87,8 @@ export class InvoiceDetail {
   readonly paymentAmount = signal<number | null>(null);
   readonly paymentMode = signal<PaymentMode | null>(null);
   readonly sourceDepositId = signal('');
+  readonly transactionReference = signal('');
+  readonly bankName = signal('');
   readonly paymentSaving = signal(false);
   readonly paymentError = signal<string | null>(null);
 
@@ -154,6 +156,8 @@ export class InvoiceDetail {
     this.paymentAmount.set(this.outstanding() || null);
     this.paymentMode.set(null);
     this.sourceDepositId.set('');
+    this.transactionReference.set('');
+    this.bankName.set('');
     this.paymentError.set(null);
     this.showPaymentModal.set(true);
   }
@@ -177,6 +181,8 @@ export class InvoiceDetail {
         amount,
         paymentMode: mode,
         sourceDepositId: mode === 'Deposit' ? this.sourceDepositId().trim() : undefined,
+        transactionReference: this.transactionReference().trim() || undefined,
+        bankName: this.bankName().trim() || undefined,
       })
       .subscribe({
         next: () => {

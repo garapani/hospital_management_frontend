@@ -25,6 +25,7 @@ function fakeInvoice(overrides: Partial<InvoiceWithReturns> = {}): InvoiceWithRe
     createdAt: '2026-08-09T00:00:00Z',
     updatedAt: '2026-08-09T00:00:00Z',
     returns: [],
+    payments: [],
     ...overrides,
   };
 }
@@ -289,10 +290,38 @@ describe('InvoiceDetail', () => {
       component.submitPayment();
       await fixture.whenStable();
 
-      expect(recordPayment).toHaveBeenCalledWith(invoice.id, { amount: 60, paymentMode: 'Cash', sourceDepositId: undefined });
+      expect(recordPayment).toHaveBeenCalledWith(invoice.id, {
+        amount: 60,
+        paymentMode: 'Cash',
+        sourceDepositId: undefined,
+        transactionReference: undefined,
+        bankName: undefined,
+      });
       expect(findOne).toHaveBeenLastCalledWith(invoice.id);
       expect(component.invoice()).toEqual(updatedInvoice);
       expect(component.showPaymentModal()).toBe(false);
+    });
+
+    it('sends transactionReference and bankName when provided (e.g. a Cheque payment)', async () => {
+      const { fixture, invoice, recordPayment } = setUp();
+      await fixture.whenStable();
+
+      const component = fixture.componentInstance;
+      component.openPaymentModal();
+      component.paymentAmount.set(60);
+      component.paymentMode.set('Cheque');
+      component.transactionReference.set('CHQ-000123');
+      component.bankName.set('State Bank');
+      component.submitPayment();
+      await fixture.whenStable();
+
+      expect(recordPayment).toHaveBeenCalledWith(invoice.id, {
+        amount: 60,
+        paymentMode: 'Cheque',
+        sourceDepositId: undefined,
+        transactionReference: 'CHQ-000123',
+        bankName: 'State Bank',
+      });
     });
 
     it('requires a source deposit id when the payment mode is Deposit', async () => {
