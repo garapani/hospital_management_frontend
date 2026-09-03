@@ -79,12 +79,12 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-shift>
-        <tr>
+        <tr [class]="'status-rail-' + (shift.status === 'Open' ? 'info' : 'success')">
           <td>{{ shift.openedAt | date: 'short' }}</td>
           <td class="font-mono text-xs">{{ shift.openedBy }}</td>
           <td class="font-mono">{{ shift.floatAmount | number: '1.2-2' }}</td>
           <td>
-            <p-tag [value]="shift.status" [severity]="shift.status === 'Open' ? 'info' : 'success'"></p-tag>
+            <p-tag [value]="shift.status" [severity]="shift.status === 'Open' ? 'info' : 'success'" [rounded]="true" styleClass="px-3"></p-tag>
           </td>
           <td class="font-mono">{{ shift.cashDeclaredTotal !== null ? (shift.cashDeclaredTotal | number: '1.2-2') : '—' }}</td>
         </tr>
