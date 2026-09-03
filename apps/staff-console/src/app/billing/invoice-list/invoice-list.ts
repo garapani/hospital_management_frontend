@@ -55,6 +55,11 @@ export class InvoiceList {
     this.load(1, this.pageSize());
   }
 
+  resetPatientFilter(): void {
+    this.patientIdFilter.set('');
+    this.applyPatientFilter();
+  }
+
   onPatientFilterSearch(query: string): void {
     clearTimeout(this.patientSearchTimer);
     const q = query.trim();

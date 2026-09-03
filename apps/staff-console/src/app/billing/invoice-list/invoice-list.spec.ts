@@ -86,6 +86,24 @@ describe('InvoiceList', () => {
     expect(invoicesApi.list).toHaveBeenCalledWith({ patientId: 'patient-1', page: 1, limit: 20 });
   });
 
+  it('resets patient filter via resetPatientFilter()', async () => {
+    const { fixture, invoicesApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.patientIdFilter.set('patient-1');
+    fixture.componentInstance.applyPatientFilter();
+    expect(invoicesApi.list).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId: 'patient-1', page: 1 }),
+    );
+
+    fixture.componentInstance.resetPatientFilter();
+    expect(fixture.componentInstance.patientIdFilter()).toBe('');
+    expect(invoicesApi.list).toHaveBeenCalledWith(
+      expect.objectContaining({ patientId: undefined, page: 1 }),
+    );
+  });
+
   it('populates invoices and totalRecords from the response', async () => {
     const invoice: Invoice = {
       id: 'inv-1',
