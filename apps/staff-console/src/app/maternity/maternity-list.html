@@ -24,10 +24,14 @@
           filterPlaceholder="Search by name, number or phone"
           emptyFilterMessage="Type at least 2 characters to search"
           placeholder="Search for a patient"
+          [showClear]="true"
           styleClass="w-80"
         ></p-select>
       </label>
       <p-button label="Filter" (onClick)="applyFilter()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+      @if (patientIdFilter()) {
+      <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetFilter()"></p-button>
+      }
     </div>
   </div>
 

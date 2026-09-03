@@ -90,7 +90,13 @@ export class MaternityList {
   }
 
   applyFilter(): void {
+    this.firstRecord.set(0);
     this.load(1, this.pageSize());
+  }
+
+  resetFilter(): void {
+    this.patientIdFilter.set('');
+    this.applyFilter();
   }
 
   private load(page: number, limit: number): void {
