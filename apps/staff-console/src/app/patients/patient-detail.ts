@@ -35,7 +35,8 @@ import { AppointmentsApiService, Appointment } from '../appointments/appointment
 import { appointmentStatusSeverity } from '../appointments/appointment.model.js';
 import { AdmissionsApiService, Admission } from '../admissions/admissions-api.service.js';
 import { admissionStatusSeverity, admissionSourceSeverity } from '../admissions/admission.model.js';
-import { OrdersApiService, Order } from '../orders/orders-api.service.js';
+import { OrdersApiService, Order, CreateOrderDto, CreateOrderItemDto } from '../orders/orders-api.service.js';
+import { ORDER_ITEM_TYPES } from '../orders/order.model.js';
 import { InvoicesApiService } from '../billing/invoices-api.service.js';
 import { Invoice, invoiceReference, statusSeverity as invoiceStatusSeverity } from '../billing/invoice.model.js';
 
@@ -53,6 +54,11 @@ type VitalFormState = Omit<CreateVitalDto, 'patientId'>;
 type NoteFormState = Omit<CreateNoteDto, 'patientId' | 'doctorId'>;
 type DiagnosisFormState = Omit<CreateDiagnosisDto, 'patientId' | 'doctorId'>;
 type PrescriptionFormState = Omit<CreatePrescriptionDto, 'patientId' | 'doctorId'>;
+type OrderFormState = Omit<CreateOrderDto, 'patientId' | 'orderedBy'>;
+
+function emptyOrderItem(): CreateOrderItemDto {
+  return { itemType: '', itemDescription: '', priority: 'Routine' };
+}
 
 @Component({
   selector: 'hms-patient-detail',
@@ -169,6 +175,10 @@ export class PatientDetail implements OnInit {
 
   readonly orders = signal<Order[]>([]);
   readonly ordersLoading = signal(false);
+  readonly showOrderModal = signal(false);
+  readonly orderForm = signal<OrderFormState>({ items: [emptyOrderItem()] });
+  readonly orderSaving = signal(false);
+  readonly orderItemTypes = ORDER_ITEM_TYPES.map((t) => ({ label: t, value: t }));
 
   readonly invoices = signal<Invoice[]>([]);
   readonly invoicesLoading = signal(false);
@@ -593,6 +603,50 @@ export class PatientDetail implements OnInit {
 
   viewOrder(order: Order) {
     this.router.navigate(['/clinical/orders', order.id]);
+  }
+
+  openOrderModal() {
+    this.orderForm.set({ items: [emptyOrderItem()] });
+    this.showOrderModal.set(true);
+  }
+
+  addOrderItem() {
+    this.orderForm.set({ ...this.orderForm(), items: [...this.orderForm().items, emptyOrderItem()] });
+  }
+
+  removeOrderItem(index: number) {
+    this.orderForm.set({ ...this.orderForm(), items: this.orderForm().items.filter((_, i) => i !== index) });
+  }
+
+  patchOrderItem(index: number, patch: Partial<CreateOrderItemDto>) {
+    this.orderForm.set({
+      ...this.orderForm(),
+      items: this.orderForm().items.map((item, i) => (i === index ? { ...item, ...patch } : item)),
+    });
+  }
+
+  submitOrder() {
+    const patientId = this.patient()?.id;
+    if (!patientId) return;
+    const items = this.orderForm().items;
+    if (items.length === 0 || items.some((item) => !item.itemType || !item.itemDescription.trim())) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Every order item needs a type and a description.' });
+      return;
+    }
+
+    this.orderSaving.set(true);
+    this.ordersApi.create({ ...this.orderForm(), patientId }).subscribe({
+      next: () => {
+        this.orderSaving.set(false);
+        this.showOrderModal.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Order placed' });
+        this.loadOrders(patientId);
+      },
+      error: () => {
+        this.orderSaving.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to place the order.' });
+      },
+    });
   }
 
   // --- Invoices ---

@@ -56,6 +56,7 @@ describe('PatientDetail', () => {
     } as unknown as AdmissionsApiService;
     const ordersApi = {
       list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+      create: jest.fn().mockReturnValue(of({ id: 'order-1' })),
     } as unknown as OrdersApiService;
     const invoicesApi = {
       list: jest.fn().mockReturnValue(of({ data: [], total: 0, page: 1, limit: 10 })),
@@ -383,6 +384,77 @@ describe('PatientDetail', () => {
     expect(encountersApi.updateNote).toHaveBeenCalledWith('note-1', { status: 'Signed' });
     // Called once on initial load, once more after the confirmed sign.
     expect(encountersApi.getNotesByPatient).toHaveBeenCalledTimes(2);
+  });
+
+  describe('Create Order', () => {
+    it('seeds the form with one empty item row on open', () => {
+      const { fixture } = setup(['order.read', 'order.manage']);
+      fixture.detectChanges();
+
+      fixture.componentInstance.openOrderModal();
+
+      expect(fixture.componentInstance.orderForm().items).toEqual([
+        { itemType: '', itemDescription: '', priority: 'Routine' },
+      ]);
+      expect(fixture.componentInstance.showOrderModal()).toBe(true);
+    });
+
+    it('adds and removes item rows', () => {
+      const { fixture } = setup(['order.read', 'order.manage']);
+      fixture.detectChanges();
+      const component = fixture.componentInstance;
+      component.openOrderModal();
+
+      component.addOrderItem();
+      expect(component.orderForm().items).toHaveLength(2);
+
+      component.removeOrderItem(0);
+      expect(component.orderForm().items).toHaveLength(1);
+    });
+
+    it('rejects submitting with an incomplete item', () => {
+      const { fixture, ordersApi } = setup(['order.read', 'order.manage']);
+      fixture.detectChanges();
+      const component = fixture.componentInstance;
+      component.openOrderModal();
+      component.patchOrderItem(0, { itemType: 'Lab' }); // no itemDescription
+
+      component.submitOrder();
+
+      expect(ordersApi.create).not.toHaveBeenCalled();
+    });
+
+    it('places the order and reloads the orders list', () => {
+      const { fixture, ordersApi } = setup(['order.read', 'order.manage']);
+      fixture.detectChanges();
+      const component = fixture.componentInstance;
+      component.openOrderModal();
+      component.patchOrderItem(0, { itemType: 'Lab', itemDescription: 'Complete Blood Count' });
+
+      component.submitOrder();
+
+      expect(ordersApi.create).toHaveBeenCalledWith({
+        items: [{ itemType: 'Lab', itemDescription: 'Complete Blood Count', priority: 'Routine' }],
+        patientId: 'patient-1',
+      });
+      expect(component.showOrderModal()).toBe(false);
+      // Once on initial tab load, once more after the order is placed.
+      expect(ordersApi.list).toHaveBeenCalledTimes(2);
+    });
+
+    it('surfaces an error and stops the spinner when placing the order fails', () => {
+      const { fixture, ordersApi } = setup(['order.read', 'order.manage']);
+      (ordersApi.create as jest.Mock).mockReturnValue(throwError(() => new Error('boom')));
+      fixture.detectChanges();
+      const component = fixture.componentInstance;
+      component.openOrderModal();
+      component.patchOrderItem(0, { itemType: 'Lab', itemDescription: 'CBC' });
+
+      component.submitOrder();
+
+      expect(component.orderSaving()).toBe(false);
+      expect(component.showOrderModal()).toBe(true);
+    });
   });
 
   describe('printIdLabel', () => {

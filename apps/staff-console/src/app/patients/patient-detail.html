@@ -415,7 +415,12 @@
             <div class="flex flex-col gap-8">
               @if (auth.hasPermission('order.read')) {
               <div class="flex flex-col gap-3">
-                <h4 class="font-semibold text-slate-700">Orders</h4>
+                <div class="flex items-center justify-between">
+                  <h4 class="font-semibold text-slate-700">Orders</h4>
+                  @if (auth.hasPermission('order.manage')) {
+                  <p-button label="Create Order" icon="pi pi-plus" size="small" (onClick)="openOrderModal()"></p-button>
+                  }
+                </div>
                 <p-table [value]="orders()" [loading]="ordersLoading()" [rowHover]="true" [paginator]="true" [rows]="5" styleClass="p-datatable-sm p-datatable-gridlines">
                   <ng-template pTemplate="header">
                     <tr>
@@ -648,6 +653,59 @@
     <div class="flex justify-end gap-2 mt-4">
       <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showNoteModal.set(false)"></p-button>
       <p-button label="Save" [loading]="noteSaving()" (onClick)="submitNote()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Create Order Modal -->
+<p-dialog header="Create Order" [(visible)]="showOrderModal" [modal]="true" [style]="{ width: '600px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @for (item of orderForm().items; track $index) {
+    <div class="flex items-start gap-2 border border-slate-200 rounded-lg p-3">
+      <div class="flex flex-col gap-2 flex-1">
+        <div class="grid grid-cols-2 gap-2">
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-medium text-slate-700">Type</label>
+            <p-select
+              [options]="orderItemTypes"
+              [ngModel]="item.itemType"
+              (ngModelChange)="patchOrderItem($index, { itemType: $event })"
+              placeholder="Select type"
+              styleClass="w-full"
+              [appendTo]="'body'"
+            ></p-select>
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-medium text-slate-700">Priority</label>
+            <p-select
+              [options]="[{ label: 'Routine', value: 'Routine' }, { label: 'Urgent', value: 'Urgent' }, { label: 'STAT', value: 'STAT' }]"
+              [ngModel]="item.priority"
+              (ngModelChange)="patchOrderItem($index, { priority: $event })"
+              styleClass="w-full"
+              [appendTo]="'body'"
+            ></p-select>
+          </div>
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-slate-700">Description</label>
+          <input pInputText [ngModel]="item.itemDescription" (ngModelChange)="patchOrderItem($index, { itemDescription: $event })" placeholder="e.g. Complete Blood Count" class="w-full" />
+        </div>
+      </div>
+      @if (orderForm().items.length > 1) {
+      <p-button icon="pi pi-trash" [text]="true" severity="danger" size="small" ariaLabel="Remove item" (onClick)="removeOrderItem($index)"></p-button>
+      }
+    </div>
+    }
+    <p-button label="Add Item" icon="pi pi-plus" [text]="true" size="small" class="self-start" (onClick)="addOrderItem()"></p-button>
+    <div class="flex flex-col gap-2">
+      <label for="orderNotes" class="text-sm font-medium text-slate-700">Notes</label>
+      <textarea pTextarea id="orderNotes" [ngModel]="orderForm().notes" (ngModelChange)="orderForm.set({ ...orderForm(), notes: $event })" rows="2" class="w-full"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showOrderModal.set(false)"></p-button>
+      <p-button label="Place Order" [loading]="orderSaving()" (onClick)="submitOrder()"></p-button>
     </div>
   </ng-template>
 </p-dialog>
