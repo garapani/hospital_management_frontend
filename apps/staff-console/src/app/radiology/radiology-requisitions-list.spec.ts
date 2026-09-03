@@ -130,4 +130,28 @@ describe('RadiologyRequisitionsList', () => {
 
     expect(fixture.componentInstance.loading()).toBe(false);
   });
+
+  it('resets filters back to empty and reloads page 1', async () => {
+    const { fixture, radiologyApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.statusFilter.set('Scanned');
+    fixture.componentInstance.orderItemIdFilter.set('order-1');
+    fixture.componentInstance.imagingItemIdFilter.set('img-1');
+    fixture.componentInstance.applyFilters();
+
+    fixture.componentInstance.resetFilters();
+
+    expect(fixture.componentInstance.statusFilter()).toBe('');
+    expect(fixture.componentInstance.orderItemIdFilter()).toBe('');
+    expect(fixture.componentInstance.imagingItemIdFilter()).toBe('');
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    const lastCall = (radiologyApi.list as jest.Mock).mock.calls.at(-1)[0];
+    expect(lastCall.status).toBeUndefined();
+    expect(lastCall.orderItemId).toBeUndefined();
+    expect(lastCall.imagingItemId).toBeUndefined();
+    expect(lastCall.page).toBe(1);
+  });
 });
+

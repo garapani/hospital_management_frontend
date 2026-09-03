@@ -98,4 +98,12 @@ export class RadiologyRequisitionsList {
     this.firstRecord.set(0);
     this.load(0);
   }
+
+  resetFilters(): void {
+    this.statusFilter.set('');
+    this.orderItemIdFilter.set('');
+    this.imagingItemIdFilter.set('');
+    this.applyFilters();
+  }
 }
+
