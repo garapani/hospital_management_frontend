@@ -131,4 +131,15 @@ describe('FixedAssetsConsole', () => {
 
     expect(fixture.componentInstance.canManage).toBe(false);
   });
+
+  it('maps asset condition and active state to status severity correctly', () => {
+    const { fixture } = setup();
+
+    expect(fixture.componentInstance.statusSeverity({ condition: 'In Service', isActive: true })).toBe('success');
+    expect(fixture.componentInstance.statusSeverity({ condition: 'Retired', isActive: true })).toBe('danger');
+    expect(fixture.componentInstance.statusSeverity({ condition: 'Under Repair', isActive: true })).toBe('warn');
+    expect(fixture.componentInstance.statusSeverity({ condition: 'In Service', isActive: false })).toBe('secondary');
+    expect(fixture.componentInstance.statusSeverity({ condition: 'Other', isActive: true })).toBe('info');
+  });
 });
+

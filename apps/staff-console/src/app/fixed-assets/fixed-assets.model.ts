@@ -7,6 +7,24 @@ export interface FixedAssetCategory {
 export type FixedAssetCondition = 'In Service' | 'Under Repair' | 'Retired';
 export const FIXED_ASSET_CONDITIONS: FixedAssetCondition[] = ['In Service', 'Under Repair', 'Retired'];
 
+export type Severity = 'success' | 'warn' | 'danger' | 'info' | 'secondary';
+
+export function fixedAssetStatusSeverity(asset: { condition: string; isActive: boolean }): Severity {
+  if (!asset.isActive) {
+    return 'secondary';
+  }
+  switch (asset.condition) {
+    case 'In Service':
+      return 'success';
+    case 'Retired':
+      return 'danger';
+    case 'Under Repair':
+      return 'warn';
+    default:
+      return 'info';
+  }
+}
+
 export interface FixedAsset {
   id: string;
   assetCode: string;

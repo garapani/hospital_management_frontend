@@ -13,7 +13,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { FixedAssetsApiService } from './fixed-assets-api.service.js';
-import { CreateFixedAssetDto, FixedAsset, FixedAssetCategory, FixedAssetValuation } from './fixed-assets.model.js';
+import { CreateFixedAssetDto, FixedAsset, FixedAssetCategory, FixedAssetValuation, fixedAssetStatusSeverity } from './fixed-assets.model.js';
 
 const EMPTY_ASSET_FORM: CreateFixedAssetDto = { categoryId: '', name: '', purchaseDate: '', purchaseCost: 0 };
 
@@ -28,6 +28,7 @@ export class FixedAssetsConsole {
   private readonly confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
   readonly canManage = this.auth.hasPermission('fixed-asset.manage');
+  readonly statusSeverity = fixedAssetStatusSeverity;
 
   readonly categories = signal<FixedAssetCategory[]>([]);
   readonly categoriesLoading = signal(false);
