@@ -83,6 +83,30 @@ describe('AdmissionList', () => {
     expect(call.page).toBe(1);
   });
 
+  it('detects active filters and resets back to default view', async () => {
+    const { fixture, admissionsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.hasActiveFilters()).toBe(false);
+
+    fixture.componentInstance.statusFilter.set('Admitted');
+    expect(fixture.componentInstance.hasActiveFilters()).toBe(true);
+
+    fixture.componentInstance.wardIdFilter.set('ward-1');
+    fixture.componentInstance.patientIdFilter.set('pat-1');
+    fixture.componentInstance.view.set('Active');
+
+    fixture.componentInstance.resetFilters();
+
+    expect(fixture.componentInstance.view()).toBe('All');
+    expect(fixture.componentInstance.wardIdFilter()).toBe('');
+    expect(fixture.componentInstance.statusFilter()).toBe('');
+    expect(fixture.componentInstance.patientIdFilter()).toBe('');
+    expect(fixture.componentInstance.hasActiveFilters()).toBe(false);
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+  });
+
   it('fetches active admissions via the active endpoint when the view switches', async () => {
     const { fixture, admissionsApi } = setup();
     fixture.detectChanges();

@@ -27,7 +27,7 @@
         optionLabel="wardName"
         optionValue="id"
         [ngModel]="wardIdFilter()"
-        (ngModelChange)="wardIdFilter.set($event)"
+        (ngModelChange)="wardIdFilter.set($event); applyFilters()"
         placeholder="All wards"
         [showClear]="true"
         styleClass="w-52"
@@ -40,7 +40,7 @@
         inputId="filterStatus"
         [options]="statuses"
         [ngModel]="statusFilter()"
-        (ngModelChange)="statusFilter.set($event)"
+        (ngModelChange)="statusFilter.set($event); applyFilters()"
         placeholder="All"
         [showClear]="true"
         styleClass="w-40"
@@ -52,7 +52,7 @@
         inputId="filterPatient"
         [options]="patientOptions()"
         [ngModel]="patientIdFilter()"
-        (ngModelChange)="patientIdFilter.set($event)"
+        (ngModelChange)="patientIdFilter.set($event); applyFilters()"
         [filter]="true"
         (onFilter)="onPatientFilterSearch($event.filter)"
         [loading]="patientSearching()"
@@ -64,7 +64,10 @@
       ></p-select>
     </div>
     }
-    <p-button label="Apply" size="small" severity="secondary" (onClick)="applyFilters()"></p-button>
+    <p-button label="Search" size="small" severity="secondary" (onClick)="applyFilters()"></p-button>
+    @if (hasActiveFilters()) {
+    <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetFilters()"></p-button>
+    }
   </div>
 
   <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white p-4">

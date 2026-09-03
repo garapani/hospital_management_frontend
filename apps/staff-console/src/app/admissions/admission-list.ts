@@ -216,9 +216,21 @@ export class AdmissionList {
     }
   }
 
+  readonly hasActiveFilters = computed(() => {
+    return this.view() !== 'All' || !!this.wardIdFilter() || !!this.statusFilter() || !!this.patientIdFilter();
+  });
+
   applyFilters(): void {
     this.firstRecord.set(0);
     this.load(0);
+  }
+
+  resetFilters(): void {
+    this.view.set('All');
+    this.wardIdFilter.set('');
+    this.statusFilter.set('');
+    this.patientIdFilter.set('');
+    this.applyFilters();
   }
 
   onViewChange(value: AdmissionView): void {
