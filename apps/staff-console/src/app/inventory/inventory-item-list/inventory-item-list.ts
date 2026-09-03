@@ -9,6 +9,8 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
+import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { EMPTY, Subject, catchError, switchMap } from 'rxjs';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
@@ -52,6 +54,8 @@ const EMPTY_ITEM_FORM: NewItemForm = {
     CheckboxModule,
     ButtonModule,
     DialogModule,
+    TagModule,
+    TooltipModule,
     DecimalPipe,
   ],
   templateUrl: './inventory-item-list.html',
@@ -163,13 +167,26 @@ export class InventoryItemList {
     });
   }
 
-  onCategoryChange(categoryId: string): void {
-    this.selectedCategoryId.set(categoryId);
+  isItemLowStock(itemId: string): boolean {
+    return this.lowStockItems().some((ls) => ls.itemId === itemId);
+  }
+
+  getLowStockInfo(itemId: string): LowStockItem | undefined {
+    return this.lowStockItems().find((ls) => ls.itemId === itemId);
+  }
+
+  onCategoryChange(categoryId: string | null): void {
+    const id = categoryId ?? '';
+    this.selectedCategoryId.set(id);
     // Reset the dependent selects — sub-categories and items are scoped to the new category.
     this.subCategories.set([]);
     this.items.set([]);
     this.selectedSubCategoryId.set('');
-    this.categoryChangeTrigger.next(categoryId);
+    this.categoryChangeTrigger.next(id);
+  }
+
+  resetFilters(): void {
+    this.onCategoryChange(null);
   }
 
   onSubCategoryChange(subCategoryId: string): void {

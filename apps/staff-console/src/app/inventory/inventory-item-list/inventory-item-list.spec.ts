@@ -96,6 +96,37 @@ describe('InventoryItemList', () => {
     expect(fixture.componentInstance.subCategories()).toEqual([]);
   });
 
+  it('resets category filter and clears subcategories and items on resetFilters()', async () => {
+    const { fixture, inventoryApi } = setup();
+    (inventoryApi.listSubCategories as jest.Mock).mockReturnValue(
+      of([{ id: 'sub-1', categoryId: 'cat-1', name: 'Tablets', isConsumable: true }]),
+    );
+    fixture.detectChanges();
+
+    fixture.componentInstance.onCategoryChange('cat-1');
+    await fixture.whenStable();
+    expect(fixture.componentInstance.selectedCategoryId()).toBe('cat-1');
+
+    fixture.componentInstance.resetFilters();
+    expect(fixture.componentInstance.selectedCategoryId()).toBe('');
+    expect(fixture.componentInstance.subCategories()).toEqual([]);
+    expect(fixture.componentInstance.items()).toEqual([]);
+  });
+
+  it('identifies low stock items and retrieves low stock info', async () => {
+    const lowStockItems: LowStockItem[] = [
+      { itemId: 'item-1', code: 'PCM-001', name: 'Paracetamol', reorderLevel: '20', minimumStock: '10', availableQuantity: '5' },
+    ];
+    const { fixture } = setup({ lowStockItems });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.isItemLowStock('item-1')).toBe(true);
+    expect(fixture.componentInstance.isItemLowStock('item-2')).toBe(false);
+    expect(fixture.componentInstance.getLowStockInfo('item-1')?.availableQuantity).toBe('5');
+    expect(fixture.componentInstance.getLowStockInfo('item-2')).toBeUndefined();
+  });
+
   it('loads items when a sub-category is selected', async () => {
     const { fixture, inventoryApi } = setup();
     (inventoryApi.listItemsBySubCategory as jest.Mock).mockReturnValue(
