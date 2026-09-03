@@ -24,6 +24,21 @@ export type SterilizationCycleStatus = 'InProgress' | 'Completed' | 'Failed';
 export type SterilizationMethod = 'Steam' | 'ETO' | 'Chemical';
 export const STERILIZATION_METHODS: SterilizationMethod[] = ['Steam', 'ETO', 'Chemical'];
 
+export type Severity = 'success' | 'warn' | 'danger' | 'info' | 'secondary';
+
+export function cycleStatusSeverity(status: string | null): Severity {
+  switch (status) {
+    case 'Completed':
+      return 'success';
+    case 'Failed':
+      return 'danger';
+    case 'InProgress':
+      return 'info';
+    default:
+      return 'secondary';
+  }
+}
+
 export interface CssdSterilizationCycle {
   id: string;
   instrumentId: string;

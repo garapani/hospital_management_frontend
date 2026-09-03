@@ -152,4 +152,14 @@ describe('CssdConsole', () => {
 
     expect(fixture.componentInstance.canManage).toBe(false);
   });
+
+  it('maps sterilization cycle status to severity correctly', () => {
+    const { fixture } = setup();
+
+    expect(fixture.componentInstance.cycleSeverity('Completed')).toBe('success');
+    expect(fixture.componentInstance.cycleSeverity('Failed')).toBe('danger');
+    expect(fixture.componentInstance.cycleSeverity('InProgress')).toBe('info');
+    expect(fixture.componentInstance.cycleSeverity('Unknown')).toBe('secondary');
+  });
 });
+

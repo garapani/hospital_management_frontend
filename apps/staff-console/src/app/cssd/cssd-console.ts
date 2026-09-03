@@ -19,6 +19,7 @@ import {
   CssdSterilizationCycle,
   STERILIZATION_METHODS,
   StartCycleDto,
+  cycleStatusSeverity,
 } from './cssd.model.js';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -36,6 +37,7 @@ export class CssdConsole {
   private readonly confirmationService = inject(ConfirmationService);
   readonly auth = inject(AuthService);
   readonly canManage = this.auth.hasPermission('cssd.manage');
+  readonly cycleSeverity = cycleStatusSeverity;
 
   readonly sterilizationMethods = STERILIZATION_METHODS;
 

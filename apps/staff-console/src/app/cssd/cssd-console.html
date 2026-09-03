@@ -95,7 +95,7 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-cycle>
-                <tr>
+                <tr [class]="'status-rail-' + cycleSeverity(cycle.status)">
                   <td>{{ instrumentNameFor(cycle.instrumentId) }}</td>
                   <td>{{ cycle.method }}</td>
                   <td>{{ cycle.startedAt ? (cycle.startedAt | date: 'short') : '—' }}</td>
@@ -103,7 +103,7 @@
                   <td>
                     <p-tag
                       [value]="cycle.status"
-                      [severity]="cycle.status === 'Completed' ? 'success' : cycle.status === 'Failed' ? 'danger' : 'info'"
+                      [severity]="cycleSeverity(cycle.status)"
                     ></p-tag>
                   </td>
                   <td class="flex gap-2">
