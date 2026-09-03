@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '@org/auth';
 import { ShellChrome } from './shell-chrome.js';
@@ -11,4 +11,11 @@ import { ShellChrome } from './shell-chrome.js';
 })
 export class AppShell {
   readonly auth = inject(AuthService);
+
+  readonly isDoctor = computed(
+    () =>
+      this.auth.hasRole('Doctor') &&
+      !this.auth.hasRole('Hospital Admin') &&
+      !this.auth.hasRole('Super Admin'),
+  );
 }

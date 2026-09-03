@@ -188,6 +188,10 @@ export class AuthService {
     return this.claims()?.permissions.includes(permission) ?? false;
   }
 
+  hasRole(role: string): boolean {
+    return this.claims()?.roles.includes(role) ?? false;
+  }
+
   /** Rejects rather than storing a token whose claims fail to decode — never leaves the
    * interceptor authenticating requests while isAuthenticated()/hasPermission() report false. */
   private setSession(accessToken: string, refreshToken: string): void {

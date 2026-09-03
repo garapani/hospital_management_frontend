@@ -290,6 +290,23 @@ describe('AuthService', () => {
     });
   });
 
+  describe('hasRole', () => {
+    it('reflects the roles embedded in the current access token', () => {
+      service.login('jdoe', 'secret').subscribe();
+      httpMock.expectOne('https://gateway.example/api/auth/login').flush({
+        accessToken: fakeAccessToken({ roles: ['Doctor', 'Surgeon'] }),
+        refreshToken: 'r',
+      });
+
+      expect(service.hasRole('Doctor')).toBe(true);
+      expect(service.hasRole('Nurse')).toBe(false);
+    });
+
+    it('is false when no user is authenticated', () => {
+      expect(service.hasRole('Doctor')).toBe(false);
+    });
+  });
+
   describe('logout', () => {
     it('clears tokens and navigates to /login without any server call', () => {
       const router = TestBed.inject(Router);

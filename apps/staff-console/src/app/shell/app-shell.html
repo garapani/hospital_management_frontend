@@ -95,17 +95,17 @@
       <i class="pi pi-heart text-base"></i>
       Triage / ER
     </a>
-    } @if (auth.hasPermission('vitals.manage')) {
+    } @if (auth.hasPermission('vitals.manage') && !isDoctor()) {
     <a
       routerLink="/clinical/vitals"
       routerLinkActive="nav-item-active"
       [routerLinkActiveOptions]="{ exact: false }"
       class="nav-item"
     >
-      <i class="pi pi-heartbeat text-base"></i>
+      <i class="pi pi-heart-fill text-base"></i>
       Vitals
     </a>
-    } @if (auth.hasPermission('encounter.read')) {
+    } @if (auth.hasPermission('encounter.read') && !isDoctor()) {
     <a
       routerLink="/clinical/encounters"
       routerLinkActive="nav-item-active"
