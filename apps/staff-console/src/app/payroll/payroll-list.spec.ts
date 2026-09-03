@@ -110,4 +110,30 @@ describe('PayrollList', () => {
 
     expect(fixture.componentInstance.markingPaidId()).toBeNull();
   });
+
+  it('resets month and year filters via resetFilters()', async () => {
+    const { fixture, payrollApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.hasActiveFilters()).toBe(false);
+
+    fixture.componentInstance.monthFilter.set(5);
+    fixture.componentInstance.yearFilter.set(2025);
+    expect(fixture.componentInstance.hasActiveFilters()).toBe(true);
+
+    fixture.componentInstance.applyFilters();
+    expect(payrollApi.listPayslips).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 1, month: 5, year: 2025 }),
+    );
+
+    fixture.componentInstance.resetFilters();
+    expect(fixture.componentInstance.hasActiveFilters()).toBe(false);
+    expect(fixture.componentInstance.monthFilter()).toBeNull();
+    expect(fixture.componentInstance.yearFilter()).toBeNull();
+    expect(payrollApi.listPayslips).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 1, month: undefined, year: undefined }),
+    );
+  });
 });
+

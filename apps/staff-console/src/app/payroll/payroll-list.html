@@ -22,8 +22,9 @@
     <p-select
       [options]="months"
       [ngModel]="monthFilter()"
-      (ngModelChange)="monthFilter.set($event)"
+      (ngModelChange)="monthFilter.set($event); applyFilters()"
       placeholder="Month"
+      [showClear]="true"
       styleClass="min-w-40"
     ></p-select>
     <p-inputNumber
@@ -39,6 +40,14 @@
       severity="secondary"
       (onClick)="applyFilters()"
     />
+    @if (hasActiveFilters()) {
+    <p-button
+      label="Reset"
+      severity="secondary"
+      [text]="true"
+      (onClick)="resetFilters()"
+    />
+    }
   </div>
 
   <div class="surface-panel overflow-hidden">
@@ -69,7 +78,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-slip>
-        <tr>
+        <tr [class]="'status-rail-' + (slip.status === 'Paid' ? 'success' : 'warn')">
           <td class="text-slate-700 border-b border-slate-200"><hms-entity-name type="employee" [id]="slip.employeeId"></hms-entity-name></td>
           <td class="text-slate-700 border-b border-slate-200">
             {{ monthNames[slip.periodMonth] }} {{ slip.periodYear }}
@@ -83,7 +92,8 @@
             <p-tag
               [value]="slip.status"
               [severity]="slip.status === 'Paid' ? 'success' : 'warn'"
-              styleClass="rounded-full px-3"
+              [rounded]="true"
+              styleClass="px-3"
             />
           </td>
           <td class="border-b border-slate-200 text-right">
