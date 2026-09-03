@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClientService } from '@org/api-client';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
+import { PaginatedResponse } from '../audit/audit.model.js';
 
 export interface Vital {
   id: string;
@@ -43,8 +44,13 @@ export type UpdateVitalDto = Omit<CreateVitalDto, 'patientId'>;
 export class VitalsApiService {
   private readonly api = inject(ApiClientService);
 
+  // limit: 100 — a long admission's vitals history can run past the default page size (recorded
+  // every few hours); unwrapped so callers keep seeing a plain array, most-recent-first (backend
+  // default order), matching every other catalog-style list in this app.
   listByPatient(patientId: string): Observable<Vital[]> {
-    return this.api.get<Vital[]>(`/vitals/patient/${patientId}`);
+    return this.api
+      .get<PaginatedResponse<Vital>>(`/vitals/patient/${patientId}`, { params: { limit: 100 } })
+      .pipe(map((res) => res.data));
   }
 
   create(dto: CreateVitalDto): Observable<Vital> {

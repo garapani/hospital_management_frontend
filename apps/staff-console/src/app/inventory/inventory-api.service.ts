@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClientService } from '@org/api-client';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 /**
  * Field names below mirror the backend inventory module exactly
@@ -215,7 +215,12 @@ export class InventoryApiService {
   }
 
   listSubCategories(categoryId: string): Observable<InventoryItemSubCategory[]> {
-    return this.api.get<InventoryItemSubCategory[]>(`/inventory/categories/${categoryId}/sub-categories`);
+    return this.api
+      .get<PaginatedResponse<InventoryItemSubCategory>>(
+        `/inventory/categories/${categoryId}/sub-categories`,
+        { params: { limit: 100 } },
+      )
+      .pipe(map((res) => res.data));
   }
 
   createSubCategory(dto: CreateInventoryItemSubCategoryDto): Observable<InventoryItemSubCategory> {
@@ -223,7 +228,11 @@ export class InventoryApiService {
   }
 
   listItemsBySubCategory(subCategoryId: string): Observable<InventoryItem[]> {
-    return this.api.get<InventoryItem[]>(`/inventory/sub-categories/${subCategoryId}/items`);
+    return this.api
+      .get<PaginatedResponse<InventoryItem>>(`/inventory/sub-categories/${subCategoryId}/items`, {
+        params: { limit: 100 },
+      })
+      .pipe(map((res) => res.data));
   }
 
   createItem(dto: CreateInventoryItemDto): Observable<InventoryItem> {
@@ -231,7 +240,9 @@ export class InventoryApiService {
   }
 
   listVendors(): Observable<InventoryVendor[]> {
-    return this.api.get<InventoryVendor[]>('/inventory/vendors');
+    return this.api
+      .get<PaginatedResponse<InventoryVendor>>('/inventory/vendors', { params: { limit: 100 } })
+      .pipe(map((res) => res.data));
   }
 
   createVendor(dto: CreateInventoryVendorDto): Observable<InventoryVendor> {

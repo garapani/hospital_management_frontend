@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClientService } from '@org/api-client';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
+import { PaginatedResponse } from '../audit/audit.model.js';
 import {
   Department,
   Ward,
@@ -16,7 +17,9 @@ export class MasterDataApiService {
   private readonly api = inject(ApiClientService);
 
   listDepartments(): Observable<Department[]> {
-    return this.api.get<Department[]>('/departments');
+    return this.api
+      .get<PaginatedResponse<Department>>('/departments', { params: { limit: 100 } })
+      .pipe(map((res) => res.data));
   }
 
   getDepartment(id: string): Observable<Department> {
@@ -36,7 +39,9 @@ export class MasterDataApiService {
   }
 
   listWards(): Observable<Ward[]> {
-    return this.api.get<Ward[]>('/wards');
+    return this.api
+      .get<PaginatedResponse<Ward>>('/wards', { params: { limit: 100 } })
+      .pipe(map((res) => res.data));
   }
 
   getWard(id: string): Observable<Ward> {
@@ -56,7 +61,9 @@ export class MasterDataApiService {
   }
 
   listBedsByWard(wardId: string): Observable<Bed[]> {
-    return this.api.get<Bed[]>(`/wards/${wardId}/beds`);
+    return this.api
+      .get<PaginatedResponse<Bed>>(`/wards/${wardId}/beds`, { params: { limit: 100 } })
+      .pipe(map((res) => res.data));
   }
 
   getBed(id: string): Observable<Bed> {

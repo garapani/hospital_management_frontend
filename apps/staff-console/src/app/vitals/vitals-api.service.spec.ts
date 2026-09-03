@@ -45,9 +45,11 @@ describe('VitalsApiService', () => {
     let result: unknown;
     service.listByPatient('patient-1').subscribe((res) => (result = res));
 
-    const req = httpMock.expectOne('https://gateway.example/api/vitals/patient/patient-1');
+    const req = httpMock.expectOne(
+      'https://gateway.example/api/vitals/patient/patient-1?limit=100',
+    );
     expect(req.request.method).toBe('GET');
-    req.flush([]);
+    req.flush({ data: [], meta: { total: 0, page: 1, limit: 100, totalPages: 0 } });
     expect(result).toEqual([]);
   });
 

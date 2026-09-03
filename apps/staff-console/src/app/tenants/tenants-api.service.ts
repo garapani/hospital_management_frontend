@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClientService } from '@org/api-client';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { PaginatedResponse, AuditRecord } from '../audit/audit.model.js';
 import {
   AdminCredentials,
@@ -33,10 +33,14 @@ export class TenantsApiService {
     return this.api.patch<Tenant>(`/tenants/${hospitalId}/package`, { packageCode });
   }
 
-  // GET /tenants has no pagination or query params on the backend (TenantsController#list) —
-  // tenant counts are small (hospitals on the platform), so this always returns the full set.
+  // GET /tenants is paginated server-side now (unbounded-list hardening). limit: 100 keeps this
+  // returning "the full set" for the platform-console screens, which don't have pager UI — tenant
+  // counts are small (hospitals on the platform) so 100 covers real usage; unwrapped here so
+  // callers keep seeing a plain array, matching every other catalog-style list in this service.
   list(): Observable<Tenant[]> {
-    return this.api.get<Tenant[]>('/tenants');
+    return this.api
+      .get<PaginatedResponse<Tenant>>('/tenants', { params: { limit: 100 } })
+      .pipe(map((res) => res.data));
   }
 
   getOne(id: string): Observable<Tenant> {
