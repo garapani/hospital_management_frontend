@@ -27,6 +27,9 @@
         styleClass="w-72"
       ></p-select>
     </div>
+    @if (departmentIdFilter()) {
+    <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetFilter()"></p-button>
+    }
   </div>
 
   <div class="surface-panel flex-1 rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white">
@@ -51,7 +54,14 @@
                 <tr>
                   <td>{{ departmentName(balance.departmentId) }}</td>
                   <td><hms-entity-name type="item" [id]="balance.itemId"></hms-entity-name></td>
-                  <td class="text-right font-mono">{{ balance.availableQuantity | number: '1.2-2' }}</td>
+                  <td class="text-right font-mono">
+                    <span class="mr-2">{{ balance.availableQuantity | number: '1.2-2' }}</span>
+                    @if (balance.availableQuantity <= 0) {
+                    <p-tag value="Out of Stock" severity="danger" [rounded]="true"></p-tag>
+                    } @else if (balance.availableQuantity < 5) {
+                    <p-tag value="Low Stock" severity="warn" [rounded]="true"></p-tag>
+                    }
+                  </td>
                 </tr>
               </ng-template>
               <ng-template pTemplate="emptymessage">
@@ -89,7 +99,7 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-txn>
-                <tr>
+                <tr [class]="'status-rail-' + (txn.transactionType === 'Receive' ? 'success' : 'warn')">
                   <td>{{ departmentName(txn.departmentId) }}</td>
                   <td><hms-entity-name type="item" [id]="txn.itemId"></hms-entity-name></td>
                   <td>

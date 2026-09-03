@@ -192,4 +192,21 @@ describe('WardSupplyConsole', () => {
 
     expect(api.listTransactions).toHaveBeenCalledWith(expect.objectContaining({ page: 2, limit: 20 }));
   });
+
+  it('filters by department and resets filter back to all departments', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.departmentIdFilter.set('dept-1');
+    fixture.componentInstance.applyFilter();
+    expect(api.listBalances).toHaveBeenCalledWith('dept-1');
+    expect(api.listTransactions).toHaveBeenCalledWith(expect.objectContaining({ departmentId: 'dept-1' }));
+
+    fixture.componentInstance.resetFilter();
+    expect(fixture.componentInstance.departmentIdFilter()).toBe('');
+    expect(api.listBalances).toHaveBeenCalledWith(undefined);
+    expect(api.listTransactions).toHaveBeenCalledWith(expect.objectContaining({ departmentId: undefined }));
+  });
 });
+

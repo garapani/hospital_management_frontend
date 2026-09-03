@@ -146,6 +146,11 @@ export class WardSupplyConsole {
     this.loadTransactions(0);
   }
 
+  resetFilter(): void {
+    this.departmentIdFilter.set('');
+    this.applyFilter();
+  }
+
   loadBalances(): void {
     this.balancesLoading.set(true);
     this.api.listBalances(this.departmentIdFilter() || undefined).subscribe({
