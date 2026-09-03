@@ -166,6 +166,12 @@ export class SsuList {
     this.load(1, this.pageSize());
   }
 
+  resetFilters(): void {
+    this.patientFilter.set('');
+    this.statusFilter.set(null);
+    this.applyFilters();
+  }
+
   private load(page: number, limit: number): void {
     this.loadTrigger.next({ page, limit });
   }

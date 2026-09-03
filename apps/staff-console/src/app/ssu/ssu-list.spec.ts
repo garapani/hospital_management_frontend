@@ -340,4 +340,24 @@ describe('SsuList', () => {
       }),
     );
   });
+
+  it('resets filters back to empty and reloads page 1', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.patientFilter.set('patient-1');
+    fixture.componentInstance.statusFilter.set('Open');
+    fixture.componentInstance.applyFilters();
+    await fixture.whenStable();
+
+    fixture.componentInstance.resetFilters();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.patientFilter()).toBe('');
+    expect(fixture.componentInstance.statusFilter()).toBeNull();
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    expect(api.listCases).toHaveBeenCalledWith({ patientId: undefined, status: undefined, page: 1, limit: 20 });
+  });
 });
+

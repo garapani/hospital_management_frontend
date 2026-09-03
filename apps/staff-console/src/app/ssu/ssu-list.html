@@ -35,10 +35,14 @@
           [options]="statusOptions"
           [ngModel]="statusFilter()"
           (ngModelChange)="statusFilter.set($event); applyFilters()"
+          [showClear]="true"
           styleClass="w-48"
         ></p-select>
       </label>
       <p-button label="Filter" (onClick)="applyFilters()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+      @if (patientFilter() || statusFilter()) {
+      <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetFilters()"></p-button>
+      }
     </div>
   </div>
 
@@ -60,7 +64,7 @@
       <ng-template pTemplate="header">
         <tr>
           <th class="table-header-cell">Case #</th>
-          <th class="table-header-cell">Patient ID</th>
+          <th class="table-header-cell">Patient</th>
           <th class="table-header-cell">Case Type</th>
           <th class="table-header-cell">Subsidy</th>
           <th class="table-header-cell">Status</th>
@@ -69,7 +73,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-ssuCase>
-        <tr class="hover:bg-slate-100 transition-colors">
+        <tr class="hover:bg-slate-100 transition-colors" [class]="'status-rail-' + ssuStatusSeverity(ssuCase.status)">
           <td class="font-mono font-semibold text-slate-700 border-b border-slate-200">{{ ssuCase.caseNumber }}</td>
           <td class="border-b border-slate-200"><hms-entity-name type="patient" [id]="ssuCase.patientId"></hms-entity-name></td>
           <td class="border-b border-slate-200">{{ ssuCase.caseType }}</td>
