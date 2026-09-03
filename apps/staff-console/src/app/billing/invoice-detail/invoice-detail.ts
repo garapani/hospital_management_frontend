@@ -15,6 +15,7 @@ import { MessageService } from 'primeng/api';
 import { EMPTY, switchMap } from 'rxjs';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
+import { openPdfBlobInNewTab } from '../../shared/pdf-blob.util.js';
 import { InvoicesApiService } from '../invoices-api.service.js';
 import { PatientsApiService } from '../../patients/patients-api.service.js';
 import {
@@ -99,6 +100,8 @@ export class InvoiceDetail {
   readonly returnSaving = signal(false);
   readonly returnError = signal<string | null>(null);
 
+  readonly printingInvoice = signal(false);
+
   // Subscribes to paramMap (not route.snapshot) so a route-reuse navigation between two
   // billing/invoices/:id URLs (e.g. browser back/forward) refetches instead of leaving the
   // previously-loaded invoice's money figures on screen under a changed id.
@@ -128,6 +131,23 @@ export class InvoiceDetail {
         },
         error: () => this.error.set('Failed to load invoice.'),
       });
+  }
+
+  printInvoice(): void {
+    const invoice = this.invoice();
+    if (!invoice) return;
+
+    this.printingInvoice.set(true);
+    this.invoicesApi.getInvoicePdf(invoice.id).subscribe({
+      next: (blob) => {
+        this.printingInvoice.set(false);
+        openPdfBlobInNewTab(blob);
+      },
+      error: () => {
+        this.printingInvoice.set(false);
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to generate the invoice PDF.' });
+      },
+    });
   }
 
   openPaymentModal(): void {

@@ -166,6 +166,73 @@ describe('InvoiceDetail', () => {
     });
   });
 
+  describe('printInvoice', () => {
+    let openSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      URL.createObjectURL = jest.fn().mockReturnValue('blob:fake-url');
+      URL.revokeObjectURL = jest.fn();
+      openSpy = jest.spyOn(window, 'open').mockReturnValue(null);
+    });
+
+    afterEach(() => openSpy.mockRestore());
+
+    it('fetches the invoice PDF and opens it in a new tab', async () => {
+      const invoice = fakeInvoice();
+      const findOne = jest.fn().mockReturnValue(of(invoice));
+      const getInvoicePdf = jest.fn().mockReturnValue(of(new Blob(['pdf'])));
+      const invoicesApi = { findOne, getInvoicePdf } as unknown as InvoicesApiService;
+
+      TestBed.configureTestingModule({
+        imports: [InvoiceDetail],
+        providers: [
+          { provide: InvoicesApiService, useValue: invoicesApi },
+          { provide: PatientsApiService, useValue: fakePatientsApi() },
+          { provide: AuthService, useValue: fakeAuth() },
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: invoice.id })) } },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(InvoiceDetail);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.printInvoice();
+      await fixture.whenStable();
+
+      expect(getInvoicePdf).toHaveBeenCalledWith(invoice.id);
+      expect(openSpy).toHaveBeenCalledWith('blob:fake-url', '_blank');
+      expect(fixture.componentInstance.printingInvoice()).toBe(false);
+    });
+
+    it('toasts an error and clears loading when generating the PDF fails', async () => {
+      const invoice = fakeInvoice();
+      const findOne = jest.fn().mockReturnValue(of(invoice));
+      const getInvoicePdf = jest.fn().mockReturnValue(throwError(() => new Error('boom')));
+      const invoicesApi = { findOne, getInvoicePdf } as unknown as InvoicesApiService;
+
+      TestBed.configureTestingModule({
+        imports: [InvoiceDetail],
+        providers: [
+          { provide: InvoicesApiService, useValue: invoicesApi },
+          { provide: PatientsApiService, useValue: fakePatientsApi() },
+          { provide: AuthService, useValue: fakeAuth() },
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({ id: invoice.id })) } },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(InvoiceDetail);
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      fixture.componentInstance.printInvoice();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.printingInvoice()).toBe(false);
+      expect(openSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Record Payment', () => {
     function setUp(opts: { canManage?: boolean; invoice?: InvoiceWithReturns } = {}) {
       const invoice = opts.invoice ?? fakeInvoice({ totalAmount: 100, paidAmount: 40 });

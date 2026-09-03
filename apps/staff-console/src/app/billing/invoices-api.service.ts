@@ -31,6 +31,10 @@ export class InvoicesApiService {
     return this.apiClient.get<InvoiceWithReturns>(`/billing/invoices/${id}`);
   }
 
+  getInvoicePdf(id: string): Observable<Blob> {
+    return this.apiClient.getBlob(`/billing/invoices/${id}/invoice.pdf`);
+  }
+
   recordPayment(id: string, dto: RecordPaymentDto): Observable<Payment> {
     return this.apiClient.post<Payment>(`/billing/invoices/${id}/payments`, dto);
   }

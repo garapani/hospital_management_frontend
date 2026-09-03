@@ -27,6 +27,7 @@
             [severity]="statusSeverity(inv.status)"
             styleClass="rounded-full px-3"
           />
+          <p-button label="Print Invoice" icon="pi pi-file-pdf" size="small" severity="secondary" [text]="true" [loading]="printingInvoice()" (onClick)="printInvoice()"></p-button>
           @if (canRecordPayment()) {
           <p-button label="Record Payment" icon="pi pi-wallet" size="small" (onClick)="openPaymentModal()"></p-button>
           }
