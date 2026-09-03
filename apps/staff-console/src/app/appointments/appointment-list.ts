@@ -116,10 +116,35 @@ export class AppointmentList {
   readonly departmentOptions = signal<{ label: string; value: string }[]>([]);
 
   constructor() {
-    this.load(0);
+    const currentUserId = this.auth.currentUser?.()?.sub;
+    const isDoctor =
+      (this.auth.hasRole?.('Doctor') ?? false) &&
+      !(this.auth.hasRole?.('Hospital Admin') ?? false) &&
+      !(this.auth.hasRole?.('Super Admin') ?? false);
+
+    if (!isDoctor) {
+      this.load(0);
+    }
+
     this.usersApi.listDirectory('Doctor').subscribe({
-      next: (doctors) => this.doctorOptions.set(doctors.map((d) => ({ label: d.displayName, value: d.id }))),
-      error: () => this.doctorOptions.set([]),
+      next: (doctors) => {
+        this.doctorOptions.set(doctors.map((d) => ({ label: d.displayName, value: d.id })));
+        if (isDoctor) {
+          if (currentUserId) {
+            const matchingDoc = doctors.find((d) => d.id === currentUserId);
+            if (matchingDoc) {
+              this.doctorIdFilter.set(matchingDoc.id);
+            }
+          }
+          this.load(0);
+        }
+      },
+      error: () => {
+        this.doctorOptions.set([]);
+        if (isDoctor) {
+          this.load(0);
+        }
+      },
     });
     this.masterDataApi.listDepartments().subscribe({
       next: (departments) =>

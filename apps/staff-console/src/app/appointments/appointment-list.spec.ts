@@ -27,7 +27,7 @@ describe('AppointmentList', () => {
 
   function setup(
     queryParams: Record<string, string> = {},
-    overrides: { doctors?: DirectoryEntry[]; departments?: Department[] } = {},
+    overrides: { doctors?: DirectoryEntry[]; departments?: Department[]; roles?: string[]; userId?: string } = {},
   ) {
     const appointmentsApi = {
       list: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } })),
@@ -48,7 +48,11 @@ describe('AppointmentList', () => {
       create: jest.fn().mockReturnValue(of(fakePatient())),
       checkDuplicates: jest.fn().mockReturnValue(of([])),
     } as unknown as PatientsApiService;
-    const auth = { hasPermission: () => true } as unknown as AuthService;
+    const auth = {
+      hasPermission: () => true,
+      hasRole: (role: string) => overrides.roles?.includes(role) ?? false,
+      currentUser: () => ({ sub: overrides.userId ?? 'user-1', roles: overrides.roles ?? [] }),
+    } as unknown as AuthService;
     const activatedRoute = {
       queryParamMap: of(convertToParamMap(queryParams)),
     } as unknown as ActivatedRoute;
@@ -375,7 +379,7 @@ describe('AppointmentList', () => {
         { provide: UsersApiService, useValue: usersApi },
         { provide: MasterDataApiService, useValue: masterDataApi },
         { provide: PatientsApiService, useValue: { search: jest.fn(), getById: jest.fn(), create: jest.fn(), checkDuplicates: jest.fn() } },
-        { provide: AuthService, useValue: { hasPermission: () => true } },
+        { provide: AuthService, useValue: { hasPermission: () => true, hasRole: () => false, currentUser: () => null } },
         { provide: ActivatedRoute, useValue: { queryParamMap: of(convertToParamMap({})) } },
       ],
     });
@@ -442,4 +446,40 @@ describe('AppointmentList', () => {
 
     expect(fixture.componentInstance.noShowActionId()).toBeNull();
   });
+
+  describe('doctor filter auto-selection', () => {
+    const mockDoctors: DirectoryEntry[] = [
+      { id: 'doc-1', displayName: 'Dr. John Watson', username: 'watson' },
+      { id: 'doc-2', displayName: 'Dr. Stephen Strange', username: 'strange' },
+    ];
+
+    it('pre-selects the logged-in doctor in doctorIdFilter when user holds Doctor role', async () => {
+      const { fixture, appointmentsApi } = setup(
+        {},
+        { doctors: mockDoctors, roles: ['Doctor'], userId: 'doc-1' },
+      );
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.doctorIdFilter()).toBe('doc-1');
+      expect(appointmentsApi.list).toHaveBeenCalledWith(
+        expect.objectContaining({ doctorId: 'doc-1' }),
+      );
+    });
+
+    it('leaves doctorIdFilter empty for non-doctor roles like Receptionist', async () => {
+      const { fixture, appointmentsApi } = setup(
+        {},
+        { doctors: mockDoctors, roles: ['Receptionist'], userId: 'rec-1' },
+      );
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(fixture.componentInstance.doctorIdFilter()).toBe('');
+      expect(appointmentsApi.list).toHaveBeenCalledWith(
+        expect.objectContaining({ doctorId: undefined }),
+      );
+    });
+  });
 });
+
