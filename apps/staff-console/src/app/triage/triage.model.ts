@@ -19,6 +19,19 @@ export function colorCodeSeverity(colorCode: string | null): 'success' | 'warn' 
   return (colorCode && COLOR_CODE_SEVERITY[colorCode]) || 'secondary';
 }
 
+const STATUS_SEVERITY: Record<string, 'success' | 'warn' | 'danger' | 'info' | 'secondary'> = {
+  Arrived: 'info',
+  Triaged: 'warn',
+  'In Treatment': 'info',
+  Discharged: 'success',
+  Admitted: 'success',
+  Deceased: 'danger',
+};
+
+export function triageStatusSeverity(status: string | null): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
+  return (status && STATUS_SEVERITY[status]) || 'secondary';
+}
+
 export const ARRIVAL_MODES = ['Walk-in', 'Ambulance', 'Police', 'Referred'];
 export const COLOR_CODES = ['Red', 'Orange', 'Yellow', 'Green', 'Blue'];
 export const TRIAGE_STATUSES = ['Arrived', 'Triaged', 'In Treatment', 'Discharged', 'Admitted', 'Deceased'];

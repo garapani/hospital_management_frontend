@@ -50,7 +50,9 @@
             <span class="text-slate-400">Untriaged</span>
             }
           </td>
-          <td>{{ entry.status }}</td>
+          <td>
+            <p-tag [value]="entry.status" [severity]="statusSeverity(entry.status)" [rounded]="true"></p-tag>
+          </td>
           <td>
             <a
               [routerLink]="['/clinical/triage', entry.id]"

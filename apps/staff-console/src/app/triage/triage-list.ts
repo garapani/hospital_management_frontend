@@ -13,7 +13,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { AuthService } from '@org/auth';
 
 import { TriageApiService, TriageEntry, CreateTriageEntryDto } from './triage-api.service.js';
-import { triageDisplayName, colorCodeSeverity, ARRIVAL_MODES } from './triage.model.js';
+import { triageDisplayName, colorCodeSeverity, triageStatusSeverity, ARRIVAL_MODES } from './triage.model.js';
 
 @Component({
   selector: 'hms-triage-list',
@@ -50,6 +50,7 @@ export class TriageList {
   readonly arrivalModes = ARRIVAL_MODES.map((m) => ({ label: m, value: m }));
   readonly displayName = triageDisplayName;
   readonly colorSeverity = colorCodeSeverity;
+  readonly statusSeverity = triageStatusSeverity;
 
   constructor() {
     this.load(0);

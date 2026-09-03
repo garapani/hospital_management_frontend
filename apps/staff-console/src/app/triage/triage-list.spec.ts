@@ -60,4 +60,17 @@ describe('TriageList', () => {
     expect(triageApi.listActive).toHaveBeenLastCalledWith({ page: 3, limit: 10 });
     expect(fixture.componentInstance.firstRecord()).toBe(20);
   });
+
+  it('maps triage entry status to expected tag severities', () => {
+    const { fixture } = setup();
+
+    expect(fixture.componentInstance.statusSeverity('Arrived')).toBe('info');
+    expect(fixture.componentInstance.statusSeverity('Triaged')).toBe('warn');
+    expect(fixture.componentInstance.statusSeverity('In Treatment')).toBe('info');
+    expect(fixture.componentInstance.statusSeverity('Discharged')).toBe('success');
+    expect(fixture.componentInstance.statusSeverity('Admitted')).toBe('success');
+    expect(fixture.componentInstance.statusSeverity('Deceased')).toBe('danger');
+    expect(fixture.componentInstance.statusSeverity('Unknown')).toBe('secondary');
+  });
 });
+
