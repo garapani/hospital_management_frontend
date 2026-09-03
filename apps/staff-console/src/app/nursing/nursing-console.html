@@ -32,6 +32,11 @@
       — Ward <hms-entity-name type="ward" [id]="admission.wardId"></hms-entity-name>,
       Bed <hms-entity-name type="bed" [id]="admission.bedId"></hms-entity-name>
     </div>
+    } @else {
+    <div class="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
+      <i class="pi pi-info-circle text-slate-400"></i>
+      <span>Select an admitted patient above to create care tasks, schedule medications, or log shift handoffs.</span>
+    </div>
     }
   </div>
 
@@ -75,14 +80,15 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-task>
-                <tr>
+                <tr [class]="'status-rail-' + taskSeverity(task.status)">
                   <td class="font-medium">{{ task.taskType }}</td>
                   <td>{{ task.description }}</td>
                   <td>{{ task.dueAt ? (task.dueAt | date: 'short') : '—' }}</td>
                   <td>
                     <p-tag
                       [value]="task.status"
-                      [severity]="task.status === 'Completed' ? 'success' : task.status === 'Cancelled' ? 'danger' : task.status === 'InProgress' ? 'info' : 'secondary'"
+                      [severity]="taskSeverity(task.status)"
+                      [rounded]="true"
                     ></p-tag>
                   </td>
                   <td class="flex gap-2">
@@ -141,7 +147,7 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-admin>
-                <tr>
+                <tr [class]="'status-rail-' + adminSeverity(admin.status)">
                   <td class="font-medium">{{ admin.drugName }}</td>
                   <td>{{ admin.dose }}</td>
                   <td>{{ admin.route || '—' }}</td>
@@ -149,7 +155,8 @@
                   <td>
                     <p-tag
                       [value]="admin.status"
-                      [severity]="admin.status === 'Administered' ? 'success' : admin.status === 'Skipped' ? 'warn' : 'secondary'"
+                      [severity]="adminSeverity(admin.status)"
+                      [rounded]="true"
                     ></p-tag>
                   </td>
                   <td class="flex gap-2">

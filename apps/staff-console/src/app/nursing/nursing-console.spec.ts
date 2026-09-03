@@ -367,4 +367,18 @@ describe('NursingConsole', () => {
 
     expect(api.listHandoffNotes).toHaveBeenCalledWith(undefined, 2, 20);
   });
+
+  it('maps nursing task and medication administration status severities correctly', () => {
+    const { fixture } = setup();
+
+    expect(fixture.componentInstance.taskSeverity('Completed')).toBe('success');
+    expect(fixture.componentInstance.taskSeverity('InProgress')).toBe('info');
+    expect(fixture.componentInstance.taskSeverity('Pending')).toBe('warn');
+    expect(fixture.componentInstance.taskSeverity('Cancelled')).toBe('danger');
+
+    expect(fixture.componentInstance.adminSeverity('Administered')).toBe('success');
+    expect(fixture.componentInstance.adminSeverity('Scheduled')).toBe('info');
+    expect(fixture.componentInstance.adminSeverity('Skipped')).toBe('warn');
+  });
 });
+

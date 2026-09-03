@@ -22,7 +22,9 @@ import {
   CreateHandoffNoteDto,
   CreateTaskDto,
   MedicationAdministration,
+  medicationStatusSeverity,
   NursingTask,
+  nursingTaskSeverity,
   Shift,
   ShiftHandoffNote,
 } from './nursing.model.js';
@@ -54,6 +56,8 @@ export class NursingConsole {
   private readonly admissionsApi = inject(AdmissionsApiService);
   readonly auth = inject(AuthService);
   readonly canManage = this.auth.hasPermission('nursing.manage');
+  readonly taskSeverity = nursingTaskSeverity;
+  readonly adminSeverity = medicationStatusSeverity;
 
   readonly admissionIdFilter = signal('');
   // Patient search picker, replacing a raw-UUID "Admission ID" text filter — a nurse can only

@@ -20,6 +20,27 @@ export interface CreateTaskDto {
   assignedTo?: string;
 }
 
+export type Severity = 'success' | 'warn' | 'danger' | 'info' | 'secondary';
+
+export function nursingTaskSeverity(status: string): Severity {
+  switch (status) {
+    case 'Completed': return 'success';
+    case 'InProgress': return 'info';
+    case 'Pending': return 'warn';
+    case 'Cancelled': return 'danger';
+    default: return 'secondary';
+  }
+}
+
+export function medicationStatusSeverity(status: string): Severity {
+  switch (status) {
+    case 'Administered': return 'success';
+    case 'Scheduled': return 'info';
+    case 'Skipped': return 'warn';
+    default: return 'secondary';
+  }
+}
+
 export type MedicationAdministrationStatus = 'Scheduled' | 'Administered' | 'Skipped';
 
 export interface MedicationAdministration {
