@@ -59,7 +59,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-record>
-        <tr class="hover:bg-slate-100 transition-colors">
+        <tr class="hover:bg-slate-100 transition-colors status-rail-success">
           <td class="border-b border-slate-200"><hms-entity-name type="patient" [id]="record.patientId"></hms-entity-name></td>
           <td class="font-medium border-b border-slate-200">{{ record.vaccine }}</td>
           <td class="border-b border-slate-200">{{ record.doseNumber }}</td>
