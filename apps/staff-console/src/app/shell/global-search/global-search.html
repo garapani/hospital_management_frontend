@@ -1,0 +1,49 @@
+<p-dialog
+  [visible]="open()"
+  (visibleChange)="!$event && close()"
+  [modal]="true"
+  [showHeader]="false"
+  [style]="{ width: '560px', marginTop: '10vh' }"
+  [contentStyle]="{ padding: '0' }"
+  styleClass="surface-modal"
+>
+  <div class="flex flex-col">
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-200">
+      <i class="pi pi-search text-slate-400"></i>
+      <input
+        #searchInput
+        type="text"
+        [ngModel]="query()"
+        (ngModelChange)="onQueryChange($event)"
+        placeholder="Search patients by name, phone, or UHID…"
+        class="flex-1 border-0 outline-none text-base"
+      />
+      <span class="text-xs text-slate-400 border border-slate-200 rounded px-1.5 py-0.5">Esc</span>
+    </div>
+
+    <div class="max-h-96 overflow-y-auto">
+      @if (loading()) {
+      <p class="p-4 text-sm text-slate-500">Searching…</p>
+      } @else if (query().trim() && results().length === 0) {
+      <p class="p-4 text-sm text-slate-500">No patients found.</p>
+      } @else {
+      <ul>
+        @for (patient of results(); track patient.id; let i = $index) {
+        <li>
+          <button
+            type="button"
+            class="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-slate-50"
+            [class.bg-slate-50]="i === activeIndex()"
+            (click)="select(patient)"
+            (mouseenter)="activeIndex.set(i)"
+          >
+            <span class="font-medium text-slate-800">{{ patient.firstName }} {{ patient.lastName }}</span>
+            <span class="text-xs text-slate-500 font-mono">{{ patient.patientNo }} @if (patient.phoneNumber) { · {{ patient.phoneNumber }} }</span>
+          </button>
+        </li>
+        }
+      </ul>
+      }
+    </div>
+  </div>
+</p-dialog>

@@ -14,6 +14,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { NotificationsApiService, Notification } from '../notifications/notifications-api.service.js';
 import { BrandingService } from '../branding/branding.service.js';
+import { GlobalSearchComponent } from './global-search/global-search.js';
 import { Subscription } from 'rxjs';
 
 /**
@@ -32,6 +33,7 @@ import { Subscription } from 'rxjs';
     InputTextModule,
     PasswordModule,
     DatePipe,
+    GlobalSearchComponent,
   ],
   selector: 'hms-shell-chrome',
   templateUrl: './shell-chrome.html',

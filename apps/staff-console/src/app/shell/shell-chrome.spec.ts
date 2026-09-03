@@ -8,12 +8,14 @@ import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { NotificationsApiService } from '../notifications/notifications-api.service.js';
 import { BrandingService } from '../branding/branding.service.js';
+import { PatientsApiService } from '../patients/patients-api.service.js';
 import { ShellChrome } from './shell-chrome.js';
 
 describe('ShellChrome user menu', () => {
   function setup(options: { changePassword?: unknown; displayName?: string; roles?: string[] } = {}) {
     const authService = {
       isPlatformAdmin: () => false,
+      hasPermission: () => false,
       currentUser: () => ({
         roles: options.roles ?? ['Hospital Admin'],
         hospitalId: 'demo',
@@ -54,6 +56,10 @@ describe('ShellChrome user menu', () => {
         { provide: MessageService, useValue: messageService },
         ConfirmationService,
         { provide: BrandingService, useValue: brandingService },
+        // ShellChrome mounts <hms-global-search> (Ctrl+K patient search) unconditionally — needs
+        // a mock here so its constructor injection succeeds, same as every other API service
+        // this spec already fakes rather than wiring real HttpClient/API_BASE_URL/TENANT_ID.
+        { provide: PatientsApiService, useValue: { search: jest.fn().mockReturnValue(of({ data: [], meta: { total: 0, page: 1, limit: 8, totalPages: 0 } })) } },
       ],
     });
 

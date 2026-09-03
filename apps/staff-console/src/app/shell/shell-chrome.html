@@ -3,6 +3,8 @@
   <p-toast position="top-right"></p-toast>
   <!-- Global confirm surface for every routed page (ConfirmationService provided in app.config). -->
   <p-confirmDialog></p-confirmDialog>
+  <!-- Ctrl+K / Cmd+K spotlight patient search, reachable from any routed page. -->
+  <hms-global-search #globalSearch></hms-global-search>
   <!-- Sidebar backdrop (mobile/tablet drawer only) -->
   @if (sidebarOpen()) {
   <div
@@ -68,6 +70,18 @@
 
       <!-- Right: Actions & User Menu -->
       <div class="flex items-center gap-3">
+        @if (auth.hasPermission('patients.read')) {
+        <button
+          type="button"
+          class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors text-sm"
+          (click)="globalSearch.toggle()"
+          aria-label="Search patients"
+        >
+          <i class="pi pi-search text-sm"></i>
+          <span>Search patients…</span>
+          <span class="text-xs border border-slate-200 rounded px-1 py-0.5 ml-2">Ctrl K</span>
+        </button>
+        }
         <!-- Notifications -->
         <div class="relative" #notificationsMenu>
           <button
