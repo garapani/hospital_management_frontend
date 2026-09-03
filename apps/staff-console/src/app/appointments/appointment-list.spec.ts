@@ -129,6 +129,29 @@ describe('AppointmentList', () => {
     expect(call.page).toBe(1);
   });
 
+  it('detects active filters and resets back to default values', async () => {
+    const { fixture, appointmentsApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.hasActiveFilters()).toBe(false);
+
+    fixture.componentInstance.statusFilter.set('Scheduled');
+    expect(fixture.componentInstance.hasActiveFilters()).toBe(true);
+
+    fixture.componentInstance.doctorIdFilter.set('doc-1');
+    fixture.componentInstance.departmentIdFilter.set('dept-1');
+    fixture.componentInstance.dateFilter.set('2026-01-01');
+
+    fixture.componentInstance.resetFilters();
+
+    expect(fixture.componentInstance.statusFilter()).toBe('');
+    expect(fixture.componentInstance.doctorIdFilter()).toBe('');
+    expect(fixture.componentInstance.departmentIdFilter()).toBe('');
+    expect(fixture.componentInstance.hasActiveFilters()).toBe(false);
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+  });
+
   it('pre-fills and opens the create modal in Existing Patient mode when navigated with a patientId query param', () => {
     const { fixture } = setup({ patientId: 'patient-1', firstName: 'Jane', lastName: 'Doe', contactNumber: '555-1234' });
 

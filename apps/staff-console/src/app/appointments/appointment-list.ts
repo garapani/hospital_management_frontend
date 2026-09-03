@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -199,9 +199,42 @@ export class AppointmentList {
     this.load(event.first || 0);
   }
 
+  readonly hasActiveFilters = computed(() => {
+    const isToday = this.dateFilter() === today();
+    const hasStatus = !!this.statusFilter();
+    const hasDept = !!this.departmentIdFilter();
+    const currentUserId = this.auth.currentUser?.()?.sub;
+    const isDoctor =
+      (this.auth.hasRole?.('Doctor') ?? false) &&
+      !(this.auth.hasRole?.('Hospital Admin') ?? false) &&
+      !(this.auth.hasRole?.('Super Admin') ?? false);
+    const hasDoctor = isDoctor
+      ? this.doctorIdFilter() !== currentUserId
+      : !!this.doctorIdFilter();
+
+    return !isToday || hasStatus || hasDept || hasDoctor;
+  });
+
   applyFilters(): void {
     this.firstRecord.set(0);
     this.load(0);
+  }
+
+  resetFilters(): void {
+    this.dateFilter.set(today());
+    this.statusFilter.set('');
+    const currentUserId = this.auth.currentUser?.()?.sub;
+    const isDoctor =
+      (this.auth.hasRole?.('Doctor') ?? false) &&
+      !(this.auth.hasRole?.('Hospital Admin') ?? false) &&
+      !(this.auth.hasRole?.('Super Admin') ?? false);
+    if (isDoctor && currentUserId) {
+      this.doctorIdFilter.set(currentUserId);
+    } else {
+      this.doctorIdFilter.set('');
+    }
+    this.departmentIdFilter.set('');
+    this.applyFilters();
   }
 
   openCreateModal(): void {
