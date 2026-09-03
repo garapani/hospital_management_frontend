@@ -195,4 +195,33 @@ describe('OtList', () => {
 
     expect(fixture.componentInstance.canManage).toBe(false);
   });
+
+  it('resets filters back to empty and reloads page 1', async () => {
+    const { fixture, api } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.patientIdFilter.set('patient-1');
+    fixture.componentInstance.statusFilter.set('Scheduled');
+    fixture.componentInstance.applyFilters();
+    await fixture.whenStable();
+
+    fixture.componentInstance.resetFilters();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.patientIdFilter()).toBe('');
+    expect(fixture.componentInstance.statusFilter()).toBeNull();
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    expect(api.list).toHaveBeenCalledWith({ patientId: undefined, status: undefined, page: 1, limit: 20 });
+  });
+
+  it('maps surgery status severities correctly', () => {
+    const { fixture } = setup();
+
+    expect(fixture.componentInstance.statusSeverity('Completed')).toBe('success');
+    expect(fixture.componentInstance.statusSeverity('InProgress')).toBe('info');
+    expect(fixture.componentInstance.statusSeverity('Scheduled')).toBe('warn');
+    expect(fixture.componentInstance.statusSeverity('Cancelled')).toBe('danger');
+  });
 });
+

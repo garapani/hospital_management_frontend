@@ -24,14 +24,25 @@
           filterPlaceholder="Search by name, number or phone"
           emptyFilterMessage="Type at least 2 characters to search"
           placeholder="Search for a patient"
+          [showClear]="true"
           styleClass="w-80"
         ></p-select>
       </label>
       <label for="otStatusFilter" class="flex flex-col gap-2">
         <span class="text-sm font-medium text-slate-700">Status</span>
-        <p-select inputId="otStatusFilter" [options]="statusOptions" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); applyFilters()" styleClass="w-48"></p-select>
+        <p-select
+          inputId="otStatusFilter"
+          [options]="statusOptions"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event); applyFilters()"
+          [showClear]="true"
+          styleClass="w-48"
+        ></p-select>
       </label>
       <p-button label="Filter" (onClick)="applyFilters()" styleClass="accent-bg rounded-lg border-none shadow-md px-6"></p-button>
+      @if (patientIdFilter() || statusFilter()) {
+      <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetFilters()"></p-button>
+      }
     </div>
   </div>
 
@@ -52,7 +63,7 @@
       <ng-template pTemplate="header">
         <tr>
           <th class="table-header-cell">Surgery #</th>
-          <th class="table-header-cell">Patient ID</th>
+          <th class="table-header-cell">Patient</th>
           <th class="table-header-cell">Procedure</th>
           <th class="table-header-cell">OT Room</th>
           <th class="table-header-cell">Scheduled</th>
@@ -61,7 +72,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-surgery>
-        <tr class="hover:bg-slate-100 transition-colors">
+        <tr class="hover:bg-slate-100 transition-colors" [class]="'status-rail-' + statusSeverity(surgery.status)">
           <td class="font-mono font-semibold text-slate-700 border-b border-slate-200">{{ surgery.surgeryNumber }}</td>
           <td class="border-b border-slate-200"><hms-entity-name type="patient" [id]="surgery.patientId"></hms-entity-name></td>
           <td class="border-b border-slate-200">{{ surgery.procedureName }}</td>
@@ -70,7 +81,7 @@
           <td class="border-b border-slate-200">
             <p-tag
               [value]="surgery.status"
-              [severity]="surgery.status === 'Completed' ? 'success' : surgery.status === 'Cancelled' ? 'danger' : surgery.status === 'InProgress' ? 'info' : 'secondary'"
+              [severity]="statusSeverity(surgery.status)"
               styleClass="rounded-full px-3"
             ></p-tag>
           </td>

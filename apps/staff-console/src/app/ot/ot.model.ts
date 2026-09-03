@@ -1,5 +1,22 @@
 export type OtSurgeryStatus = 'Scheduled' | 'InProgress' | 'Completed' | 'Cancelled';
 
+export type Severity = 'success' | 'warn' | 'danger' | 'info' | 'secondary';
+
+export function otSurgeryStatusSeverity(status: string): Severity {
+  switch (status) {
+    case 'Completed':
+      return 'success';
+    case 'InProgress':
+      return 'info';
+    case 'Scheduled':
+      return 'warn';
+    case 'Cancelled':
+      return 'danger';
+    default:
+      return 'secondary';
+  }
+}
+
 export interface OtSurgery {
   id: string;
   surgeryNumber: string;

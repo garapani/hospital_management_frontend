@@ -10,10 +10,9 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { EMPTY, Observable, Subject, catchError, map, switchMap } from 'rxjs';
-import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { OtApiService } from './ot-api.service.js';
-import { CreateSurgeryDto, OtSurgery, OtSurgeryStatus } from './ot.model.js';
+import { CreateSurgeryDto, OtSurgery, OtSurgeryStatus, otSurgeryStatusSeverity } from './ot.model.js';
 import { EntityName } from '../directory/entity-name.js';
 import { PatientsApiService } from '../patients/patients-api.service.js';
 
@@ -86,8 +85,17 @@ export class OtList {
     this.load(page, rows);
   }
 
+  readonly statusSeverity = otSurgeryStatusSeverity;
+
   applyFilters(): void {
+    this.firstRecord.set(0);
     this.load(1, this.pageSize());
+  }
+
+  resetFilters(): void {
+    this.patientIdFilter.set('');
+    this.statusFilter.set(null);
+    this.applyFilters();
   }
 
   private load(page: number, limit: number): void {
