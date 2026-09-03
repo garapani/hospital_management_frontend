@@ -30,7 +30,7 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-rule>
-                <tr>
+                <tr [class]="'status-rail-' + statusSeverity(rule.isActive)">
                   <td><hms-entity-name type="doctor" [id]="rule.doctorId"></hms-entity-name></td>
                   <td>
                     @if (rule.departmentId) {
@@ -41,7 +41,7 @@
                   </td>
                   <td class="text-right font-mono">{{ rule.fractionPercent | number: '1.2-2' }}%</td>
                   <td>
-                    <p-tag [value]="rule.isActive ? 'Active' : 'Inactive'" [severity]="rule.isActive ? 'success' : 'warn'"></p-tag>
+                    <p-tag [value]="rule.isActive ? 'Active' : 'Inactive'" [severity]="statusSeverity(rule.isActive)" [rounded]="true"></p-tag>
                   </td>
                   <td>
                     @if (canManage) {

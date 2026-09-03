@@ -125,5 +125,13 @@ describe('FractionConsole', () => {
     expect(text).not.toContain('Doctor ID');
     expect(text).not.toContain('Department ID');
   });
+
+  it('maps rule active state to status severity correctly', () => {
+    const { fixture } = setup();
+
+    expect(fixture.componentInstance.statusSeverity(true)).toBe('success');
+    expect(fixture.componentInstance.statusSeverity(false)).toBe('warn');
+  });
 });
+
 

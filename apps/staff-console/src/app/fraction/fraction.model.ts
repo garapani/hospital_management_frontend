@@ -6,6 +6,12 @@ export interface FractionRule {
   isActive: boolean;
 }
 
+export type Severity = 'success' | 'warn' | 'danger' | 'info' | 'secondary';
+
+export function ruleStatusSeverity(isActive: boolean): Severity {
+  return isActive ? 'success' : 'warn';
+}
+
 export interface CreateRuleDto {
   doctorId: string;
   departmentId?: string;

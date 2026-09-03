@@ -13,7 +13,7 @@ import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { FractionApiService } from './fraction-api.service.js';
-import { CreateEntryDto, CreateRuleDto, FractionEntry, FractionRule } from './fraction.model.js';
+import { CreateEntryDto, CreateRuleDto, FractionEntry, FractionRule, ruleStatusSeverity } from './fraction.model.js';
 import { EntityName } from '../directory/entity-name.js';
 import { UsersApiService } from '../users/users-api.service.js';
 import { MasterDataApiService } from '../master-data/master-data-api.service.js';
@@ -49,6 +49,7 @@ export class FractionConsole {
   // Doctor holds fraction.read only (to see their own revenue share), not fraction.manage — the
   // mutating controls below must stay hidden for that role, not just backend-rejected.
   readonly canManage = this.auth.hasPermission('fraction.manage');
+  readonly statusSeverity = ruleStatusSeverity;
 
   readonly doctorOptions = signal<{ label: string; value: string }[]>([]);
   readonly departmentOptions = signal<{ label: string; value: string }[]>([]);
