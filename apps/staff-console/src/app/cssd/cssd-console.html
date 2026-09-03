@@ -31,13 +31,13 @@
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-instrument>
-                <tr>
+                <tr [class]="'status-rail-' + (instrument.isActive ? 'success' : 'warn')">
                   <td class="font-mono font-medium">{{ instrument.code }}</td>
                   <td>{{ instrument.name }}</td>
                   <td>{{ instrument.category || '—' }}</td>
                   <td>{{ instrument.quantity }}</td>
                   <td>
-                    <p-tag [value]="instrument.isActive ? 'Active' : 'Inactive'" [severity]="instrument.isActive ? 'success' : 'warn'"></p-tag>
+                    <p-tag [value]="instrument.isActive ? 'Active' : 'Inactive'" [severity]="instrument.isActive ? 'success' : 'warn'" [rounded]="true" styleClass="px-3"></p-tag>
                   </td>
                   <td>
                     @if (canManage) {
@@ -104,6 +104,8 @@
                     <p-tag
                       [value]="cycle.status"
                       [severity]="cycleSeverity(cycle.status)"
+                      [rounded]="true"
+                      styleClass="px-3"
                     ></p-tag>
                   </td>
                   <td class="flex gap-2">
