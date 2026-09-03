@@ -64,4 +64,14 @@ describe('NotificationList', () => {
     expect(notificationsApi.markAllAsRead).toHaveBeenCalledTimes(1);
     expect(fixture.componentInstance.notifications().every((n) => n.isRead)).toBe(true);
   });
+
+  it('maps notification types to correct severity', () => {
+    const { fixture } = setup();
+
+    expect(fixture.componentInstance.notificationSeverity('success')).toBe('success');
+    expect(fixture.componentInstance.notificationSeverity('warning')).toBe('warn');
+    expect(fixture.componentInstance.notificationSeverity('error')).toBe('danger');
+    expect(fixture.componentInstance.notificationSeverity('info')).toBe('info');
+  });
 });
+
