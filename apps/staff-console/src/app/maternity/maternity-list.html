@@ -60,7 +60,10 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-record>
-        <tr class="hover:bg-slate-100 transition-colors">
+        <tr
+          class="hover:bg-slate-100 transition-colors"
+          [class]="record.deliveryDate ? 'status-rail-success' : 'status-rail-info'"
+        >
           <td class="border-b border-slate-200"><hms-entity-name type="patient" [id]="record.patientId"></hms-entity-name></td>
           <td class="border-b border-slate-200">
             <a [routerLink]="['/admissions', record.admissionId]" class="text-sky-600 hover:text-sky-800 text-sm font-medium">View Admission</a>
