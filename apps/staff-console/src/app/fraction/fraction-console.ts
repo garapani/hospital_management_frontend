@@ -8,29 +8,50 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { TabsModule } from 'primeng/tabs';
+import { SelectModule } from 'primeng/select';
 import { MessageService } from 'primeng/api';
 import { ApiError } from '@org/api-client';
 import { AuthService } from '@org/auth';
 import { FractionApiService } from './fraction-api.service.js';
 import { CreateEntryDto, CreateRuleDto, FractionEntry, FractionRule } from './fraction.model.js';
 import { EntityName } from '../directory/entity-name.js';
+import { UsersApiService } from '../users/users-api.service.js';
+import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 
 const EMPTY_RULE_FORM: CreateRuleDto = { doctorId: '', fractionPercent: 0 };
 const EMPTY_ENTRY_FORM: CreateEntryDto = { invoiceId: '', doctorId: '' };
 
 @Component({
-  imports: [DecimalPipe, DatePipe, FormsModule, TableModule, ButtonModule, TagModule, DialogModule, InputTextModule, InputNumberModule, TabsModule, EntityName],
+  imports: [
+    DecimalPipe,
+    DatePipe,
+    FormsModule,
+    TableModule,
+    ButtonModule,
+    TagModule,
+    DialogModule,
+    InputTextModule,
+    InputNumberModule,
+    SelectModule,
+    TabsModule,
+    EntityName,
+  ],
   selector: 'hms-fraction-console',
   templateUrl: './fraction-console.html',
 })
 export class FractionConsole {
   private readonly api = inject(FractionApiService);
+  private readonly usersApi = inject(UsersApiService);
+  private readonly masterDataApi = inject(MasterDataApiService);
   private readonly messageService = inject(MessageService);
   private readonly auth = inject(AuthService);
 
   // Doctor holds fraction.read only (to see their own revenue share), not fraction.manage — the
   // mutating controls below must stay hidden for that role, not just backend-rejected.
   readonly canManage = this.auth.hasPermission('fraction.manage');
+
+  readonly doctorOptions = signal<{ label: string; value: string }[]>([]);
+  readonly departmentOptions = signal<{ label: string; value: string }[]>([]);
 
   readonly rules = signal<FractionRule[]>([]);
   readonly rulesLoading = signal(false);
@@ -49,6 +70,14 @@ export class FractionConsole {
   constructor() {
     this.loadRules();
     this.loadEntries();
+    this.usersApi.listDirectory('Doctor').subscribe({
+      next: (doctors) => this.doctorOptions.set(doctors.map((d) => ({ label: d.displayName, value: d.id }))),
+      error: () => this.doctorOptions.set([]),
+    });
+    this.masterDataApi.listDepartments().subscribe({
+      next: (departments) => this.departmentOptions.set(departments.map((d) => ({ label: d.departmentName, value: d.id }))),
+      error: () => this.departmentOptions.set([]),
+    });
   }
 
   // --- Rules ---

@@ -6,6 +6,8 @@ import { AuthService } from '@org/auth';
 import { FractionConsole } from './fraction-console.js';
 import { FractionApiService } from './fraction-api.service.js';
 import { DirectoryResolverService } from '../directory/directory-resolver.service.js';
+import { UsersApiService } from '../users/users-api.service.js';
+import { MasterDataApiService } from '../master-data/master-data-api.service.js';
 
 describe('FractionConsole', () => {
   function setup(options: { canManage?: boolean } = {}) {
@@ -20,6 +22,12 @@ describe('FractionConsole', () => {
     const messageService = { add: jest.fn() } as unknown as MessageService;
     const auth = { hasPermission: jest.fn().mockReturnValue(options.canManage ?? true) } as unknown as AuthService;
     const directoryResolver = { resolve: jest.fn().mockReturnValue(of(null)) } as unknown as DirectoryResolverService;
+    const usersApi = {
+      listDirectory: jest.fn().mockReturnValue(of([{ id: 'd1', displayName: 'Dr. Jane' }])),
+    } as unknown as UsersApiService;
+    const masterDataApi = {
+      listDepartments: jest.fn().mockReturnValue(of([{ id: 'dept1', departmentName: 'Cardiology' }])),
+    } as unknown as MasterDataApiService;
 
     TestBed.configureTestingModule({
       imports: [FractionConsole],
@@ -28,11 +36,13 @@ describe('FractionConsole', () => {
         { provide: MessageService, useValue: messageService },
         { provide: AuthService, useValue: auth },
         { provide: DirectoryResolverService, useValue: directoryResolver },
+        { provide: UsersApiService, useValue: usersApi },
+        { provide: MasterDataApiService, useValue: masterDataApi },
       ],
     });
 
     const fixture = TestBed.createComponent(FractionConsole);
-    return { fixture, api, messageService, auth };
+    return { fixture, api, messageService, auth, usersApi, masterDataApi };
   }
 
   it('loads rules and entries on init', async () => {
@@ -98,4 +108,22 @@ describe('FractionConsole', () => {
 
     expect(fixture.componentInstance.ruleError()).toBe('Invalid doctor');
   });
+
+  it('loads doctor and department dropdown options for pickers', async () => {
+    const { fixture, usersApi, masterDataApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(usersApi.listDirectory).toHaveBeenCalledWith('Doctor');
+    expect(fixture.componentInstance.doctorOptions()).toEqual([{ label: 'Dr. Jane', value: 'd1' }]);
+    expect(masterDataApi.listDepartments).toHaveBeenCalled();
+    expect(fixture.componentInstance.departmentOptions()).toEqual([{ label: 'Cardiology', value: 'dept1' }]);
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('Doctor');
+    expect(text).toContain('Department');
+    expect(text).not.toContain('Doctor ID');
+    expect(text).not.toContain('Department ID');
+  });
 });
+

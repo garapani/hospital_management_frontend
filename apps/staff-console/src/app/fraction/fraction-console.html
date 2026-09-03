@@ -22,8 +22,8 @@
             <p-table [value]="rules()" [loading]="rulesLoading()" [rowHover]="true" styleClass="p-datatable-sm p-datatable-gridlines">
               <ng-template pTemplate="header">
                 <tr>
-                  <th class="table-header-cell">Doctor ID</th>
-                  <th class="table-header-cell">Department ID</th>
+                  <th class="table-header-cell">Doctor</th>
+                  <th class="table-header-cell">Department</th>
                   <th class="table-header-cell text-right">Fraction %</th>
                   <th class="table-header-cell">Status</th>
                   <th class="table-header-cell w-32">Actions</th>
@@ -32,7 +32,13 @@
               <ng-template pTemplate="body" let-rule>
                 <tr>
                   <td><hms-entity-name type="doctor" [id]="rule.doctorId"></hms-entity-name></td>
-                  <td class="font-mono">{{ rule.departmentId || 'All' }}</td>
+                  <td>
+                    @if (rule.departmentId) {
+                    <hms-entity-name type="department" [id]="rule.departmentId"></hms-entity-name>
+                    } @else {
+                    <span class="text-slate-500 font-medium">All Departments</span>
+                    }
+                  </td>
                   <td class="text-right font-mono">{{ rule.fractionPercent | number: '1.2-2' }}%</td>
                   <td>
                     <p-tag [value]="rule.isActive ? 'Active' : 'Inactive'" [severity]="rule.isActive ? 'success' : 'warn'"></p-tag>
@@ -111,12 +117,31 @@
     </div>
     }
     <div class="flex flex-col gap-2">
-      <label for="ruleDoctorId" class="text-sm font-medium text-slate-700">Doctor ID</label>
-      <input id="ruleDoctorId" pInputText [ngModel]="ruleForm().doctorId" (ngModelChange)="ruleForm.set({ ...ruleForm(), doctorId: $event })" class="w-full" />
+      <label for="ruleDoctorId" class="text-sm font-medium text-slate-700">Doctor</label>
+      <p-select
+        inputId="ruleDoctorId"
+        [options]="doctorOptions()"
+        [ngModel]="ruleForm().doctorId"
+        (ngModelChange)="ruleForm.set({ ...ruleForm(), doctorId: $event })"
+        placeholder="Select Doctor"
+        [filter]="true"
+        filterPlaceholder="Search doctor..."
+        styleClass="w-full"
+      ></p-select>
     </div>
     <div class="flex flex-col gap-2">
-      <label for="ruleDepartmentId" class="text-sm font-medium text-slate-700">Department ID (optional)</label>
-      <input id="ruleDepartmentId" pInputText [ngModel]="ruleForm().departmentId" (ngModelChange)="ruleForm.set({ ...ruleForm(), departmentId: $event })" class="w-full" />
+      <label for="ruleDepartmentId" class="text-sm font-medium text-slate-700">Department (optional)</label>
+      <p-select
+        inputId="ruleDepartmentId"
+        [options]="departmentOptions()"
+        [ngModel]="ruleForm().departmentId"
+        (ngModelChange)="ruleForm.set({ ...ruleForm(), departmentId: $event })"
+        placeholder="All Departments (Optional)"
+        [showClear]="true"
+        [filter]="true"
+        filterPlaceholder="Search department..."
+        styleClass="w-full"
+      ></p-select>
     </div>
     <div class="flex flex-col gap-2">
       <label for="ruleFractionPercent" class="text-sm font-medium text-slate-700">Fraction %</label>
@@ -145,8 +170,17 @@
       <input id="entryInvoiceId" pInputText [ngModel]="entryForm().invoiceId" (ngModelChange)="entryForm.set({ ...entryForm(), invoiceId: $event })" class="w-full" />
     </div>
     <div class="flex flex-col gap-2">
-      <label for="entryDoctorId" class="text-sm font-medium text-slate-700">Doctor ID</label>
-      <input id="entryDoctorId" pInputText [ngModel]="entryForm().doctorId" (ngModelChange)="entryForm.set({ ...entryForm(), doctorId: $event })" class="w-full" />
+      <label for="entryDoctorId" class="text-sm font-medium text-slate-700">Doctor</label>
+      <p-select
+        inputId="entryDoctorId"
+        [options]="doctorOptions()"
+        [ngModel]="entryForm().doctorId"
+        (ngModelChange)="entryForm.set({ ...entryForm(), doctorId: $event })"
+        placeholder="Select Doctor"
+        [filter]="true"
+        filterPlaceholder="Search doctor..."
+        styleClass="w-full"
+      ></p-select>
     </div>
   </div>
   <ng-template pTemplate="footer">
