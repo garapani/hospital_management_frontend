@@ -155,6 +155,12 @@ export class PharmacyDispensingList {
     this.load(0);
   }
 
+  resetFilters(): void {
+    this.orderItemIdFilter.set('');
+    this.statusFilter.set('');
+    this.applyFilters();
+  }
+
   openCreateModal(): void {
     this.createForm.set({ orderItemId: '', inventoryItemId: '', quantity: 1 });
     this.categoryId.set('');

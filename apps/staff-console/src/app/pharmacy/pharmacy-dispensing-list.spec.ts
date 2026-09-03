@@ -184,4 +184,25 @@ describe('PharmacyDispensingList', () => {
     expect(fixture.componentInstance.saving()).toBe(false);
     expect(fixture.componentInstance.showCreateModal()).toBe(true);
   });
+
+  it('resets filters back to empty and reloads page 1', async () => {
+    const { fixture, pharmacyApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.orderItemIdFilter.set('order-1');
+    fixture.componentInstance.statusFilter.set('Pending');
+    fixture.componentInstance.applyFilters();
+
+    fixture.componentInstance.resetFilters();
+
+    expect(fixture.componentInstance.orderItemIdFilter()).toBe('');
+    expect(fixture.componentInstance.statusFilter()).toBe('');
+    expect(fixture.componentInstance.firstRecord()).toBe(0);
+    const lastCall = (pharmacyApi.list as jest.Mock).mock.calls.at(-1)[0];
+    expect(lastCall.orderItemId).toBeUndefined();
+    expect(lastCall.status).toBeUndefined();
+    expect(lastCall.page).toBe(1);
+  });
 });
+
