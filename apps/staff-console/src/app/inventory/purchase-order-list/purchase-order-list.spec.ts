@@ -85,6 +85,21 @@ describe('PurchaseOrderList', () => {
     expect(inventoryApi.listPurchaseOrders).toHaveBeenCalledTimes(1);
   });
 
+  it('resets vendor filter via resetFilter()', async () => {
+    const { fixture, inventoryApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.onVendorFilterChange('vendor-1');
+    expect(fixture.componentInstance.vendorFilter()).toBe('vendor-1');
+    expect(fixture.componentInstance.hasSearched()).toBe(true);
+
+    fixture.componentInstance.resetFilter();
+    expect(fixture.componentInstance.vendorFilter()).toBe('');
+    expect(fixture.componentInstance.hasSearched()).toBe(false);
+    expect(fixture.componentInstance.purchaseOrders()).toEqual([]);
+  });
+
   it('does not throw when the p-select clear icon emits null, and canAddLine requires a real item', async () => {
     const { fixture } = setup();
     fixture.detectChanges();

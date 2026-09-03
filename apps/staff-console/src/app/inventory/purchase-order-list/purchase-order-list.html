@@ -25,6 +25,9 @@
         styleClass="w-72"
       ></p-select>
     </div>
+    @if (vendorFilter()) {
+    <p-button label="Reset" size="small" [text]="true" severity="secondary" (onClick)="resetFilter()"></p-button>
+    }
     @if (canManageCatalog) {
     <p-button label="Add Vendor" icon="pi pi-plus" size="small" severity="secondary" [text]="true" (onClick)="openAddVendorModal()"></p-button>
     }

@@ -187,6 +187,10 @@ export class PurchaseOrderList {
     this.load(0);
   }
 
+  resetFilter(): void {
+    this.onVendorFilterChange(null);
+  }
+
   openCreateModal(): void {
     this.createVendorId.set(this.vendorFilter());
     this.createNotes.set('');
