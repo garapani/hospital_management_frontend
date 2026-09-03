@@ -154,4 +154,19 @@ describe('EmployeeList', () => {
     );
     expect(fixture.componentInstance.togglingId()).toBe(null);
   });
+
+  it('resets search filter and reloads list via resetSearch()', async () => {
+    const { fixture, employeesApi } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    fixture.componentInstance.q.set('Nurse');
+    fixture.componentInstance.search();
+    expect(employeesApi.list).toHaveBeenCalledWith(expect.objectContaining({ page: 1, q: 'Nurse' }));
+
+    fixture.componentInstance.resetSearch();
+    expect(fixture.componentInstance.q()).toBe('');
+    expect(employeesApi.list).toHaveBeenCalledWith(expect.objectContaining({ page: 1, q: undefined }));
+  });
 });
+

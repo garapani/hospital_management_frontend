@@ -124,6 +124,11 @@ export class EmployeeList {
     this.load(0);
   }
 
+  resetSearch(): void {
+    this.q.set('');
+    this.search();
+  }
+
   openCreateModal(): void {
     this.editingId.set(null);
     this.editForm.set({

@@ -32,6 +32,14 @@
       severity="secondary"
       (onClick)="search()"
     />
+    @if (q()) {
+    <p-button
+      label="Reset"
+      severity="secondary"
+      [text]="true"
+      (onClick)="resetSearch()"
+    />
+    }
   </div>
 
   <div class="surface-panel overflow-hidden">
@@ -60,7 +68,7 @@
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-emp>
-        <tr>
+        <tr [class]="'status-rail-' + (emp.isActive ? 'success' : 'warn')">
           <td class="font-mono text-slate-600 border-b border-slate-200">{{ emp.employeeCode }}</td>
           <td class="font-semibold text-slate-700 border-b border-slate-200">
             {{ emp.firstName }} {{ emp.lastName }}
@@ -73,8 +81,9 @@
           <td class="border-b border-slate-200">
             <p-tag
               [value]="emp.isActive ? 'Active' : 'Inactive'"
-              [severity]="emp.isActive ? 'success' : 'secondary'"
-              styleClass="rounded-full px-3"
+              [severity]="emp.isActive ? 'success' : 'warn'"
+              [rounded]="true"
+              styleClass="px-3"
             />
           </td>
           <td class="border-b border-slate-200 text-right whitespace-nowrap">
