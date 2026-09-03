@@ -85,6 +85,12 @@ export const appRoutes: Route[] = [
         canActivate: [permissionGuard(Permissions.BILLING_READ)],
       },
       {
+        path: 'billing/cashier-shifts',
+        loadComponent: () =>
+          import('./billing/cashier-shift/cashier-shift.js').then((m) => m.CashierShiftComponent),
+        canActivate: [permissionGuard(Permissions.BILLING_READ)],
+      },
+      {
         path: 'admin/billing-settings',
         loadComponent: () => import('./billing/billing-settings/billing-settings.js').then((m) => m.BillingSettingsComponent),
         canActivate: [permissionGuard(Permissions.MASTER_DATA_MANAGE)],

@@ -22,6 +22,17 @@
       Invoices
     </a>
     }
+    @if (auth.hasPermission('billing.manage')) {
+    <a
+      routerLink="/billing/cashier-shifts"
+      routerLinkActive="nav-item-active"
+      [routerLinkActiveOptions]="{ exact: false }"
+      class="nav-item"
+    >
+      <i class="pi pi-wallet text-base"></i>
+      Cashier Shift
+    </a>
+    }
     @if (auth.hasPermission('insurance.read')) {
     <a
       routerLink="/insurance"

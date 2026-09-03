@@ -1,0 +1,194 @@
+<div class="flex flex-col gap-6">
+  <p-toast></p-toast>
+
+  <div class="flex items-center justify-between">
+    <h1 class="page-title">Cashier Shift</h1>
+  </div>
+
+  @if (loading()) {
+  <p class="text-sm text-surface-500">Loading…</p>
+  } @else {
+
+  <div class="surface-panel p-8">
+    @if (currentShift(); as shift) {
+    <div class="flex items-start justify-between gap-3 flex-wrap">
+      <div>
+        <div class="text-sm font-medium text-slate-500">Open shift</div>
+        <div class="font-mono text-xl font-bold text-slate-900 mt-1">
+          Float {{ shift.floatAmount | number: '1.2-2' }}
+        </div>
+        <div class="text-xs text-slate-500 mt-1">
+          Opened {{ shift.openedAt | date: 'short' }}
+          @if (shift.notes) { — {{ shift.notes }} }
+        </div>
+      </div>
+      @if (canManage()) {
+      <p-button label="Close Shift" icon="pi pi-lock" (onClick)="openCloseModal()"></p-button>
+      }
+    </div>
+    } @else {
+    <div class="flex items-center justify-between gap-3 flex-wrap">
+      <p class="text-sm text-slate-600">No shift currently open.</p>
+      @if (canManage()) {
+      <p-button label="Open Shift" icon="pi pi-lock-open" (onClick)="openOpenModal()"></p-button>
+      }
+    </div>
+    }
+  </div>
+
+  @if (lastReconciliation(); as reconciliation) {
+  <div class="surface-panel p-8">
+    <h2 class="mb-4 text-lg font-bold text-slate-800">Reconciliation — shift closed</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm bg-white border border-slate-200 rounded-xl">
+        <thead>
+          <tr class="text-left text-xs font-bold uppercase tracking-wide text-slate-500 border-b border-slate-200">
+            <th class="p-3">Mode</th>
+            <th class="p-3">Expected</th>
+            <th class="p-3">Declared</th>
+            <th class="p-3">Variance</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (mode of reconciliation.modes; track mode.paymentMode) {
+          <tr class="border-b border-slate-100 last:border-0">
+            <td class="p-3 font-medium text-slate-700">{{ mode.paymentMode }}</td>
+            <td class="p-3 font-mono">{{ mode.expectedAmount | number: '1.2-2' }}</td>
+            <td class="p-3 font-mono">{{ mode.declaredAmount | number: '1.2-2' }}</td>
+            <td class="p-3 font-mono font-bold" [class.text-red-600]="mode.variance !== 0" [class.text-green-600]="mode.variance === 0">
+              {{ mode.variance | number: '1.2-2' }}
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  }
+
+  <div class="surface-panel p-8">
+    <h2 class="mb-4 text-lg font-bold text-slate-800">Recent shifts</h2>
+    <p-table [value]="history()" styleClass="p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Opened</th>
+          <th>Opened by</th>
+          <th>Float</th>
+          <th>Status</th>
+          <th>Cash declared</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-shift>
+        <tr>
+          <td>{{ shift.openedAt | date: 'short' }}</td>
+          <td class="font-mono text-xs">{{ shift.openedBy }}</td>
+          <td class="font-mono">{{ shift.floatAmount | number: '1.2-2' }}</td>
+          <td>
+            <p-tag [value]="shift.status" [severity]="shift.status === 'Open' ? 'info' : 'success'"></p-tag>
+          </td>
+          <td class="font-mono">{{ shift.cashDeclaredTotal !== null ? (shift.cashDeclaredTotal | number: '1.2-2') : '—' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="5" class="text-center text-sm text-slate-500 p-4">No shifts recorded yet.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+  }
+</div>
+
+<p-dialog header="Open Shift" [(visible)]="showOpenModal" [modal]="true" [closable]="!opening()" [closeOnEscape]="!opening()" [style]="{ width: '380px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-4 py-4">
+    @if (openError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ openError() }}
+    </div>
+    }
+    <div class="flex flex-col gap-2">
+      <label for="floatAmount" class="text-sm font-medium text-slate-700">Opening float</label>
+      <p-inputNumber
+        inputId="floatAmount"
+        [ngModel]="floatAmount()"
+        (ngModelChange)="floatAmount.set($event)"
+        mode="decimal"
+        [minFractionDigits]="2"
+        [maxFractionDigits]="2"
+        [min]="0"
+        styleClass="w-full"
+      ></p-inputNumber>
+    </div>
+    <div class="flex flex-col gap-2">
+      <label for="openNotes" class="text-sm font-medium text-slate-700">Notes (optional)</label>
+      <textarea pTextarea id="openNotes" rows="2" [ngModel]="openNotes()" (ngModelChange)="openNotes.set($event)" class="w-full"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showOpenModal.set(false)"></p-button>
+      <p-button label="Open Shift" [loading]="opening()" (onClick)="submitOpen()" [disabled]="floatAmount() === null"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Close Shift" [(visible)]="showCloseModal" [modal]="true" [closable]="!closing()" [closeOnEscape]="!closing()" [style]="{ width: '520px' }" styleClass="surface-modal">
+  <div class="flex flex-col gap-5 py-4">
+    @if (closeError()) {
+    <div class="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100 flex items-center gap-2">
+      <i class="pi pi-exclamation-circle"></i>
+      {{ closeError() }}
+    </div>
+    }
+
+    <div>
+      <div class="text-sm font-medium text-slate-700 mb-2">Cash denomination count</div>
+      <div class="grid grid-cols-3 gap-3">
+        @for (denomination of denominations; track denomination) {
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500">₹{{ denomination }}</label>
+          <p-inputNumber
+            [ngModel]="denominationCounts()[denomination] ?? null"
+            (ngModelChange)="setDenominationCount(denomination, $event)"
+            [min]="0"
+            styleClass="w-full"
+          ></p-inputNumber>
+        </div>
+        }
+      </div>
+      <div class="text-sm text-slate-600 mt-3">
+        Counted cash total: <span class="font-mono font-bold">{{ cashCountedTotal() | number: '1.2-2' }}</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="text-sm font-medium text-slate-700 mb-2">Declared totals — other modes</div>
+      <div class="grid grid-cols-2 gap-3">
+        @for (mode of declarableModes; track mode) {
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-slate-500">{{ mode }}</label>
+          <p-inputNumber
+            [ngModel]="modeTotals()[mode] ?? null"
+            (ngModelChange)="setModeTotal(mode, $event)"
+            mode="decimal"
+            [minFractionDigits]="2"
+            [maxFractionDigits]="2"
+            [min]="0"
+            styleClass="w-full"
+          ></p-inputNumber>
+        </div>
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="closeNotes" class="text-sm font-medium text-slate-700">Notes (optional)</label>
+      <textarea pTextarea id="closeNotes" rows="2" [ngModel]="closeNotes()" (ngModelChange)="closeNotes.set($event)" class="w-full"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button label="Cancel" severity="secondary" [text]="true" (onClick)="showCloseModal.set(false)"></p-button>
+      <p-button label="Close Shift" severity="warn" [loading]="closing()" (onClick)="submitClose()"></p-button>
+    </div>
+  </ng-template>
+</p-dialog>
