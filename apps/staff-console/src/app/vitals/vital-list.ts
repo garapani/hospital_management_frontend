@@ -59,6 +59,23 @@ export class VitalList {
   });
   readonly saving = signal(false);
 
+  resetPatientSearch(): void {
+    this.searchQuery.set('');
+    this.patientResults.set([]);
+  }
+
+  vitalSeverity(v: Vital): 'warn' | 'success' {
+    if (
+      (v.spO2 != null && v.spO2 < 95) ||
+      (v.temperature != null && (v.temperature > 38 || v.temperature < 35.5)) ||
+      (v.bpSystolic != null && (v.bpSystolic > 140 || v.bpSystolic < 90)) ||
+      (v.pulse != null && (v.pulse > 100 || v.pulse < 60))
+    ) {
+      return 'warn';
+    }
+    return 'success';
+  }
+
   readonly canManage = this.auth.hasPermission('vitals.manage');
 
   searchPatients(): void {

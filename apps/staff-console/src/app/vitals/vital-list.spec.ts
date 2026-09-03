@@ -116,4 +116,39 @@ describe('VitalList', () => {
     expect(vitalsApi.voidVital).toHaveBeenCalledWith('v1');
     expect(vitalsApi.listByPatient).toHaveBeenCalledWith('p3');
   });
+
+  it('resets patient search via resetPatientSearch()', async () => {
+    const { fixture } = setup();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const samplePatient: Patient = {
+      id: 'p1', patientNo: 'PAT-1', firstName: 'John', lastName: 'Doe', gender: 'Male', isActive: true, createdAt: '', updatedAt: '',
+    };
+    fixture.componentInstance.searchQuery.set('John');
+    fixture.componentInstance.patientResults.set([samplePatient]);
+
+    fixture.componentInstance.resetPatientSearch();
+    expect(fixture.componentInstance.searchQuery()).toBe('');
+    expect(fixture.componentInstance.patientResults()).toEqual([]);
+  });
+
+  it('correctly categorizes vital severity based on physiological thresholds', () => {
+    const { fixture } = setup();
+    const normal: Vital = {
+      id: 'v1', patientId: 'p1', recordedAt: '', createdAt: '',
+      spO2: 98, temperature: 36.8, bpSystolic: 120, pulse: 72,
+    };
+    expect(fixture.componentInstance.vitalSeverity(normal)).toBe('success');
+
+    const lowSpO2: Vital = { ...normal, spO2: 92 };
+    expect(fixture.componentInstance.vitalSeverity(lowSpO2)).toBe('warn');
+
+    const fever: Vital = { ...normal, temperature: 38.5 };
+    expect(fixture.componentInstance.vitalSeverity(fever)).toBe('warn');
+
+    const hypertension: Vital = { ...normal, bpSystolic: 155 };
+    expect(fixture.componentInstance.vitalSeverity(hypertension)).toBe('warn');
+  });
 });
+
